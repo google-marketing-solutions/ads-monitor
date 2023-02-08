@@ -1,0 +1,63 @@
+global:
+  auth: ./google-ads.yaml
+  mcc_id: "<YOUR_MCC_ID>"
+  custom_callbacks_location: ./custom_callbacks.py
+  pushgateway_url: "localhost:9091"
+
+queries:
+  placements:
+    query: |
+      SELECT
+          group_placement_view.display_name AS name,
+          group_placement_view.placement_type AS type,
+          metrics.clicks AS clicks,
+          metrics.impressions AS impressions,
+          metrics.conversions AS conversions,
+          metrics.cost_micros / 1e6 AS cost
+      FROM group_placement_view
+      WHERE
+          segments.date DURING TODAY
+          AND campaign.status = "ENABLED"
+          AND ad_group.status = "ENABLED"
+          AND metrics.cost_micros > 0
+  impressions:
+    query: |
+      SELECT
+          customer.id AS customer_id,
+          campaign.id AS campaign_id,
+          ad_group.id AS ad_group_id,
+          segments.ad_network_type AS network,
+          metrics.clicks AS clicks,
+          metrics.impressions AS impressions,
+          metrics.conversions AS conversions,
+          metrics.conversions_value AS conversions_value,
+          metrics.cost_micros / 1e6 AS cost
+      FROM ad_group
+      WHERE
+          segments.date DURING TODAY
+          AND campaign.status = "ENABLED"
+          AND ad_group.status = "ENABLED"
+          AND metrics.impressions > 0
+  mapping:
+    query: |
+      SELECT
+          customer.descriptive_name AS account_name,
+          campaign.name AS campaign_name,
+          ad_group.id AS ad_group_id,
+          ad_group.name AS ad_group_name,
+          1 AS info
+      FROM ad_group
+      WHERE campaign.status = 'ENABLED'
+          AND ad_group.status = 'ENABLED'
+  approvals:
+    query: |
+      SELECT
+          campaign.id AS campaign_id,
+          ad_group_ad.policy_summary.approval_status AS approval_status,
+          ad_group_ad.policy_summary.review_status AS review_status,
+          1 AS ad_count
+      FROM ad_group_ad
+      WHERE campaign.status = 'ENABLED'
+          AND ad_group.status = 'ENABLED'
+          AND ad_group_ad.status = 'ENABLED'
+    custom_callback: approvals_callback

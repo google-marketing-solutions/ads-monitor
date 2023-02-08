@@ -1,0 +1,44 @@
+version: '3'
+services:
+  prometheus:
+    image: prom/prometheus:main
+    expose:
+          - 9090
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./alerts.yml:/etc/prometheus/alerts.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    network_mode: "host"
+    restart: unless-stopped
+    grafana:
+        image: grafana/grafana:latest
+        ports:
+          - 3000:3000
+        restart: unless-stopped
+        volumes:
+          - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+          - grafana-data:/var/lib/grafana
+  gaarf_exporter:
+    build -t gaarf_exporter src/.
+  alertmanager:
+    image: prom/alertmanager:latest
+    ports:
+      - "9093:9093"
+    volumes:
+      - "./alertmanager:/config"
+    command: --config.file=/config/alertmanager.yml --log.level=debug
+    restart: unless-stopped
+    network_mode: "host"
+  pushgateway:
+    image: prom/pushgateway
+    restart: unless-stopped
+    expose:
+      - 9091
+    ports:
+      - "9091:9091"
+    network_mode: "host"
