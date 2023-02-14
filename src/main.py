@@ -13,6 +13,9 @@
 
 import argparse
 import yaml
+import logging
+from rich.logging import RichHandler
+from rich.pretty import pprint
 from gaarf.api_clients import GoogleAdsApiClient
 from gaarf.query_executor import AdsReportFetcher
 from gaarf.utils import get_customer_ids
@@ -25,7 +28,17 @@ if __name__ == '__main__':
     parser.add_argument("-c",
                         dest="config",
                         default="./gaarf_exporter.yaml")
+    parser.add_argument("--log", "--loglevel", dest="loglevel", default="info")
     args = parser.parse_args()
+
+    logging.basicConfig(format="%(message)s",
+                        level=args.loglevel.upper(),
+                        datefmt="%Y-%m-%d %H:%M:%S",
+                        handlers=[RichHandler(rich_tracebacks=True)])
+    logging.getLogger("google.ads.googleads.client").setLevel(logging.WARNING)
+    logging.getLogger("smart_open.smart_open_lib").setLevel(logging.WARNING)
+    logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
+    logger = logging.getLogger(__name__)
 
     with open(args.config, encoding="utf-8") as f:
         config = yaml.safe_load(f)
@@ -40,7 +53,7 @@ if __name__ == '__main__':
     GaarfExporter.options(report_fetcher=report_fetcher,
                           pushgateway_url=settings.get("pushgateway_url"))
     for name, content in queries.items():
-        suffix = content.get("suffix")
+        suffix = content.get("suffix") or name
         job_name = content.get("job_name") or name
         if callback_name := content.get("custom_callback"):
             custom_callback = import_custom_callback(
@@ -48,7 +61,7 @@ if __name__ == '__main__':
                 callback_name=callback_name)
         else:
             custom_callback = None
-        print(f"Running query {name}")
+        logger.info(f"Running query {name}")
         GaarfExporter(query_text=content.get("query"),
                       namespace=namespace,
                       suffix=suffix,

@@ -13,11 +13,14 @@
 
 from typing import Callable, Optional
 
+import logging
 import re
 from importlib import import_module
 from prometheus_client import Gauge, push_to_gateway, CollectorRegistry
 from gaarf.query_executor import AdsReportFetcher
 from gaarf.query_editor import QuerySpecification
+
+logger = logging.getLogger(__name__)
 
 
 class GaarfExporter:
@@ -45,9 +48,10 @@ class GaarfExporter:
             raise ValueError("namespace cannot be empty")
         self.namespace = f"{namespace}" if namespace.endswith(
             "_") else f"{namespace}_"
-        self.suffix = f"{suffix}_" if suffix else suffix
+        self.suffix = f"{suffix}_" if suffix else ""
         self.job_name = job_name
         self.registry: CollectorRegistry = CollectorRegistry()
+        logger.debug(str(self))
 
     @classmethod
     def options(cls, **kwargs) -> None:
@@ -82,6 +86,7 @@ class GaarfExporter:
             for column, field in virtual_attributes.items():
                 metrics[column] = self._define_gauge(column)
         self.metrics = metrics
+        logger.debug(f"metrics: {self.metrics}")
 
     def _define_labels(self) -> None:
         labelnames = []
@@ -90,12 +95,16 @@ class GaarfExporter:
             if "metric" not in field:
                 labelnames.append(str(column))
         self.labelnames = labelnames
+        logger.debug(f"labelsnames: {self.labelnames}")
 
     def _define_gauge(self, name: str) -> Gauge:
         return Gauge(name=f"{self.namespace}{self.suffix}{name}",
                      documentation=name,
                      labelnames=self.labelnames,
                      registry=self.registry)
+
+    def __str__(self) -> str:
+        return f"GaarfExporter(namespace={self.namespace}, suffix={self.suffix}, job_name={self.job_name})"
 
 
 def import_custom_callback(callback_location: str,
