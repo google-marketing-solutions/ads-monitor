@@ -1,0 +1,23 @@
+groups:
+  - name: gaarf
+    rules:
+      - record: gaarf:impressions:overall
+        expr: sum(gaarf_impressions)
+      - record: gaarf:conversions:overall
+        expr: sum(gaarf_conversions)
+      - alert: NoAdsImpressions
+        expr: round(deriv(gaarf:impressions:overall[30m])) == 0
+        for: 30m
+        labels:
+          severity: severe
+        annotations:
+          summary: No Ads Impressions for the last 30 minutes
+      - alert: NoAdsConversions
+        expr: round(deriv(gaarf:conversions:overall[30m])) == 0
+        for: 1h
+        labels:
+          severity: severe
+        annotations:
+          summary: No Ads Conversions for the last hour
+
+

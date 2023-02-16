@@ -19,7 +19,7 @@ scrape_configs:
       - targets: ['localhost:9091']
 ```
 
-Please refer to [prometheus.yml](../prometheus.yml) example.
+Please refer to [prometheus.yml](../prometheus/prometheus.yml) example.
 
 ## Adding new target to existing prometheus.yml
 

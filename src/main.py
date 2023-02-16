@@ -15,7 +15,6 @@ import argparse
 import yaml
 import logging
 from rich.logging import RichHandler
-from rich.pretty import pprint
 from gaarf.api_clients import GoogleAdsApiClient
 from gaarf.query_executor import AdsReportFetcher
 from gaarf.utils import get_customer_ids

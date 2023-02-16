@@ -16,7 +16,7 @@ a solid monitoring environment for your crucial Ads metrics and dimensions.
 
 ## Deliverable (implementation)
 
-Ads Monitor provides you with a Grafana dashboard and a set of default alerts.
+Ads Monitor provides you with a Grafana dashboard and a set of default [alerts](prometheus/alerts.yml).
 Data that powers the dashboard and alerts are extracted from Google Ads API and
 stored in a Prometheus.
 
@@ -34,18 +34,34 @@ stored in a Prometheus.
 			and paste them in the terminal.
 
 * `prometheus.yml` file configured. Learn more at [how to configure Prometheus](docs/how-to-configure-prometheus.md).
+* (Optional) [Docker Compose](https://docs.docker.com/compose/install/) installed.
 
 
 ### Installation
 
-An easiest way of trying the solution is to use Docker Compose.
+An easiest way to try the solution is to run it via [Docker Compose](https://docs.docker.com/compose/install/).
+
+1. expose environmental variable `GOOGLE_ADS_YAML`:
+
+```
+export GOOGLE_ADS_YAML=/path/to/google-ads.yaml
+```
+
+2. start the containers
 
 ```
 docker compose up
 ```
 
-It will build `gaarf_exporter` container and pull latest images of Prometheus,
-Pushgateway, AlertManager and Grafana.
+This command will build `gaarf_exporter` image, pull latest images of Prometheus,
+Pushgateway, AlertManager and Grafana and perform the initial scrape of metrics
+from Google Ads.
+
+> To perform regular export of Google Ads metrics set up a cronjob, i.e.
+> use the command below to run the scraping every 10 minutes:
+> ```
+> */10 * * * * bash /path/to/ads_monitor_folder/scripts/run-gaarf-exporter.sh
+> ```
 
 
 #### Manual installation
@@ -79,6 +95,7 @@ docker run --network=host \
 * (Optional) `custom_callbacks.py` - file with callbacks that might be associated
 	with a particular query.
 
+> Change `--network=host` to the network that where your Pushgateway instance is running.
 
 `gaarf_exporter` will push metrics to Pushgateway so they can later be scraped by Prometheus.
 

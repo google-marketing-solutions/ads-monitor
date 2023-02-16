@@ -48,7 +48,7 @@ class GaarfExporter:
             raise ValueError("namespace cannot be empty")
         self.namespace = f"{namespace}" if namespace.endswith(
             "_") else f"{namespace}_"
-        self.suffix = f"{suffix}_" if suffix else ""
+        self.suffix = f"{suffix}_" if suffix and suffix != "Remove" else ""
         self.job_name = job_name
         self.registry: CollectorRegistry = CollectorRegistry()
         logger.debug(str(self))
@@ -80,7 +80,7 @@ class GaarfExporter:
         self._define_labels()
         for column, field in zip(self.query_specification.column_names,
                                  self.query_specification.fields):
-            if "metric" in field:
+            if "metrics" in field:
                 metrics[column] = self._define_gauge(column)
         if virtual_attributes := self.query_specification.virtual_attributes:
             for column, field in virtual_attributes.items():

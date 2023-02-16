@@ -1,44 +1,70 @@
 version: '3'
+
+networks:
+  ads-monitor:
+    driver: bridge
+
+volumes:
+  prometheus_data: {}
+  grafana_data: {}
+
 services:
   prometheus:
     image: prom/prometheus:main
+    container_name: ads_prometheus
+    networks:
+      - ads-monitor
     expose:
           - 9090
     volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-      - ./alerts.yml:/etc/prometheus/alerts.yml
+      - ./prometheus/:/etc/prometheus/
+      - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
       - '--web.console.libraries=/etc/prometheus/console_libraries'
       - '--web.console.templates=/etc/prometheus/consoles'
       - '--web.enable-lifecycle'
-    network_mode: "host"
     restart: unless-stopped
-    grafana:
-        image: grafana/grafana:latest
-        ports:
-          - 3000:3000
-        restart: unless-stopped
-        volumes:
-          - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
-          - grafana-data:/var/lib/grafana
+  grafana:
+    image: grafana/grafana:latest
+    container_name: ads_grafana
+    networks:
+      - ads-monitor
+    ports:
+      - 3000:3000
+    restart: unless-stopped
+    volumes:
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+      - grafana_data:/var/lib/grafana
   gaarf_exporter:
-    build -t gaarf_exporter src/.
+    build: src/.
+    image: gaarf_exporter
+    container_name: ads_exporter
+    networks:
+      - ads-monitor
+    volumes:
+      - "${GOOGLE_ADS_YAML:-$HOME/google-ads.yaml}:/app/google-ads.yaml"
+      - ./src/gaarf_exporter.yaml/:/app/gaarf_exporter.yaml
+      - ./custom_callbacks.py/:/app/custom_callbacks.py
   alertmanager:
     image: prom/alertmanager:latest
+    container_name: ads_alertmanager
+    networks:
+      - ads-monitor
     ports:
       - "9093:9093"
     volumes:
       - "./alertmanager:/config"
     command: --config.file=/config/alertmanager.yml --log.level=debug
     restart: unless-stopped
-    network_mode: "host"
   pushgateway:
     image: prom/pushgateway
+    container_name: ads_pushgateway
+    networks:
+      - ads-monitor
     restart: unless-stopped
     expose:
       - 9091
     ports:
       - "9091:9091"
-    network_mode: "host"
