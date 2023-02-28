@@ -2,7 +2,7 @@ global:
   auth: ./google-ads.yaml
   mcc_id: "<YOUR_MCC_ID>"
   custom_callbacks_location: ./custom_callbacks.py
-  pushgateway_url: "localhost:9091"
+  pushgateway_url: ads_pushgateway:9091
 
 queries:
   placements:

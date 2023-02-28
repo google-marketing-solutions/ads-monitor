@@ -14,8 +14,8 @@ services:
     container_name: ads_prometheus
     networks:
       - ads-monitor
-    expose:
-          - 9090
+    ports:
+      - 9090:9090
     volumes:
       - ./prometheus/:/etc/prometheus/
       - prometheus_data:/prometheus
@@ -44,9 +44,9 @@ services:
     networks:
       - ads-monitor
     volumes:
-      - "${GOOGLE_ADS_YAML:-$HOME/google-ads.yaml}:/app/google-ads.yaml"
+      - "${GOOGLE_ADS_YAML:-$HOME/google-ads.yaml}/:/app/google-ads.yaml"
       - ./src/gaarf_exporter.yaml/:/app/gaarf_exporter.yaml
-      - ./custom_callbacks.py/:/app/custom_callbacks.py
+      - ./src/custom_callbacks.py/:/app/custom_callbacks.py
   alertmanager:
     image: prom/alertmanager:latest
     container_name: ads_alertmanager
@@ -64,7 +64,5 @@ services:
     networks:
       - ads-monitor
     restart: unless-stopped
-    expose:
-      - 9091
     ports:
       - "9091:9091"

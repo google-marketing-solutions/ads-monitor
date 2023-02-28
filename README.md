@@ -47,7 +47,12 @@ An easiest way to try the solution is to run it via [Docker Compose](https://doc
 export GOOGLE_ADS_YAML=/path/to/google-ads.yaml
 ```
 
-2. start the containers
+2. update `src/gaarf_exporter.yaml`:
+
+* in `globals` section add your MCC account under `mcc_id` key.
+
+
+3. start the containers:
 
 ```
 docker compose up
