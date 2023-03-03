@@ -1,14 +1,14 @@
 groups:
-  - name: gaarf
+  - name: googleads
     rules:
-      - record: gaarf:impressions:overall
-        expr: sum(gaarf_impressions)
+      - record: googleads:impressions:overall
+        expr: sum(googleads_impressions)
 
-      - record: gaarf:conversions:overall
-        expr: sum(gaarf_conversions)
+      - record: googleads:conversions:overall
+        expr: sum(googleads_conversions)
 
       - alert: NoAdsImpressions
-        expr: deriv(gaarf:impressions:overall[30m]) == 0
+        expr: deriv(googleads:impressions:overall[30m]) == 0
         for: 30m
         labels:
           severity: crucial
@@ -16,7 +16,7 @@ groups:
           summary: No Ads Impressions for the last 30 minutes
 
       - alert: NoAdsConversions
-        expr: deriv(gaarf:conversions:overall[30m]) == 0
+        expr: deriv(googleads:conversions:overall[30m]) == 0
         for: 1h
         labels:
           severity: crucial
@@ -24,19 +24,21 @@ groups:
           summary: No Ads Conversions for the last hour
 
       - alert: DoubleGDNCostCampaign
-        expr: sum by(campaign_id) (gaarf_cost{network="CONTENT"}) / sum by(campaign_id) (gaarf_cost{network="CONTENT"} offset 30m) > 2.0 and (sum by(campaign_id) (gaarf_cost) > 1)
+        expr: sum by(campaign_id) (googleads_cost{network="CONTENT"}) / sum by(campaign_id) (googleads_cost{network="CONTENT"} offset 30m) > 2.0 and (sum by(campaign_id) (googleads_cost) > 1)
+        for: 1h
         labels:
           severity: high
           team: display
 
       - alert: DoubleSearchCostCampaign
-        expr: sum by(campaign_id) (gaarf_cost{network="SEARCH"}) / sum by(campaign_id) (gaarf_cost{network="SEARCH"} offset 30m) > 2.0 and (sum by(campaign_id) (gaarf_cost) > 1)
+        expr: sum by(campaign_id) (googleads_cost{network="SEARCH"}) / sum by(campaign_id) (googleads_cost{network="SEARCH"} offset 30m) > 2.0 and (sum by(campaign_id) (googleads_cost) > 1)
+        for: 1h
         labels:
           severity: high
           team: search
 
       - alert: AdsNotReviewedForMoreThanOneDay
-        expr: gaarf_approvals_ad_count{review_status!="REVIEWED"} and on() hour() >= 3 <=15
+        expr: googleads_approvals_ad_count{review_status!="REVIEWED"} and on() hour() >= 3 <=15
         for: 1d
         labels:
           severity: medium
@@ -44,7 +46,7 @@ groups:
         annotations:
           summary: Some ads haven't been reviewed for more than 24 hours
           description: >
-            Campaigns with unreviewed ads: {{ range query "gaarf_approvals_ad_count{review_status!='REVIEWED'}" }}
+            Campaigns with unreviewed ads: {{ range query "googleads_approvals_ad_count{review_status!='REVIEWED'}" }}
               {{ .Labels.campaign_id }}
             {{ end }}
 
