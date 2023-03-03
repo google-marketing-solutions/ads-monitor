@@ -1,11 +1,30 @@
 {
+  "__inputs": [
+    {
+      "name": "DS_PROMETHEUS",
+      "label": "prometheus",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "prometheus"
+    }
+  ],
+  "__elements": {},
+  "__requires": [
+    {
+      "type": "datasource",
+      "id": "prometheus",
+      "name": "Prometheus",
+      "version": "1.0.0"
+    }
+  ],
   "annotations": {
     "list": [
       {
         "builtIn": 1,
         "datasource": {
-          "type": "grafana",
-          "uid": "-- Grafana --"
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
         },
         "enable": true,
         "hide": true,
@@ -25,7 +44,16 @@
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
   "id": 2,
-  "links": [],
+  "links": [
+    {
+      "icon": "external link",
+      "tags": [],
+      "targetBlank": true,
+      "title": "Repository",
+      "type": "link",
+      "url": "https://professional-services.googlesource.com/solutions/ads_monitor/"
+    }
+  ],
   "liveNow": false,
   "panels": [
     {
@@ -44,7 +72,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "DDdJznA4k"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -121,10 +149,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "DDdJznA4k"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum by (network) (gaarf_cost)",
+          "expr": "sum by (network) (googleads_cost)",
           "legendFormat": "{{label_name}}",
           "range": true,
           "refId": "A"
@@ -136,7 +164,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "DDdJznA4k"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -213,10 +241,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "DDdJznA4k"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum (gaarf_cost{network=\"SEARCH\"}) - sum (gaarf_cost{network=\"SEARCH\"} offset 15m)",
+          "expr": "sum (googleads_cost{network=\"SEARCH\"}) - sum (googleads_cost{network=\"SEARCH\"} offset 15m)",
           "hide": false,
           "legendFormat": "search_impressions_cost_delta_15m",
           "range": true,
@@ -239,7 +267,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "DDdJznA4k"
+            "uid": "${DS_PROMETHEUS}"
           },
           "gridPos": {
             "h": 12,
@@ -290,7 +318,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "DDdJznA4k"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -347,10 +375,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "DDdJznA4k"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(gaarf_approvals_ad_count{approval_status!=\"APPROVED\"}) / sum(gaarf_approvals_ad_count) * 100",
+          "expr": "sum(googleads_approvals_ad_count{approval_status!=\"APPROVED\"}) / sum(googleads_approvals_ad_count) * 100",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -362,7 +390,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "DDdJznA4k"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -419,10 +447,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "DDdJznA4k"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(gaarf_approvals_ad_count{review_status=\"REVIEWED\"}) / sum(gaarf_approvals_ad_count) * 100",
+          "expr": "sum(googleads_approvals_ad_count{review_status=\"REVIEWED\"}) / sum(googleads_approvals_ad_count) * 100",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -434,7 +462,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "DDdJznA4k"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -469,7 +497,7 @@
           "calcs": [
             "lastNotNull"
           ],
-          "fields": "/^sum\\(gaarf_approvals_ad_count\\{approval_status!=\"APPROVED\",campaign_id=\"13826499993\"\\}\\) / sum\\(gaarf_approvals_ad_count\\{campaign_id=\"13826499993\"\\}\\) \\* 100$/",
+          "fields": "/^sum\\(googleads_approvals_ad_count\\{approval_status!=\"APPROVED\",campaign_id=\"13826499993\"\\}\\) / sum\\(googleads_approvals_ad_count\\{campaign_id=\"13826499993\"\\}\\) \\* 100$/",
           "values": false
         },
         "showThresholdLabels": false,
@@ -480,10 +508,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "DDdJznA4k"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(gaarf_approvals_ad_count{approval_status!=\"APPROVED\",campaign_id=\"$campaign_id\"}) / sum(gaarf_approvals_ad_count{campaign_id=\"$campaign_id\"}) * 100",
+          "expr": "sum(googleads_approvals_ad_count{approval_status!=\"APPROVED\",campaign_id=\"$campaign_id\"}) / sum(googleads_approvals_ad_count{campaign_id=\"$campaign_id\"}) * 100",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -495,7 +523,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "DDdJznA4k"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -574,11 +602,11 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "DDdJznA4k"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum by(approval_status) (gaarf_approvals_ad_count)",
+          "expr": "sum by(approval_status) (googleads_approvals_ad_count)",
           "hide": false,
           "interval": "",
           "legendFormat": "__auto",
@@ -592,7 +620,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "DDdJznA4k"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -671,11 +699,11 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "DDdJznA4k"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum by(review_status) (gaarf_approvals_ad_count)",
+          "expr": "sum by(review_status) (googleads_approvals_ad_count)",
           "hide": false,
           "interval": "",
           "legendFormat": "__auto",
@@ -702,7 +730,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "DDdJznA4k"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -748,11 +776,11 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "DDdJznA4k"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum by()(gaarf_impressions)",
+          "expr": "sum by()(googleads_impressions)",
           "hide": false,
           "legendFormat": "__auto",
           "range": true,
@@ -765,7 +793,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "DDdJznA4k"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -815,11 +843,11 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "DDdJznA4k"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum by () (gaarf_conversions)",
+          "expr": "sum by () (googleads_conversions)",
           "hide": false,
           "legendFormat": "__auto",
           "range": true,
@@ -832,7 +860,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "DDdJznA4k"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -909,7 +937,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "DDdJznA4k"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -923,11 +951,11 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "DDdJznA4k"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum by () (max_over_time(gaarf_impressions[15m]))",
+          "expr": "sum by () (max_over_time(googleads_impressions[15m]))",
           "hide": false,
           "interval": "",
           "legendFormat": "impressions",
@@ -947,7 +975,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "DDdJznA4k"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1049,11 +1077,11 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "DDdJznA4k"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(gaarf_impressions{ad_group_id=~\"$ad_group_id\", customer_id=~\"$customer_id\"})",
+          "expr": "sum(googleads_impressions{ad_group_id=~\"$ad_group_id\", customer_id=~\"$customer_id\"})",
           "hide": false,
           "legendFormat": "impressions",
           "range": true,
@@ -1066,7 +1094,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "DDdJznA4k"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1143,7 +1171,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "DDdJznA4k"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -1157,11 +1185,11 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "DDdJznA4k"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(gaarf_impressions) - sum(gaarf_impressions offset 15m)",
+          "expr": "sum(googleads_impressions) - sum(googleads_impressions offset 15m)",
           "hide": false,
           "interval": "",
           "legendFormat": "impressions",
@@ -1181,7 +1209,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "DDdJznA4k"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1283,11 +1311,11 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "DDdJznA4k"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(gaarf_conversions{ad_group_id=~\"$ad_group_id\", customer_id=~\"$customer_id\"})",
+          "expr": "sum(googleads_conversions{ad_group_id=~\"$ad_group_id\", customer_id=~\"$customer_id\"})",
           "hide": false,
           "legendFormat": "impressions",
           "range": true,
@@ -1300,7 +1328,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "DDdJznA4k"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1377,11 +1405,11 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "DDdJznA4k"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum by() (gaarf_conversions)",
+          "expr": "sum by() (googleads_conversions)",
           "hide": false,
           "interval": "",
           "legendFormat": "__auto",
@@ -1395,7 +1423,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "DDdJznA4k"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1497,11 +1525,11 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "DDdJznA4k"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(gaarf_impressions{ad_group_id=\"$ad_group_id\", customer_id=\"$customer_id\"}) - sum(gaarf_impressions{ad_group_id=\"$ad_group_id\", customer_id=\"$customer_id\"} offset 15m)",
+          "expr": "sum(googleads_impressions{ad_group_id=\"$ad_group_id\", customer_id=\"$customer_id\"}) - sum(googleads_impressions{ad_group_id=\"$ad_group_id\", customer_id=\"$customer_id\"} offset 15m)",
           "hide": false,
           "legendFormat": "impressions",
           "range": true,
@@ -1514,7 +1542,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "DDdJznA4k"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1591,11 +1619,11 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "DDdJznA4k"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(gaarf_conversions) - sum(gaarf_conversions offset 15m)",
+          "expr": "sum(googleads_conversions) - sum(googleads_conversions offset 15m)",
           "hide": false,
           "interval": "",
           "legendFormat": "conversions",
@@ -1615,7 +1643,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "DDdJznA4k"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1692,11 +1720,11 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "DDdJznA4k"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(gaarf_conversions) - sum(gaarf_conversions offset 15m)",
+          "expr": "sum(googleads_conversions) - sum(googleads_conversions offset 15m)",
           "hide": false,
           "interval": "",
           "legendFormat": "conversions",
@@ -1706,7 +1734,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "DDdJznA4k"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -1743,7 +1771,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "DDdJznA4k"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1821,10 +1849,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "DDdJznA4k"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum by(type) (gaarf_placements_cost)",
+          "expr": "sum by(type) (googleads_placements_cost)",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -1836,7 +1864,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "DDdJznA4k"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1914,10 +1942,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "DDdJznA4k"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "topk(5, max_over_time(gaarf_placements_impressions[60m]))",
+          "expr": "topk(5, max_over_time(googleads_placements_impressions[60m]))",
           "legendFormat": "{{name}}",
           "range": true,
           "refId": "A"
@@ -1942,9 +1970,9 @@
         },
         "datasource": {
           "type": "prometheus",
-          "uid": "DDdJznA4k"
+          "uid": "${DS_PROMETHEUS}"
         },
-        "definition": "label_values(gaarf_impressions, customer_id)",
+        "definition": "label_values(googleads_impressions, customer_id)",
         "hide": 0,
         "includeAll": true,
         "label": "Account:",
@@ -1952,7 +1980,7 @@
         "name": "customer_id",
         "options": [],
         "query": {
-          "query": "label_values(gaarf_impressions, customer_id)",
+          "query": "label_values(googleads_impressions, customer_id)",
           "refId": "StandardVariableQuery"
         },
         "refresh": 1,
@@ -1969,9 +1997,9 @@
         },
         "datasource": {
           "type": "prometheus",
-          "uid": "DDdJznA4k"
+          "uid": "${DS_PROMETHEUS}"
         },
-        "definition": "label_values(gaarf_impressions{customer_id=\"$customer_id\"}, ad_group_id)",
+        "definition": "label_values(googleads_impressions{customer_id=\"$customer_id\"}, ad_group_id)",
         "hide": 0,
         "includeAll": true,
         "label": "Ad Group",
@@ -1979,7 +2007,7 @@
         "name": "ad_group_id",
         "options": [],
         "query": {
-          "query": "label_values(gaarf_impressions{customer_id=\"$customer_id\"}, ad_group_id)",
+          "query": "label_values(googleads_impressions{customer_id=\"$customer_id\"}, ad_group_id)",
           "refId": "StandardVariableQuery"
         },
         "refresh": 1,
@@ -1996,9 +2024,9 @@
         },
         "datasource": {
           "type": "prometheus",
-          "uid": "DDdJznA4k"
+          "uid": "${DS_PROMETHEUS}"
         },
-        "definition": "label_values(gaarf_impressions, job)",
+        "definition": "label_values(googleads_impressions, job)",
         "hide": 0,
         "includeAll": true,
         "label": "Job:",
@@ -2006,7 +2034,7 @@
         "name": "job",
         "options": [],
         "query": {
-          "query": "label_values(gaarf_impressions, job)",
+          "query": "label_values(googleads_impressions, job)",
           "refId": "StandardVariableQuery"
         },
         "refresh": 1,
@@ -2027,9 +2055,9 @@
         },
         "datasource": {
           "type": "prometheus",
-          "uid": "DDdJznA4k"
+          "uid": "${DS_PROMETHEUS}"
         },
-        "definition": "label_values(gaarf_impressions{customer_id=\"$customer_id\"}, campaign_id)",
+        "definition": "label_values(googleads_impressions{customer_id=\"$customer_id\"}, campaign_id)",
         "hide": 0,
         "includeAll": true,
         "label": "campaign_id",
@@ -2037,7 +2065,7 @@
         "name": "campaign_id",
         "options": [],
         "query": {
-          "query": "label_values(gaarf_impressions{customer_id=\"$customer_id\"}, campaign_id)",
+          "query": "label_values(googleads_impressions{customer_id=\"$customer_id\"}, campaign_id)",
           "refId": "StandardVariableQuery"
         },
         "refresh": 1,
@@ -2056,8 +2084,7 @@
     "hidden": false
   },
   "timezone": "",
-  "title": "Ads Monitor Demo",
-  "uid": "b0YU2YT4z",
+  "title": "Ads Monitor",
   "version": 46,
   "weekStart": ""
 }
