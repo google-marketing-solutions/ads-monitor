@@ -33,6 +33,6 @@ done
 current_dir=$(dirname $(readlink -f $0))
 docker run --network="${network:-host}" \
 	-v ${ads_config:-$HOME/google-ads.yaml}:/app/google-ads.yaml \
-	-v "${current_dir}/../src/my_gaarf_exporter.yaml:/app/gaarf_exporter.yaml" \
+	-v "${current_dir}/../src/gaarf_exporter.yaml:/app/gaarf_exporter.yaml" \
 	-v "${current_dir}/../src/custom_callbacks.py:/app/custom_callbacks.py" \
 	gaarf_exporter
