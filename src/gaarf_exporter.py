@@ -65,6 +65,8 @@ class GaarfExporter:
         self._define_metrics()
         result = self.report_fetcher.fetch(self.query_specification,
                                            optimize_strategy)
+        if not result:
+            return
         if callback:
             result = callback(result)
         for row in result:
@@ -82,8 +84,8 @@ class GaarfExporter:
                                  self.query_specification.fields):
             if "metrics" in field:
                 metrics[column] = self._define_gauge(column)
-        if virtual_attributes := self.query_specification.virtual_attributes:
-            for column, field in virtual_attributes.items():
+        if virtual_columns := self.query_specification.virtual_columns:
+            for column, field in virtual_columns.items():
                 metrics[column] = self._define_gauge(column)
         self.metrics = metrics
         logger.debug(f"metrics: {self.metrics}")
