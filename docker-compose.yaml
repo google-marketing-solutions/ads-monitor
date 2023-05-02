@@ -34,6 +34,8 @@ services:
     ports:
       - 3000:3000
     restart: unless-stopped
+    environment:
+      - GF_INSTALL_PLUGINS=marcusolsson-treemap-panel
     volumes:
       - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
       - grafana_data:/var/lib/grafana
