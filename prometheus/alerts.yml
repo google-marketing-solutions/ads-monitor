@@ -1,11 +1,38 @@
 groups:
   - name: googleads
     rules:
+      - record: campaign_spend_threshold
+        expr: 200
+
+      - record: campaign_spend_increase_threshold
+        expr: 2.0
+
+      - record: search_term_clicks_threshold
+        expr: 200
+
+      - record: search_term_clicks_increase_threshold
+        expr: 2.0
+
       - record: googleads:impressions:overall
         expr: sum(googleads_impressions)
 
       - record: googleads:conversions:overall
         expr: sum(googleads_conversions)
+
+      - record: googleads:impressions:account
+        expr: sum by(customer_id) (googleads_impressions)
+
+      - record: googleads:conversions:account
+        expr: sum by(customer_id) (googleads_conversions)
+
+      - record: googleads:all_conversions:account_conversionid
+        expr: sum by(customer_id, conversion_id) (googleads_conversion_action_all_conversions)
+
+      - alert: NoConversionsForConversionId
+        expr: deriv(googleads:all_conversions:account_conversionid[30m]) == 0
+        for: 1h
+        labels:
+          severity: crucial
 
       - alert: NoAdsImpressions
         expr: deriv(googleads:impressions:overall[30m]) == 0
@@ -23,15 +50,19 @@ groups:
         annotations:
           summary: No Ads Conversions for the last hour
 
-      - alert: DoubleGDNCostCampaign
-        expr: sum by(campaign_id) (googleads_cost{network="CONTENT"}) / sum by(campaign_id) (googleads_cost{network="CONTENT"} offset 30m) > 2.0 and (sum by(campaign_id) (googleads_cost) > 1)
+      - alert: IncreaseGDNCostCampaign
+        expr: |
+          sum by(campaign_id) (googleads_cost{network="CONTENT"}) / sum by(campaign_id) (googleads_cost{network="CONTENT"} offset 30m) > on() group_left() (campaign_spend_increase_threshold)
+          and (sum by(campaign_id) (googleads_cost) > on() group_left() (campaign_spend_threshold))
         for: 1h
         labels:
           severity: high
           team: display
 
-      - alert: DoubleSearchCostCampaign
-        expr: sum by(campaign_id) (googleads_cost{network="SEARCH"}) / sum by(campaign_id) (googleads_cost{network="SEARCH"} offset 30m) > 2.0 and (sum by(campaign_id) (googleads_cost) > 1)
+      - alert: IncreaseSearchCostCampaign
+        expr: |
+          sum by(campaign_id) (googleads_cost{network="SEARCH"}) / sum by(campaign_id) (googleads_cost{network="SEARCH"} offset 30m) > on() group_left() (campaign_spend_increase_threshold)
+          and (sum by(campaign_id) (googleads_cost) > on() group_left() (campaign_spend_threshold))
         for: 1h
         labels:
           severity: high
@@ -49,5 +80,18 @@ groups:
             Campaigns with unreviewed ads: {{ range query "googleads_approvals_ad_count{review_status!='REVIEWED'}" }}
               {{ .Labels.campaign_id }}
             {{ end }}
-
-
+      - alert: RecentlyDisapprovedAds
+        expr: |
+          googleads_approvals_ad_count{approval_status="DISAPPROVED"}
+          and (googleads_approvals_ad_count{approval_status="APPROVED"} offset 1d)
+          and on() hour() >= 3 <=15
+        for: 1h
+        labels:
+          severity: medium
+          domain: approvals
+        annotations:
+          summary: Some of approved ads haven't been recently disapproved
+          description: >
+            Campaigns with disapproved ads: {{ range query "googleads_approvals_ad_count{approval_status='DISAPPROVED'} and (googleads_approvals_ad_count{approval_status='APPROVED'} offset 1d)" }}
+              {{ .Labels.campaign_id }}
+            {{ end }}
