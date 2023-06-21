@@ -99,6 +99,14 @@ docker run --network=host \
 
 `gaarf_exporter` will push metrics to Pushgateway so they can later be scraped by Prometheus.
 
+##### Skipping or including particular queries
+
+When running `gaarf_exporter` there are two CLI flags that can help fine-tuning
+which queries from config file should be run:
+
+* `--queries.include` - comma-separated query names (i.e. `performance,search_terms`) that will be taken from `gaarf_exporter.yaml` for fetching.
+* `--queries.exclude` - comma-separated query names (i.e. `performance,search_terms`) that will be will be excluded from fetching despite being in the `gaarf_exporter.yaml` config.
+
 ### Usage
 
 #### Creating Grafana dashboard

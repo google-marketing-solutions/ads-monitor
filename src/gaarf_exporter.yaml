@@ -3,6 +3,7 @@ global:
   mcc_id: "<YOUR_MCC_ID>"
   custom_callbacks_location: ./custom_callbacks.py
   pushgateway_url: ads_pushgateway:9091
+  namespace: googleads
 
 queries:
   placements:
@@ -20,7 +21,7 @@ queries:
           AND campaign.status = "ENABLED"
           AND ad_group.status = "ENABLED"
           AND metrics.cost_micros > 0
-  impressions:
+  performance:
     query: |
       SELECT
           customer.id AS customer_id,
@@ -38,6 +39,7 @@ queries:
           AND campaign.status = "ENABLED"
           AND ad_group.status = "ENABLED"
           AND metrics.impressions > 0
+    suffix: Remove
   mapping:
     query: |
       SELECT
@@ -61,3 +63,34 @@ queries:
           AND ad_group.status = 'ENABLED'
           AND ad_group_ad.status = 'ENABLED'
     custom_callback: approvals_callback
+  conversions_mapping:
+    query: |
+      SELECT
+        customer.id AS customer_id,
+        conversion_action.id AS conversion_id,
+        conversion_action.include_in_conversions_metric AS include_in_conversions,
+        conversion_action.name AS name,
+        conversion_action.type AS type,
+        conversion_action.origin AS origin,
+        conversion_action.category AS category,
+        1 AS info
+      FROM conversion_action
+      WHERE conversion_action.status = "ENABLED"
+  conversion_action:
+    query: |
+      SELECT
+          customer.id AS account_id,
+          segments.conversion_action~0 AS conversion_id,
+          metrics.all_conversions AS all_conversions
+      FROM customer
+      WHERE segments.date DURING TODAY
+        AND metrics.all_conversions > 0
+  search_terms:
+    query: |
+      SELECT
+        search_term_view.search_term AS search_term,
+        metrics.clicks AS clicks
+      FROM search_term_view
+      WHERE search_term_view.status = "ADDED"
+        AND segments.date DURING TODAY
+        AND metrics.clicks > 0

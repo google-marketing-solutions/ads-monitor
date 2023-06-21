@@ -13,6 +13,7 @@ global:
   mcc_id: "<YOUR_MCC_ID>"
   custom_callbacks_location: ./custom_callbacks.py
   pushgateway_url: "localhost:9091"
+  namespace: googleads
 
 queries:
   query_name:
@@ -49,13 +50,14 @@ Consists of one or more queries.
 * `query` - text of a query (based on [gaarf syntax](https://github.com/google/ads-api-report-fetcher/blob/main/docs/how-to-write-queries.md)).
 * `job_name` - custom job name to be exposed to Pushgateway (by default the same as `<query_name>`
 * `suffix` - custom suffix for the metrics for the query.
-  By default `suffix` is not set up so the typing metrics might look
-  like this `googleads_impressions`. If you specify `suffix` (i.e. `placements`)
-  the metrics will look like `googleads_placements_impressions`
+  * By default `suffix` is the same and query name; so if you have a query `placements`
+  the metric in Prometheus will look like `googleads_placements_impressions`.
+  * If you specify `suffix` (i.e. `plc`) the metrics will look like `googleads_plc_impressions`.
+  * You can remove suffix for some generic metrics by specifying `suffix: Remove`
 * `custom_callback` - name of the function in `custom_callback_location`
   that will be applied to the results of query execution before exposing them to Prometheus.
 
-### Query: how to defing metrics and labels
+### Query: how to define metrics and labels
 
 By default every element field in the query that starts with `metrics` will be
 treated as metric that needs to be exposed to Prometheus.

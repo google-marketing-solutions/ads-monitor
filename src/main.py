@@ -24,9 +24,13 @@ from gaarf_exporter import GaarfExporter, import_custom_callback
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("-c",
-                        dest="config",
-                        default="./gaarf_exporter.yaml")
+    parser.add_argument("-c", dest="config", default="./gaarf_exporter.yaml")
+    parser.add_argument("--queries.exclude",
+                        dest="exclude_queries",
+                        default=None)
+    parser.add_argument("--queries.include",
+                        dest="include_queries",
+                        default=None)
     parser.add_argument("--log", "--loglevel", dest="loglevel", default="info")
     args = parser.parse_args()
 
@@ -43,6 +47,10 @@ if __name__ == '__main__':
         config = yaml.safe_load(f)
     queries = config.get("queries")
     settings = config.get("global")
+    exclude_queries = args.exclude_queries.split(
+        ",") if args.exclude_queries else None
+    include_queries = args.include_queries.split(
+        ",") if args.include_queries else None
     if not (namespace := settings.get("namespace")):
         namespace = "googleads"
     client = GoogleAdsApiClient(settings.get("auth"))
@@ -52,6 +60,10 @@ if __name__ == '__main__':
     GaarfExporter.options(report_fetcher=report_fetcher,
                           pushgateway_url=settings.get("pushgateway_url"))
     for name, content in queries.items():
+        if include_queries and name not in include_queries:
+            continue
+        if exclude_queries and name in exclude_queries:
+            continue
         suffix = content.get("suffix") or name
         job_name = content.get("job_name") or name
         if callback_name := content.get("custom_callback"):
