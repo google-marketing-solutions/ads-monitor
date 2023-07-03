@@ -1,3 +1,17 @@
+# Copyright 2023 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 version: '3'
 
 networks:
@@ -40,15 +54,18 @@ services:
       - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
       - grafana_data:/var/lib/grafana
   gaarf_exporter:
-    build: src/.
+    build: gaarf_exporter/.
     image: gaarf_exporter
-    container_name: ads_exporter
+    container_name: gaarf_exporter
     networks:
       - ads-monitor
     volumes:
-      - "${GOOGLE_ADS_YAML:-$HOME/google-ads.yaml}/:/app/google-ads.yaml"
-      - ./src/gaarf_exporter.yaml/:/app/gaarf_exporter.yaml
-      - ./src/custom_callbacks.py/:/app/custom_callbacks.py
+      - "${GOOGLE_ADS_YAML:-$HOME/google-ads.yaml}:/root/google-ads.yaml"
+    command:
+      - "--account=$GAARF_EXPORTER_ACCOUNT_ID"
+    restart: unless-stopped
+    depends_on:
+      - prometheus
   alertmanager:
     image: prom/alertmanager:latest
     container_name: ads_alertmanager
@@ -60,11 +77,3 @@ services:
       - "./alertmanager:/config"
     command: --config.file=/config/alertmanager.yml --log.level=debug
     restart: unless-stopped
-  pushgateway:
-    image: prom/pushgateway
-    container_name: ads_pushgateway
-    networks:
-      - ads-monitor
-    restart: unless-stopped
-    ports:
-      - "9091:9091"

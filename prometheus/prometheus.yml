@@ -12,8 +12,7 @@ rule_files:
 
 scrape_configs:
   - job_name: 'gaarf'
-    honor_labels: true
     scrape_interval: 30s
     static_configs:
-      - targets: ['ads_pushgateway:9091']
+      - targets: ['gaarf_exporter:8000']
 

@@ -38,17 +38,13 @@ to do the following:
 
 An easiest way to try the solution is to run it via [Docker Compose](https://docs.docker.com/compose/install/).
 
-1. expose environmental variable `GOOGLE_ADS_YAML`:
+1. expose environmental variables `GOOGLE_ADS_YAML` and `GAARF_EXPORTER_ACCOUNT_ID`:
 
 ```
 export GOOGLE_ADS_YAML=/path/to/google-ads.yaml
+export GAARF_EXPORTER_ACCOUNT_ID=<YOUR_MCC_ID>
 ```
 > If you don't specify the environmental variable Ads Monitor will be expecting `google.yaml` file in your $HOME directory.
-
-2. update `src/gaarf_exporter.yaml`:
-
-* in `globals` section add your MCC account under `mcc_id` key.
-
 
 3. start the containers:
 
@@ -56,26 +52,18 @@ export GOOGLE_ADS_YAML=/path/to/google-ads.yaml
 docker compose up
 ```
 
-This command will build `gaarf_exporter` image, pull latest images of Prometheus,
-Pushgateway, AlertManager and Grafana and perform the initial scrape of metrics
-from Google Ads.
-
-> To perform regular export of Google Ads metrics set up a cronjob, i.e.
-> use the command below to run the scraping every 10 minutes:
-> ```
-> */10 * * * * bash /path/to/ads_monitor_folder/scripts/run-gaarf-exporter.sh
-> ```
+This command will build `gaarf_exporter` image and start scraping Google Ads every 15 minutes,
+pull latest images of Prometheus, AlertManager and Grafana.
 
 
 #### Manual installation
 
-You can build and run `gaarf_exporter` container on your own (given that you have
-instance of Pushgateway up and running).
+You can build and run `gaarf_exporter` container on your own.
 
 1. Build `gaarf_exporter` container:
 
 ```
-cd src
+cd gaarf_exporter
 docker build -t gaarf_exporter .
 ```
 
@@ -83,21 +71,17 @@ docker build -t gaarf_exporter .
 
 ```
 docker run --network=host \
-  -v /path/to/google-ads.yaml:/app/google-ads.yaml \
-  -v `pwd`/gaarf_exporter.yaml:/app/gaarf_exporter.yaml \
-  -v `pwd`/custom_callbacks.py:/app/custom_callbacks.py \
+  -v /path/to/google-ads.yaml:/root/google-ads.yaml \
   gaarf_exporter
 ```
 
 `gaarf_exporter` expected these files to be mapped into containers:
 
 * `google-ads.yaml` - file that contains authentication details to connect to Google Ads API.
-* `gaarf_exporter.yaml` - configuration file that specify which metrics should be exposed to Prometheus - learn [how to create a gaarf_exporter.yaml](docs/how-to-create-gaarf-exporter-config.md).
-* (Optional) `custom_callbacks.py` - file with callbacks that might be associated	with a particular query.
 
 > Change `--network=host` to the network that where your Pushgateway instance is running.
 
-`gaarf_exporter` will push metrics to Pushgateway so they can later be scraped by Prometheus.
+`gaarf_exporter` will push expose metrics on `localhost:8000` so they can later be scraped by Prometheus.
 
 ##### Skipping or including particular queries
 

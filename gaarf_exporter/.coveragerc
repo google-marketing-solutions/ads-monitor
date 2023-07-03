@@ -1,0 +1,6 @@
+[paths]
+source =
+    gaarf_exporter
+    .tox/*/site-packages
+[report]
+skip_empty = true
