@@ -27,7 +27,7 @@ from gaarf_exporter.config import Config
 from gaarf_exporter.exporter import GaarfExporter
 from gaarf_exporter.target import targets_similarity_check
 from gaarf_exporter.target_util import get_targets
-from gaarf_exporter.util import parse_other_args
+from gaarf_exporter.util import parse_other_args, find_relative_metrics
 from gaarf_exporter import collectors
 
 
@@ -103,6 +103,12 @@ def main():
         checked_targets = targets_similarity_check(selected_collectors)
         config = Config.from_targets(checked_targets)
         queries = config.queries
+    for query_name, query in queries.items():
+        if relative_metrics := find_relative_metrics(query['query']):
+            logger.warning(
+                (f'In query %s, relative metrics: [%s] are found, which might '
+                 f'not be useful.'),
+                query_name, ', '.join(relative_metrics))
     runtime_options = {
         "exclude_queries":
         args.exclude_queries.split(",") if args.exclude_queries else None,
