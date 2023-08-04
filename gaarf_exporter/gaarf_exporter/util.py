@@ -15,23 +15,6 @@
 import re
 from typing import Dict, List
 
-TOKEN_PATTERNS = [
-    (r'~\d+', 'INDEX'),
-    (r':(\w+\.)+\w+', 'NESTED_RESOURCE'),
-    (r'".*?"', 'STRING'),
-    (r',', 'SEPARATOR'),
-    (r'(?i)AS', 'KEYWORD_AS'),
-    (r'(?i)FROM', 'KEYWORD_FROM'),
-    (r'(?i)SELECT|WHERE|DURING|TODAY|AND|OR|NOT', 'KEYWORD'),
-    (r'\d+(?:\.\d+)?(?:[eE][+-]?\d+)?', 'NUMBER'),
-    (r'(\w+\.)+\w+', 'PREFIXED_IDENTIFIER'),
-    (r'\w+', 'IDENTIFIER'),
-    (r'((\>\=)|(\<\=))|([\+\-\*/\(\)\=\>\<])', 'MATH_OPERATOR'),
-]
-
-
-RELATIVE_METRIC_PATTERNS = r'(?i)average|cpm|ctr|percentage|rate|share'
-
 
 def parse_other_args(other_args: List[str]) -> Dict[str, set]:
     result = {}
@@ -59,34 +42,3 @@ def parse_other_args(other_args: List[str]) -> Dict[str, set]:
 
 def remove_spaces(s):
     return re.sub(r'\s+', '', s)
-
-
-def tokenize(expression):
-    all_patterns = '|'.join(
-        '(?P<%s>%s)' % (pair[1], pair[0]) for pair in TOKEN_PATTERNS)
-
-    tokens = []
-    prev_token_type = None
-    for match in re.finditer(all_patterns, expression):
-        token_type = match.lastgroup
-        token_value = match.group()
-        tokens.append(
-            (token_value,
-             'ALIAS' if prev_token_type == 'KEYWORD_AS' else token_type))
-        prev_token_type = token_type
-
-    return tokens
-
-
-def find_relative_metrics(query):
-    result = set()
-    raw_tokens = tokenize(query)
-    for token_value, token_type in raw_tokens:
-        if token_type == 'KEYWORD_FROM':
-            break
-
-        if token_type in ('IDENTIFIER', 'PREFIXED_IDENTIFIER'):
-            metric_name = token_value.split('.')[-1]
-            if re.search(RELATIVE_METRIC_PATTERNS, metric_name):
-                result.add(metric_name)
-    return list(result)

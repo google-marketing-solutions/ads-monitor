@@ -16,10 +16,30 @@ from collections import namedtuple
 import copy
 from enum import Enum
 import itertools
+import re
 from typing import List, Optional, Union
 
 from . import util
 from .query_elements import Field
+
+
+def tokenizer(expression):
+    patterns = [
+        (r'\d+(?:\.\d+)?(?:[eE][+-]?\d+)?', 'NUMBER'),
+        (r'(\w+\.)+\w+', 'PREFIXED_IDENTIFIER'),
+        (r'\w+', 'IDENTIFIER'),
+        (r'[\+\-\*/\(\)]', 'MATH_OPERATOR'),
+    ]
+
+    pattern = '|'.join('(?P<%s>%s)' % (pair[1], pair[0]) for pair in patterns)
+
+    tokens = []
+    for match in re.finditer(pattern, expression):
+        token_type = match.lastgroup
+        token_value = match.group()
+        tokens.append((token_value, token_type))
+
+    return tokens
 
 
 class TargetLevel(Enum):
@@ -103,7 +123,7 @@ class Target:
             return field_list
 
         for field in field_list:
-            raw_tokens = util.tokenize(field.name)
+            raw_tokens = tokenizer(field.name)
             if not field.alias:
                 if len(raw_tokens) > 1:
                     raise ValueError('virtual column need an alias.')
