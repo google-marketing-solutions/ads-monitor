@@ -18,7 +18,7 @@ from typing import List
 import pytest
 
 from gaarf_exporter.query_elements import Field, Customizer, CustomizerTypeEnum
-from gaarf_exporter.target import Target, TargetLevel, create_default_service_target, tokenizer, targets_similarity_check
+from gaarf_exporter.target import Target, TargetLevel, create_default_service_target, targets_similarity_check
 
 
 def tokenize_sql(sql: str) -> List[str]:
@@ -365,34 +365,6 @@ def test_target_similarity(
     actual_equality = target1 == target2
     assert actual_similarity == expected_similarity
     assert actual_equality == expected_equality
-
-
-@pytest.mark.parametrize(
-    'expression, expected',
-    [
-        ('clicks',
-         [('clicks', 'IDENTIFIER')]),
-        ('metrics.clicks',
-         [('metrics.clicks', 'PREFIXED_IDENTIFIER')]),
-        ('prefix_1.metrics.clicks',
-         [('prefix_1.metrics.clicks', 'PREFIXED_IDENTIFIER')]),
-        ('prefix_2.prefix_1.metrics.clicks',
-         [('prefix_2.prefix_1.metrics.clicks', 'PREFIXED_IDENTIFIER')]),
-        ('(prefix_1.metrics.clicks + var1)/20',
-         [
-             ('(', 'MATH_OPERATOR'),
-             ('prefix_1.metrics.clicks', 'PREFIXED_IDENTIFIER'),
-             ('+', 'MATH_OPERATOR'),
-             ('var1', 'IDENTIFIER'),
-             (')', 'MATH_OPERATOR'),
-             ('/', 'MATH_OPERATOR'),
-             ('20', 'NUMBER')
-         ])
-    ]
-)
-def test_tokenize_field(expression, expected):
-    actual = tokenizer(expression)
-    assert actual == expected
 
 
 @pytest.mark.parametrize(

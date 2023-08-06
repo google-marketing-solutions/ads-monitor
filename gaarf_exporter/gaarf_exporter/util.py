@@ -15,6 +15,22 @@
 import re
 from typing import Dict, List
 
+TOKEN_PATTERNS = (
+    r'(?i)(?P<INDEX>~\d+)'
+    r'|(?P<NESTED_RESOURCE>:(\w+\.)+\w+)'
+    r'|(?P<STRING>".*?")'
+    r'|(?P<SEPARATOR>,)'
+    r'|(?P<KEYWORD_AS>AS)'
+    r'|(?P<KEYWORD_FROM>FROM)'
+    r'|(?P<KEYWORD>SELECT|WHERE|DURING|TODAY|AND|OR|NOT)'
+    r'|(?P<NUMBER>\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)'
+    r'|(?P<PREFIXED_IDENTIFIER>(\w+\.)+\w+)'
+    r'|(?P<IDENTIFIER>\w+)'
+    r'|(?P<MATH_OPERATOR>((\>\=)|(\<\=))|([\+\-\*/\(\)\=\>\<]))')
+
+
+RELATIVE_METRIC_PATTERNS = r'(?i)average|cpm|ctr|percentage|rate|share'
+
 
 def parse_other_args(other_args: List[str]) -> Dict[str, set]:
     result = {}
@@ -42,3 +58,31 @@ def parse_other_args(other_args: List[str]) -> Dict[str, set]:
 
 def remove_spaces(s):
     return re.sub(r'\s+', '', s)
+
+
+def tokenize(expression):
+    tokens = []
+    prev_token_type = None
+    for match in re.finditer(TOKEN_PATTERNS, expression):
+        token_type = match.lastgroup
+        token_value = match.group()
+        tokens.append(
+            (token_value,
+             'ALIAS' if prev_token_type == 'KEYWORD_AS' else token_type))
+        prev_token_type = token_type
+
+    return tokens
+
+
+def find_relative_metrics(query):
+    result = set()
+    raw_tokens = tokenize(query)
+    for token_value, token_type in raw_tokens:
+        if token_type == 'KEYWORD_FROM':
+            break
+
+        if token_type in ('IDENTIFIER', 'PREFIXED_IDENTIFIER'):
+            metric_name = token_value.split('.')[-1]
+            if re.search(RELATIVE_METRIC_PATTERNS, metric_name):
+                result.add(metric_name)
+    return list(result)
