@@ -11,44 +11,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
-from typing import Dict, List, Optional
 import argparse
 import yaml
 import logging
-from gaarf.api_clients import GoogleAdsApiClient
-from gaarf.query_executor import AdsReportFetcher
 from gaarf.cli.utils import init_logging
 from pathlib import Path
 from prometheus_client import start_http_server
 from smart_open import open
 from time import sleep
 
+from gaarf_exporter.bootstrap import inject_dependencies
 from gaarf_exporter.config import Config
 from gaarf_exporter.exporter import GaarfExporter
 from gaarf_exporter.target import targets_similarity_check
 from gaarf_exporter.target_util import get_targets
 from gaarf_exporter.util import parse_other_args, find_relative_metrics
 from gaarf_exporter import collectors
-
-
-def process_queries(report_fetcher: AdsReportFetcher, accounts: List[str],
-                    gaarf_exporter: GaarfExporter, queries: Dict[str,
-                                                                 Dict[str,
-                                                                      str]],
-                    runtime_options: Dict[str, Optional[List[str]]]) -> None:
-    for name, content in queries.items():
-        if not (query_text := content.get("query")):
-            raise ValueError("Missing query text for query %s", name)
-        if include_queries := runtime_options.get("include_queries"):
-            if name not in include_queries:
-                continue
-        if exclude_queries := runtime_options.get("exclude_queries"):
-            if name in exclude_queries:
-                continue
-        suffix = content.get("suffix") or name
-        logging.info(f"Running query {name}")
-        report = report_fetcher.fetch(query_text, accounts)
-        gaarf_exporter.export(report=report, suffix=suffix)
 
 
 def main():
@@ -107,8 +85,7 @@ def main():
         if relative_metrics := find_relative_metrics(query['query']):
             logger.warning(
                 (f'In query %s, relative metrics: [%s] are found, which might '
-                 f'not be useful.'),
-                query_name, ', '.join(relative_metrics))
+                 f'not be useful.'), query_name, ', '.join(relative_metrics))
     runtime_options = {
         "exclude_queries":
         args.exclude_queries.split(",") if args.exclude_queries else None,
@@ -116,18 +93,11 @@ def main():
         args.include_queries.split(",") if args.include_queries else None,
     }
 
-    with open(args.ads_config, "r", encoding="utf-8") as f:
-        google_ads_config_dict = yaml.safe_load(f)
-    if not (account := args.account):
-        account = google_ads_config_dict.get("login_customer_id")
-    if not account:
-        raise ValueError(
-            "No account found, please specify via --account CLI flag"
-            "or add as login_customer_id in google-ads.yaml")
-    client = GoogleAdsApiClient(config_dict=google_ads_config_dict,
-                                version=f"v{args.api_version}")
-    report_fetcher = AdsReportFetcher(client)
-    accounts = report_fetcher.expand_mcc(account)
+    dependencies = inject_dependencies(ads_config_path=args.ads_config,
+                                       api_version=args.api_version,
+                                       account=args.account)
+    report_fetcher, accounts = dependencies.get(
+        "report_fetcher"), dependencies.get("accounts")
     gaarf_exporter_options = {
         "expose_metrics_with_zero_values": args.zero_value_metrics,
         "namespace": args.namespace
@@ -147,22 +117,35 @@ def main():
             "Specify option for exposing data to Prometheus - either http_server or pushgateway"
         )
 
-    if gaarf_exporter.pushgateway_url:
-        process_queries(report_fetcher, gaarf_exporter, queries,
-                        runtime_options)
-        logger.info("Saving data to pushgateway at %s",
-                    gaarf_exporter.pushgateway_url)
-    else:
+    if gaarf_exporter.http_server_url and not gaarf_exporter.pushgateway_url:
         start_http_server(port=args.port,
                           addr=args.address,
                           registry=gaarf_exporter.registry)
         logger.info("Started http_server at http://%s",
                     gaarf_exporter.http_server_url)
-        while True:
-            process_queries(report_fetcher, accounts, gaarf_exporter, queries,
-                            runtime_options)
-            gaarf_exporter.reset_registry()
-            sleep(int(args.delay) * 60)
+    while True:
+        for name, content in queries.items():
+            if not (query_text := content.get("query")):
+                raise ValueError("Missing query text for query %s", name)
+            if include_queries := runtime_options.get("include_queries"):
+                if name not in include_queries:
+                    continue
+            if exclude_queries := runtime_options.get("exclude_queries"):
+                if name in exclude_queries:
+                    continue
+            report = report_fetcher.fetch(query_text, accounts)
+            if dependencies.get("convert_fake_report"):
+                report.is_fake = False
+            suffix = content.get("suffix") or name
+            logging.info(f"Started export for query {name}")
+            gaarf_exporter.export(report=report, suffix=suffix)
+            logging.info(f"Ended export for query {name}")
+        if gaarf_exporter.pushgateway_url:
+            logger.info("Saving data to pushgateway at %s",
+                        gaarf_exporter.pushgateway_url)
+            exit()
+        gaarf_exporter.reset_registry()
+        sleep(int(args.delay) * 60)
 
 
 if __name__ == '__main__':
