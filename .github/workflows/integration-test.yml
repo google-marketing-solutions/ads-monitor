@@ -1,0 +1,38 @@
+name: Test garrf-exporter
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10", "3.11"]
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install tox pytest
+          if [ -f gaarf_exporter/requirements.txt ]; then pip install -r gaarf_exporter/requirements.txt; fi
+      - name: Run unit tests
+        run: |
+          cd gaarf_exporter
+          tox
+      - name: Run integration tests
+        run: |
+          cd gaarf_exporter
+          pip install -e .
+          gaarf-exporter --expose-metrics-with-zero-values --iterations 1 --delay 1
+
