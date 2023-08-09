@@ -33,9 +33,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--account", dest="account", default=None)
     parser.add_argument("-c", dest="config", default=None)
-    parser.add_argument("--ads-config",
-                        dest="ads_config",
-                        default=str(Path.home() / "google-ads.yaml"))
+    parser.add_argument("--ads-config", dest="ads_config", default=None)
     parser.add_argument("--api-version", dest="api_version", default=14)
     parser.add_argument("--queries.exclude",
                         dest="exclude_queries",
@@ -58,6 +56,7 @@ def main():
                         dest="pushgateway_port",
                         default=None)
     parser.add_argument("--logger", dest="logger", default="local")
+    parser.add_argument("--iterations", dest="iterations", default=None, type=int)
     parser.add_argument("--delay-minutes", dest="delay", type=int, default=15)
     parser.add_argument("--expose-metrics-with-zero-values",
                         dest="zero_value_metrics",
@@ -146,6 +145,10 @@ def main():
             exit()
         gaarf_exporter.reset_registry()
         sleep(int(args.delay) * 60)
+        if iterations := args.iterations:
+            iterations-=1
+            if iterations == 0:
+                break
 
 
 if __name__ == '__main__':
