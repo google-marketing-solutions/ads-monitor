@@ -1,0 +1,13 @@
+{
+    "name": "ads-monitor",
+    "build": {
+        "skip": true
+    },
+    "hooks": {
+        "prebuild": {
+            "commands": [
+                "./deploy_to_vm.sh"
+            ]
+        }
+    }
+}

@@ -33,6 +33,8 @@ to do the following:
 * (Optional) `prometheus.yml` file configured. Learn more at [how to configure Prometheus](docs/how-to-configure-prometheus.md).
 * (Optional) [Docker Compose](https://docs.docker.com/compose/install/) installed.
 
+### Deploy to VM
+[![Run on Google Cloud](https://deploy.cloud.run/button.svg)](https://deploy.cloud.run)
 
 ### Installation
 
