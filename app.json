@@ -1,13 +1,13 @@
 {
     "name": "ads-monitor",
-    "build": {
-        "skip": true
+    "options": {
+      "allow-unauthenticated": false,
+      "memory": "2048Mi",
+      "cpu": "4"
     },
     "hooks": {
         "prebuild": {
-            "commands": [
-                "./deploy_to_vm.sh"
-            ]
+          "commands": ["echo \"Setting Project ID: ${GOOGLE_CLOUD_PROJECT}\"", "gcloud config set project ${GOOGLE_CLOUD_PROJECT}", "chmod u+x ./deploy_to_vm.sh", "./deploy_to_vm.sh"]
         }
     }
 }

@@ -25,7 +25,7 @@ MACHINE_TYPE=$(sed -n 's/^MACHINE_TYPE: \([-a-zA-Z0-9]*\)$/\1/p' $CONFIGS_YAML)
 IMAGE_PROJECT=cos-cloud
 IMAGE_FAMILY=cos-stable
 USERNAME=$(pwd | sed -n 's/\/home\/\([^/]*\).*/\1/p')
-SSH_KEY_NAME="ads_monitor"
+SSH_KEY_NAME="google_compute_engine"
 
 PRIVATE_KEY_PATH="/home/$USERNAME/.ssh/$SSH_KEY_NAME"
 PUBLIC_KEY_PATH="$PRIVATE_KEY_PATH.pub"
