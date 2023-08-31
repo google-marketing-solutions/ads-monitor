@@ -33,27 +33,19 @@ class TargetLevel(Enum):
 Level = namedtuple('Level',
                    ['table', 'id', 'id_alias', 'name', 'name_alias', 'filter'])
 
-
 LEVELS = (
     None,
-    Level('ad_group_ad',
-          'ad_group_ad.ad.id', 'ad_group_ad_ad_id',
+    Level('ad_group_ad', 'ad_group_ad.ad.id', 'ad_group_ad_ad_id',
           'ad_group_ad.ad.name', 'ad_group_ad_ad_name',
           "ad_group_ad.status = 'ENABLED'"),
-    Level('ad_group',
-          'ad_group.id', 'ad_group_id',
-          'ad_group.name', 'ad_group_name',
-          "ad_group.status = 'ENABLED'"),
-    Level('campaign',
-          'campaign.id', 'campaign_id',
-          'campaign.name', 'campaign_name',
-          "campaign.status = 'ENABLED'"),
-    Level('customer',
-          'customer.id', 'customer_id',
+    Level('ad_group', 'ad_group.id', 'ad_group_id', 'ad_group.name',
+          'ad_group_name', "ad_group.status = 'ENABLED'"),
+    Level('campaign', 'campaign.id', 'campaign_id', 'campaign.name',
+          'campaign_name', "campaign.status = 'ENABLED'"),
+    Level('customer', 'customer.id', 'customer_id',
           'customer.descriptive_name', 'account_name',
           "customer.status = 'ENABLED'"),
-    Level('customer',
-          'customer.id', 'customer_id',
+    Level('customer', 'customer.id', 'customer_id',
           'customer.descriptive_name', 'account_name',
           "customer.status = 'ENABLED'"),
 )
@@ -67,13 +59,15 @@ class Target:
                  level: TargetLevel = TargetLevel.AD_GROUP,
                  resource_name: Optional[str] = None,
                  dimensions: Optional[Union[str, List[Field]]] = None,
-                 filters: Optional[str] = None) -> None:
+                 filters: Optional[str] = None,
+                 suffix: Optional[str] = None) -> None:
         self.name = name
         self.level = level
         self.resource_name = resource_name
         self.filters = filters
         self.metrics = self._init_fields(metrics, 'metrics')
         self.dimensions = self._init_fields(dimensions)
+        self.suffix = suffix if suffix else name
 
     @staticmethod
     def is_number(token):
@@ -152,8 +146,7 @@ class Target:
             if field not in dedup:
                 # should not add a name-only field with the same name as what
                 # the level defines.
-                if (not field.alias
-                        and not field.customizer
+                if (not field.alias and not field.customizer
                         and self.level != 0
                         and field.name == LEVELS[self.level.value].id):
                     continue
@@ -183,20 +176,20 @@ class Target:
         if not other or not isinstance(other, Target):
             return False
 
-        if (self.to_comparable_str(self.metrics) !=
-                self.to_comparable_str(other.metrics)):
+        if (self.to_comparable_str(self.metrics)
+                != self.to_comparable_str(other.metrics)):
             return False
 
-        if (self.to_comparable_str(self.dimensions) !=
-                self.to_comparable_str(other.dimensions)):
+        if (self.to_comparable_str(self.dimensions)
+                != self.to_comparable_str(other.dimensions)):
             return False
 
-        if (self.to_comparable_str(self.filters) !=
-                self.to_comparable_str(other.filters)):
+        if (self.to_comparable_str(self.filters)
+                != self.to_comparable_str(other.filters)):
             return False
 
-        if (self.to_comparable_str(self.resource_name) !=
-                self.to_comparable_str(other.resource_name)):
+        if (self.to_comparable_str(self.resource_name)
+                != self.to_comparable_str(other.resource_name)):
             return False
         return True
 
@@ -223,8 +216,7 @@ class Target:
         return hash((self.to_comparable_str(self.metrics),
                      self.to_comparable_str(self.dimensions),
                      self.to_comparable_str(self.filters),
-                     self.to_comparable_str(self.resource_name),
-                     self.level))
+                     self.to_comparable_str(self.resource_name), self.level))
 
 
 class ServiceTarget(Target):
@@ -240,10 +232,9 @@ def create_default_service_target(level: TargetLevel):
     current_level = level.value - 1 if level == TargetLevel.MCC else level.value
     while 0 < current_level <= TargetLevel.CUSTOMER.value:
         level_def = LEVELS[current_level]
-        dimensions.append(Field(
-            name=level_def.id, alias=level_def.id_alias))
-        dimensions.append(Field(
-            name=level_def.name, alias=level_def.name_alias))
+        dimensions.append(Field(name=level_def.id, alias=level_def.id_alias))
+        dimensions.append(
+            Field(name=level_def.name, alias=level_def.name_alias))
 
         if filters:
             filters = filters + ' AND ' + level_def.filter
@@ -252,13 +243,11 @@ def create_default_service_target(level: TargetLevel):
 
         current_level += 1
 
-    return ServiceTarget(
-        name='mapping',
-        metrics=[Field(name='1', alias='info')],
-        dimensions=dimensions,
-        level=level,
-        filters=filters
-    )
+    return ServiceTarget(name='mapping',
+                         metrics=[Field(name='1', alias='info')],
+                         dimensions=dimensions,
+                         level=level,
+                         filters=filters)
 
 
 def targets_similarity_check(targets: List[Target]) -> List[Target]:
