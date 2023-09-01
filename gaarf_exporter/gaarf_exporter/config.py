@@ -25,34 +25,43 @@ class Config:
 
     @property
     def queries(self):
-        return {target.name: {
-            'query': target.query} for target in self.targets if not isinstance(
-                target, ServiceTarget)}
+        return {
+            target.name: {
+                'query': target.query,
+                'suffix': target.suffix
+            }
+            for target in self.targets
+            if not isinstance(target, ServiceTarget)
+        }
 
     @property
     def service_queries(self):
-        return {target.name: {
-            'query': target.query} for target in self.targets if isinstance(
-                target, ServiceTarget)
+        return {
+            target.name: {
+                'query': target.query
+            }
+            for target in self.targets if isinstance(target, ServiceTarget)
         }
 
     @property
     def service_targets(self):
-        return {target.name: target for target in self.targets if isinstance(
-            target, ServiceTarget)
+        return {
+            target.name: target
+            for target in self.targets if isinstance(target, ServiceTarget)
         }
 
     @property
     def lowest_target_level(self):
-        return TargetLevel(min([target.level.value for target in self.targets]))
+        return TargetLevel(min([target.level.value
+                                for target in self.targets]))
 
     @classmethod
     def from_targets(cls, targets: Sequence[Target]):
         has_service_target = any(
             [isinstance(target, ServiceTarget) for target in targets])
         if not has_service_target:
-            min_level = TargetLevel(min(
-                [target.level.value for target in targets]))
+            min_level = TargetLevel(
+                min([target.level.value for target in targets]))
             default_service_target = create_default_service_target(min_level)
             targets = list(targets)
             targets.append(default_service_target)

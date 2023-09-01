@@ -58,7 +58,8 @@ class PerformanceCollector:
             name=self.name,
             metrics=DEFAULT_METRICS,
             level=TargetLevel.AD_GROUP,
-            dimensions=[Field("segments.ad_network_type", "network")])
+            dimensions=[Field("segments.ad_network_type", "network")],
+            suffix="Remove")
 
 
 @collector("default", "generic")
@@ -134,8 +135,7 @@ class SearchTermsCollector:
             level=TargetLevel.CUSTOMER,
             resource_name="search_term_view",
             dimensions=[Field("search_term_view.search_term", "search_term")],
-            filters="search_term_view.status = 'ADDED' AND metrics.clicks > 0"
-        )
+            filters="search_term_view.status = 'ADDED' AND metrics.clicks > 0")
 
 
 @collector("all")
