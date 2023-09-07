@@ -60,9 +60,10 @@ services:
     networks:
       - ads-monitor
     volumes:
-      - "${GOOGLE_ADS_YAML:-$HOME/google-ads.yaml}:/root/google-ads.yaml"
+      - "${GOOGLE_ADS_YAML:-$HOME/google-ads.yaml}:/google-ads.yaml"
     command:
       - "--account=$GAARF_EXPORTER_ACCOUNT_ID"
+      - "--ads-config=/google-ads.yaml"
     restart: unless-stopped
     depends_on:
       - prometheus
