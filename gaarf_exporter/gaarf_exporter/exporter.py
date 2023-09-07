@@ -45,11 +45,11 @@ class GaarfExporter:
         logger.debug(str(self))
 
     def reset_registry(self):
-        self.registry = CollectorRegistry()
+        self.registry._collector_to_names.clear()
+        self.registry._names_to_collectors.clear()
 
     def export(self,
-               report: GaarfReport,
-               namespace: Optional[str] = None,
+               report: GaarfReport, namespace: Optional[str] = None,
                suffix: str = "") -> None:
         metrics = self._define_metrics(report.query_specification, suffix)
         labels = self._define_labels(report.query_specification)
@@ -105,6 +105,8 @@ class GaarfExporter:
             gauge_name = f"{self.namespace}{suffix}_{name}"
         else:
             gauge_name = f"{self.namespace}{name}"
+        if gauge_name in self.registry._names_to_collectors:
+            return self.registry._names_to_collectors.get(gauge_name)
         return Gauge(name=gauge_name,
                      documentation=name,
                      labelnames=labelnames,

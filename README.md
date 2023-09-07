@@ -46,7 +46,7 @@ An easiest way to try the solution is to run it via [Docker Compose](https://doc
 export GOOGLE_ADS_YAML=/path/to/google-ads.yaml
 export GAARF_EXPORTER_ACCOUNT_ID=<YOUR_MCC_ID>
 ```
-> If you don't specify the environmental variable Ads Monitor will be expecting `google.yaml` file in your $HOME directory.
+> If you don't specify the environmental variable Ads Monitor will be expecting `google-ads.yaml` file in your $HOME directory.
 
 3. start the containers:
 
@@ -81,7 +81,7 @@ docker run --network=host \
 
 * `google-ads.yaml` - file that contains authentication details to connect to Google Ads API.
 
-> Change `--network=host` to the network that where your Pushgateway instance is running.
+> Change `--network=host` to the network that where your Prometheus instance is running.
 
 `gaarf_exporter` will push expose metrics on `localhost:8000` so they can later be scraped by Prometheus.
 

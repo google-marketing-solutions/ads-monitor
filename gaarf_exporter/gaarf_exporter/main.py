@@ -56,7 +56,10 @@ def main():
                         dest="pushgateway_port",
                         default=None)
     parser.add_argument("--logger", dest="logger", default="local")
-    parser.add_argument("--iterations", dest="iterations", default=None, type=int)
+    parser.add_argument("--iterations",
+                        dest="iterations",
+                        default=None,
+                        type=int)
     parser.add_argument("--delay-minutes", dest="delay", type=int, default=15)
     parser.add_argument("--expose-metrics-with-zero-values",
                         dest="zero_value_metrics",
@@ -83,8 +86,8 @@ def main():
     for query_name, query in queries.items():
         if relative_metrics := find_relative_metrics(query['query']):
             logger.warning(
-                (f'In query %s, relative metrics: [%s] are found, which might '
-                 f'not be useful.'), query_name, ', '.join(relative_metrics))
+                'In query %s, relative metrics: [%s] are found, which might '
+                'not be useful.', query_name, ', '.join(relative_metrics))
     runtime_options = {
         "exclude_queries":
         args.exclude_queries.split(",") if args.exclude_queries else None,
@@ -143,10 +146,9 @@ def main():
             logger.info("Saving data to pushgateway at %s",
                         gaarf_exporter.pushgateway_url)
             exit()
-        gaarf_exporter.reset_registry()
         sleep(int(args.delay) * 60)
         if iterations := args.iterations:
-            iterations-=1
+            iterations -= 1
             if iterations == 0:
                 break
 
