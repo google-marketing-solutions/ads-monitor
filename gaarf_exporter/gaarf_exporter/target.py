@@ -35,8 +35,8 @@ Level = namedtuple('Level',
 
 LEVELS = (
     None,
-    Level('ad_group_ad', 'ad_group_ad.ad.id', 'ad_group_ad_ad_id',
-          'ad_group_ad.ad.name', 'ad_group_ad_ad_name',
+    Level('ad_group_ad', 'ad_group_ad.ad.id', 'ad_id',
+          'ad_group_ad.ad.name', 'ad_name',
           "ad_group_ad.status = 'ENABLED'"),
     Level('ad_group', 'ad_group.id', 'ad_group_id', 'ad_group.name',
           'ad_group_name', "ad_group.status = 'ENABLED'"),

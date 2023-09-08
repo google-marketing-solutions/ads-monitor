@@ -48,12 +48,12 @@ By default it will start http_server on `localhost:8000` and will push some basi
 
 ### Collectors
 
-You can specify collectors with `--collectors.<collector_name>` CLI argument. Some collectors available by default, other you need to specify explicitly.
+You can specify collectors with `--collectors <collector_name>` CLI argument. Some collectors available by default, other you need to specify explicitly.
 
 ### Default collectors
 
 * `performance` - extract `clicks`, `impressions`, `cost`, `conversions` on by `ad_network` and `ad_group_id`
-* `disapprovals` - extract `approval_status`, `review_status`, `policy_topic_type`, `policy_topics` by `ad_group_id` and `ad_id`
+* `disapprovals` - extract `approval_status`, `review_status`, `topic`, `topic_type` by `ad_group_id` and `ad_id` only for not approved ads
 * `conversion_action` - extract `all_conversions` by `conversion_id` and `account_id`
 * `mapping` - performance mapping between `ad_group_id`, `ad_group_name`, `campaign_id`, `campaign_name,` `campaign_status`, `account_id`, `account_name`
 

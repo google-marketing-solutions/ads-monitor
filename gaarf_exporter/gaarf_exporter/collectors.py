@@ -64,18 +64,23 @@ class PerformanceCollector:
 
 @collector("default", "generic")
 class DisapprovalCollector:
-    name = "disapproval"
+    name = "disapprovals"
 
     def __init__(self) -> None:
         self.target = Target(
             name=self.name,
             level=TargetLevel.AD_GROUP_AD,
             dimensions=[
-                Field("campaign.id", "campaign_id"),
+                Field("ad_group.id", "ad_group_id"),
                 Field("ad_group_ad.policy_summary.approval_status",
                       "approval_status"),
                 Field("ad_group_ad.policy_summary.review_status",
-                      "review_status")
+                      "review_status"),
+                Field("ad_group_ad.policy_summary.policy_topic_entries:type",
+                      "topic_type"),
+                Field("ad_group_ad.policy_summary.policy_topic_entries:topic",
+                      "topic"),
+                Field("1", "ad_count")
             ],
             filters=(
                 "campaign.status = 'ENABLED'"

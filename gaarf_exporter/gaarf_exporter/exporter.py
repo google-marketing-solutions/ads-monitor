@@ -14,6 +14,7 @@
 
 from typing import Dict, List, Optional, Sequence
 
+from collections import abc
 import logging
 from prometheus_client import Gauge, push_to_gateway, CollectorRegistry
 from gaarf.query_editor import QuerySpecification
@@ -49,14 +50,21 @@ class GaarfExporter:
         self.registry._names_to_collectors.clear()
 
     def export(self,
-               report: GaarfReport, namespace: Optional[str] = None,
+               report: GaarfReport,
+               namespace: Optional[str] = None,
                suffix: str = "") -> None:
         metrics = self._define_metrics(report.query_specification, suffix)
         labels = self._define_labels(report.query_specification)
         if not report:
             return
         for row in report:
-            label_values = [row.get(label) for label in labels]
+            label_values = []
+            for label in labels:
+                if isinstance(row.get(label), abc.MutableSequence):
+                    label_value = ",".join(row.get(label))
+                else:
+                    label_value = row.get(label)
+                label_values.append(label_value)
             for name, metric in metrics.items():
                 if (metric_value := getattr(row, name)
                         or self.expose_metrics_with_zero_values):
