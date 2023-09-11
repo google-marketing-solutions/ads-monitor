@@ -15,7 +15,6 @@ import argparse
 import yaml
 import logging
 from gaarf.cli.utils import init_logging
-from pathlib import Path
 from prometheus_client import start_http_server
 from smart_open import open
 from time import sleep

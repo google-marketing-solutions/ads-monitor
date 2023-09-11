@@ -23,11 +23,12 @@ from .query_elements import Field
 
 
 class TargetLevel(Enum):
-    AD_GROUP_AD = 1
-    AD_GROUP = 2
-    CAMPAIGN = 3
-    CUSTOMER = 4
-    MCC = 5
+    AD_GROUP_AD_ASSET = 1
+    AD_GROUP_AD = 2
+    AD_GROUP = 3
+    CAMPAIGN = 4
+    CUSTOMER = 5
+    MCC = 6
 
 
 Level = namedtuple('Level',

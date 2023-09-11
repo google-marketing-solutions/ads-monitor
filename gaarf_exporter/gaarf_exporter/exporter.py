@@ -22,6 +22,31 @@ from gaarf.report import GaarfReport
 
 logger = logging.getLogger(__name__)
 
+METRICS = ("campaign.target_cpa.target_cpa_micros",
+           "campaign_budget.amount_micros", "campaign.target_roas.target_roas",
+           "campaign.manual_cpm", "campaign.manual_cpv",
+           "campaign.maximize_conversion_value.target_roas",
+           "campaign.maximize_conversions.target_cpa_micros",
+           "campaign.target_spend.cpc_bid_ceiling_micros",
+           "campaign.target_spend.target_spend_micros",
+           "campaign.target_roas.cpc_bid_ceiling_micros",
+           "campaign.target_roas.cpc_bid_floor_micros",
+           "campaign.target_cpa.cpc_bid_ceiling_micros",
+           "campaign.target_cpa.cpc_bid_floor_micros",
+           "ad_group.cpc_bid_micros",
+           "ad_group.cpm_bid_micros",
+           "ad_group.cpv_bid_micros",
+           "ad_group.effective_target_cpa_micros",
+           "ad_group.effective_target_cpa_source",
+           "ad_group.effective_target_roas",
+           "ad_group.percent_cpc_bid_micros",
+           "ad_group.target_cpa_micros",
+           "ad_group.target_cpm_micros",
+           "ad_group.target_roas",
+           "campaign.optimization_score",
+           "customer.optimization_score"
+           )
+
 
 class GaarfExporter:
 
@@ -76,8 +101,6 @@ class GaarfExporter:
         else:
             self.registry.collect()
 
-    # TODO (amarkin): Metric shouldn't be defined solely on query_specification
-    # i.e. campaign_budget is a dimension but should be treated as metric
     def _define_metrics(self, query_specification: QuerySpecification,
                         suffix: str) -> Dict[str, Gauge]:
         metrics = {}
@@ -86,7 +109,7 @@ class GaarfExporter:
             query_specification)
         for column, field in zip(non_virtual_columns,
                                  query_specification.fields):
-            if "metrics" in field:
+            if "metrics" in field or field in METRICS:
                 metrics[column] = self._define_gauge(column, suffix, labels)
         if virtual_columns := query_specification.virtual_columns:
             for column, field in virtual_columns.items():
@@ -101,7 +124,7 @@ class GaarfExporter:
             query_specification)
         for column, field in zip(non_virtual_columns,
                                  query_specification.fields):
-            if "metric" not in field:
+            if "metric" not in field and field not in METRICS:
                 labelnames.append(str(column))
         logger.debug(f"labelnames: {labelnames}")
         return labelnames

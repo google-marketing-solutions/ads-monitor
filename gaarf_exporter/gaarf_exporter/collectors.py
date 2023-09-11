@@ -174,7 +174,8 @@ class BidBudgetCollector:
                 Field("campaign_budget.amount_micros/1e6", "budget"),
                 Field("campaign.target_cpa.target_cpa_micros/1e6",
                       "target_cpa"),
-                # TODO (amarkin): Adding ROAS breaks labels of metric
+                Field("campaign.maximize_conversions.target_cpa_micros/1e6",
+                      "max_conv_target_cpa"),
                 Field("campaign.target_roas.target_roas", "target_roas"),
             ],
             filters="campaign.status = 'ENABLED'")
