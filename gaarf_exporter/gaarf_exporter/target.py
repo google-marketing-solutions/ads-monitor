@@ -36,6 +36,9 @@ Level = namedtuple('Level',
 
 LEVELS = (
     None,
+    Level('ad_group_ad_asset_view', 'asset.id', 'asset_id',
+          'asset.name', 'asset',
+          "ad_group_ad_asset_view.enabled = TRUE"),
     Level('ad_group_ad', 'ad_group_ad.ad.id', 'ad_id',
           'ad_group_ad.ad.name', 'ad_name',
           "ad_group_ad.status = 'ENABLED'"),

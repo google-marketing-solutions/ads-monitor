@@ -14,8 +14,16 @@
 
 from typing import (Callable, Dict, List, Protocol, Type, TypeVar,
                     runtime_checkable)
+
 from .target import Target, TargetLevel
 from .query_elements import Field, Customizer, CustomizerTypeEnum
+
+
+@runtime_checkable
+class BaseCollector(Protocol):
+    name: str
+    target: Target
+
 
 T = TypeVar('T', bound='BaseCollector')
 
@@ -32,10 +40,28 @@ def collector(*registries: str) -> Callable:
     return class_collector
 
 
-@runtime_checkable
-class BaseCollector(Protocol):
-    name: str
-    target: Target
+def create_conversion_split_collector(
+        seed_collector: BaseCollector) -> type[BaseCollector]:
+    name = seed_collector.__name__.replace("Collector", "")
+    name = f"{name}ConversionSplitCollector"
+    cls = type(name, (seed_collector, ),
+               {"name": seed_collector.name + "_conversion_split"})
+    cls.target = Target(name=cls.name,
+                        metrics=DEFAULT_CONVERSION_SPLIT_METRICS,
+                        level=seed_collector.target.level,
+                        dimensions=DEFAULT_CONVERSION_SPLIT_DIMENSIONS,
+                        filters=("segments.date DURING TODAY "
+                                 "AND metrics.all_conversions > 0"))
+    return cls
+
+
+def register_conversion_split_collector(cls: Type[T]) -> Type[T]:
+    conv_split_cls = create_conversion_split_collector(cls)
+    registry[conv_split_cls.name] = {
+        conv_split_cls.name: conv_split_cls,
+        cls.name: cls
+    }
+    return cls
 
 
 registry: Dict[str, Dict[str, Type[BaseCollector]]] = dict()
@@ -47,138 +73,257 @@ DEFAULT_METRICS = [
     Field("cost_micros / 1e6", "cost")
 ]
 
+DEFAULT_CONVERSION_SPLIT_METRICS = [
+    Field("all_conversions"),
+    Field("all_conversions_value"),
+]
+
+DEFAULT_CONVERSION_SPLIT_DIMENSIONS = [
+    Field("segments.conversion_action_category", "conversion_category"),
+    Field("segments.conversion_action_name", "conversion_name"),
+    Field("segments.conversion_action", "conversion_id",
+          Customizer(CustomizerTypeEnum.INDEX, '0'))
+]
+
 
 # TODO (amarkin): Make collector dynamically customizable
 @collector("default", "generic")
+@register_conversion_split_collector
 class PerformanceCollector:
     name = "performance"
-
-    def __init__(self) -> None:
-        self.target = Target(
-            name=self.name,
-            metrics=DEFAULT_METRICS,
-            level=TargetLevel.AD_GROUP,
-            dimensions=[Field("segments.ad_network_type", "network")],
-            suffix="Remove")
+    target = Target(name=name,
+                    metrics=DEFAULT_METRICS,
+                    level=TargetLevel.AD_GROUP,
+                    dimensions=[Field("segments.ad_network_type", "network")],
+                    suffix="Remove")
 
 
 @collector("default", "generic")
 class DisapprovalCollector:
     name = "disapprovals"
-
-    def __init__(self) -> None:
-        self.target = Target(
-            name=self.name,
-            level=TargetLevel.AD_GROUP_AD,
-            dimensions=[
-                Field("ad_group.id", "ad_group_id"),
-                Field("ad_group_ad.policy_summary.approval_status",
-                      "approval_status"),
-                Field("ad_group_ad.policy_summary.review_status",
-                      "review_status"),
-                Field("ad_group_ad.policy_summary.policy_topic_entries:type",
-                      "topic_type"),
-                Field("ad_group_ad.policy_summary.policy_topic_entries:topic",
-                      "topic"),
-                Field("1", "ad_count")
-            ],
-            filters=(
-                "campaign.status = 'ENABLED'"
-                " AND ad_group.status = 'ENABLED'"
-                " AND ad_group_ad.status = 'ENABLED'"
-                " AND ad_group_ad.policy_summary.approval_status != 'APPROVED'"
-            ))
+    target = Target(
+        name=name,
+        level=TargetLevel.AD_GROUP_AD,
+        dimensions=[
+            Field("ad_group.id", "ad_group_id"),
+            Field("ad_group_ad.policy_summary.approval_status",
+                  "approval_status"),
+            Field("ad_group_ad.policy_summary.review_status", "review_status"),
+            Field("ad_group_ad.policy_summary.policy_topic_entries:type",
+                  "topic_type"),
+            Field("ad_group_ad.policy_summary.policy_topic_entries:topic",
+                  "topic"),
+            Field("1", "ad_count")
+        ],
+        filters=(
+            "campaign.status = 'ENABLED'"
+            " AND ad_group.status = 'ENABLED'"
+            " AND ad_group_ad.status = 'ENABLED'"
+            " AND ad_group_ad.policy_summary.approval_status != 'APPROVED'"))
 
 
 @collector("default", "generic")
 class ConversionActionCollector:
     name = "conversion_action"
+    target = Target(name=name,
+                    metrics=[Field("all_conversions")],
+                    level=TargetLevel.CUSTOMER,
+                    dimensions=[
+                        Field("customer.id", "account_id"),
+                        Field("segments.conversion_action", "conversion_id",
+                              Customizer(CustomizerTypeEnum.INDEX, '0'))
+                    ],
+                    filters=("segments.date DURING TODAY"
+                             " AND metrics.all_conversions > 0"))
 
-    def __init__(self) -> None:
-        self.target = Target(name=self.name,
-                             metrics=[Field("all_conversions")],
-                             level=TargetLevel.CUSTOMER,
-                             dimensions=[
-                                 Field("customer.id", "account_id"),
-                                 Field(
-                                     "segments.conversion_action",
-                                     "conversion_id",
-                                     Customizer(CustomizerTypeEnum.INDEX, '0'))
-                             ],
-                             filters=("segments.date DURING TODAY"
-                                      " AND metrics.all_conversions > 0"))
+
+@collector("app")
+class AppCampaignMappingCollector:
+    name = "app_campaign_mapping"
+    target = Target(name=name,
+                    metrics=[Field("1", "info")],
+                    level=TargetLevel.CAMPAIGN,
+                    dimensions=[
+                        Field("app_campaign_setting.app_id", "app_id"),
+                        Field("app_campaign_setting.app_store", "app_store"),
+                        Field(
+                            "app_campaign_setting.bidding_strategy_goal_type",
+                            "bidding_strategy")
+                    ],
+                    filters="campaign.status = 'ENABLED'")
 
 
 @collector("default", "generic")
 class MappingCollector:
     name = "mapping"
-
-    def __init__(self) -> None:
-        self.target = Target(name=self.name,
-                             metrics=[Field("1", "info")],
-                             level=TargetLevel.AD_GROUP,
-                             dimensions=[
-                                 Field("customer.descriptive_name",
-                                       "account_name"),
-                                 Field("campaign.name", "campaign_name"),
-                                 Field("ad_group.id", "ad_group_id"),
-                                 Field("ad_group.name", "ad_group_name")
-                             ],
-                             filters=("campaign.status = 'ENABLED'"
-                                      " AND ad_group.status = 'ENABLED'"))
+    target = Target(name=name,
+                    metrics=[Field("1", "info")],
+                    level=TargetLevel.AD_GROUP,
+                    dimensions=[
+                        Field("customer.descriptive_name", "account_name"),
+                        Field("campaign.name", "campaign_name"),
+                        Field("campaign.bidding_strategy_type",
+                              "bidding_strategy_type"),
+                        Field("campaign.advertising_channel_type",
+                              "campaign_type"),
+                        Field("campaign.advertising_channel_sub_type",
+                              "campaign_sub_type"),
+                        Field("ad_group.id", "ad_group_id"),
+                        Field("ad_group.name", "ad_group_name")
+                    ],
+                    filters=("campaign.status = 'ENABLED'"
+                             " AND ad_group.status = 'ENABLED'"))
 
 
 # TODO (amarkin): Support registering without argument
-@collector("all")
+@collector("all", "search")
+@register_conversion_split_collector
 class SearchTermsCollector:
     name = "search_terms"
-
-    def __init__(self) -> None:
-        self.target = Target(
-            name=self.name,
-            metrics=DEFAULT_METRICS,
-            level=TargetLevel.CUSTOMER,
-            resource_name="search_term_view",
-            dimensions=[Field("search_term_view.search_term", "search_term")],
-            filters="search_term_view.status = 'ADDED' AND metrics.clicks > 0")
+    target = Target(
+        name=name,
+        metrics=DEFAULT_METRICS,
+        level=TargetLevel.CUSTOMER,
+        resource_name="search_term_view",
+        dimensions=[Field("search_term_view.search_term", "search_term")],
+        filters=("segments.date DURING TODAY "
+                 "AND campaign.status = 'ENABLED' "
+                 "AND metrics.clicks > 0"))
 
 
 @collector("all")
+@register_conversion_split_collector
 class PlacementsCollector:
     name = "placements"
-
-    def __init__(self) -> None:
-        self.target = Target(
-            name=self.name,
-            metrics=DEFAULT_METRICS,
-            level=TargetLevel.CUSTOMER,
-            resource_name="group_placement_view",
-            dimensions=[
-                Field("group_placement_view.display_name", "name"),
-                Field("group_placement_view.placement_type", "type")
-            ],
-            filters=
-            "segments.date DURING TODAY AND campaign.status = 'ENABLED' AND metrics.cost_micros > 0"
-        )
+    target = Target(name=name,
+                    metrics=DEFAULT_METRICS,
+                    level=TargetLevel.CUSTOMER,
+                    resource_name="group_placement_view",
+                    dimensions=[
+                        Field("group_placement_view.display_name", "name"),
+                        Field("group_placement_view.placement_type", "type")
+                    ],
+                    filters=("segments.date DURING TODAY "
+                             "AND campaign.status = 'ENABLED' "
+                             "AND metrics.clicks > 0"))
 
 
 @collector("all")
 class BidBudgetCollector:
     name = "bid_budgets"
+    target = Target(
+        name=name,
+        level=TargetLevel.CAMPAIGN,
+        metrics=[
+            Field("campaign_budget.amount_micros/1e6", "budget"),
+            Field("campaign.target_cpa.target_cpa_micros/1e6", "target_cpa"),
+            Field("campaign.maximize_conversions.target_cpa_micros/1e6",
+                  "max_conv_target_cpa"),
+            Field("campaign.target_roas.target_roas", "target_roas"),
+        ],
+        filters="campaign.status = 'ENABLED'")
 
-    def __init__(self) -> None:
-        self.target = Target(
-            name=self.name,
-            level=TargetLevel.CAMPAIGN,
-            metrics=[
-                Field("campaign_budget.amount_micros/1e6", "budget"),
-                Field("campaign.target_cpa.target_cpa_micros/1e6",
-                      "target_cpa"),
-                Field("campaign.maximize_conversions.target_cpa_micros/1e6",
-                      "max_conv_target_cpa"),
-                Field("campaign.target_roas.target_roas", "target_roas"),
-            ],
-            filters="campaign.status = 'ENABLED'")
+
+@collector("all")
+@register_conversion_split_collector
+class AssetPerformanceCollector:
+    name = "ad_group_asset"
+    target = Target(
+        name=name,
+        level=TargetLevel.AD_GROUP_AD_ASSET,
+        metrics=[
+            Field("clicks"),
+            Field("impressions"),
+            Field("biddable_app_install_conversions", "installs"),
+            Field("biddable_app_post_install_conversions", "inapps"),
+            Field("cost_micros / 1e6", "cost"),
+            Field("conversions_value")
+        ],
+        dimensions=[
+            Field("ad_group_ad_asset_view.performance_label",
+                  "performance_label"),
+            Field("ad_group_ad_asset_view.field_type", "type"),
+            Field("ad_group_ad_asset_view.policy_summary:review_status",
+                  "review_status"),
+            Field("ad_group_ad_asset_view.policy_summary:approval_status",
+                  "approval_status"),
+            Field(
+                "ad_group_ad_asset_view.policy_summary:policy_topic_entries.type",
+                "policy_topic_type"),
+            Field(
+                "ad_group_ad_asset_view.policy_summary:policy_topic_entries.topic",
+                "policy_topics")
+        ],
+        filters=("segments.date DURING TODAY "
+                 "AND campaign.status = 'ENABLED' "
+                 "AND ad_group.status = 'ENABLED' "
+                 "AND ad_group_ad_asset_view.enabled = TRUE"))
+
+
+@collector("all", "demographics")
+@register_conversion_split_collector
+class AgeRangeCollector:
+    name = "age"
+    target = Target(
+        name=name,
+        metrics=DEFAULT_METRICS,
+        level=TargetLevel.CAMPAIGN,
+        resource_name="age_range_view",
+        dimensions=[Field("ad_group_criterion.age_range.type", "age_range")],
+        filters=("segments.date DURING TODAY "
+                 "AND campaign.status = 'ENABLED' "
+                 "AND metrics.clicks > 0"))
+
+
+@collector("all", "demographics")
+@register_conversion_split_collector
+class GenderCollector:
+    name = "gender"
+    target = Target(
+        name=name,
+        metrics=DEFAULT_METRICS,
+        level=TargetLevel.CAMPAIGN,
+        resource_name="gender_view",
+        dimensions=[Field("ad_group_criterion.gender.type", "gender")],
+        filters=("segments.date DURING TODAY "
+                 "AND campaign.status = 'ENABLED' "
+                 "AND metrics.clicks > 0"))
+
+
+@collector("all", "search")
+@register_conversion_split_collector
+class KeywordsCollector:
+    name = "keywords"
+    target = Target(name=name,
+                    metrics=DEFAULT_METRICS,
+                    level=TargetLevel.AD_GROUP,
+                    resource_name="keyword_view",
+                    dimensions=[
+                        Field("ad_group_criterion.keyword.text", "keyword"),
+                        Field("ad_group_criterion.keyword.match_type",
+                              "match_type")
+                    ],
+                    filters=("segments.date DURING TODAY "
+                             "AND campaign.status = 'ENABLED' "
+                             "AND metrics.clicks > 0"))
+
+
+@collector("all", "geo")
+@register_conversion_split_collector
+class UserLocationCollector:
+    name = "user_location"
+    target = Target(name=name,
+                    metrics=DEFAULT_METRICS,
+                    level=TargetLevel.CAMPAIGN,
+                    resource_name="user_location_view",
+                    dimensions=[
+                        Field("user_location_view.country_criterion_id",
+                              "country_id"),
+                        Field("campaign.status")
+                    ],
+                    filters=("segments.date DURING TODAY "
+                             "AND campaign.status = 'ENABLED' "
+                             "AND metrics.clicks > 0"))
 
 
 def default_collectors() -> List[Target]:
