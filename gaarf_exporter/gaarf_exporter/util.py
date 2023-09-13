@@ -29,7 +29,7 @@ TOKEN_PATTERNS = (
     r'|(?P<MATH_OPERATOR>((\>\=)|(\<\=))|([\+\-\*/\(\)\=\>\<]))')
 
 
-RELATIVE_METRIC_PATTERNS = r'(?i)average|cpm|ctr|percentage|rate|share'
+RELATIVE_METRIC_PATTERNS = r'(?i)average_|_cpm|ctr|_percentage|_rate|_share'
 
 
 def parse_other_args(other_args: List[str]) -> Dict[str, set]:

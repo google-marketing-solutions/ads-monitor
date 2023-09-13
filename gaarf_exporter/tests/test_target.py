@@ -115,10 +115,10 @@ def test_target_at_mcc_level_create_query(simple_target_at_mcc_level):
 
 
 def test_target_at_ad_group_ad_level_create_query(
-    simple_target_at_ad_group_ad_level):
+        simple_target_at_ad_group_ad_level):
     expected_sql = """
     SELECT
-        ad_group_ad.ad.id AS ad_group_ad_ad_id,
+        ad_group_ad.ad.id AS ad_id,
         metrics.impressions AS impressions
     FROM ad_group_ad
     WHERE segments.date DURING TODAY
@@ -127,14 +127,12 @@ def test_target_at_ad_group_ad_level_create_query(
         simple_target_at_ad_group_ad_level.query, expected_sql)
 
 
-@pytest.mark.parametrize(
-    'test_level, expected_sql',
-    [
-        (TargetLevel.AD_GROUP_AD, """
+@pytest.mark.parametrize('test_level, expected_sql', [
+    (TargetLevel.AD_GROUP_AD, """
             SELECT
                 1 AS info,
-                ad_group_ad.ad.id AS ad_group_ad_ad_id,
-                ad_group_ad.ad.name AS ad_group_ad_ad_name,
+                ad_group_ad.ad.id AS ad_id,
+                ad_group_ad.ad.name AS ad_name,
                 ad_group.id AS ad_group_id,
                 ad_group.name AS ad_group_name,
                 campaign.id AS campaign_id,
@@ -198,7 +196,7 @@ def test_create_default_service_target_at_ad_group_ad_level(
 def test_target_with_empty_metric_create_query(empty_metric_target):
     expected_sql = """
     SELECT
-        ad_group_ad.ad.id AS ad_group_ad_ad_id,
+        ad_group_ad.ad.id AS ad_id,
         campaign.id AS campaign_id,
         ad_group_ad.policy_summary.approval_status AS approval_status,
         ad_group_ad.policy_summary.review_status AS review_status
@@ -261,84 +259,49 @@ def test_target_can_handle_complex_metrics_with_three_components():
     assert_sql_functionally_equivalent(target.query, expected_sql)
 
 
-@pytest.mark.parametrize(
-    'target1, target2, expected',
-    [
-        (
-            Target(),
-            Target(),
-            True
-        ),
-        (
-            Target(name='target1', metrics='clicks,conversions'),
-            Target(name='target2', metrics='clicks,conversions'),
-            True
-        ),
-        (
-            Target(name='target1', metrics='clicks,conversions'),
-            Target(name='target2', dimensions='clicks,conversions'),
-            False
-        ),
-        (
-            Target(metrics='clicks,conversions'),
-            Target(metrics=[Field(name='clicks'), Field(name='conversions')]),
-            True
-        ),
-        (
-            Target(metrics='conversions,impressions'),
-            Target(metrics=[
-                Field(name='impressions'), Field(name='conversions')]),
-            True
-        ),
-        (
-            Target(
-                metrics=[Field(name='conversions'),
-                         Field(name='impressions', alias='imp')]),
-            Target(
-                metrics=[Field(name='impressions', alias='imp'),
-                         Field(name='conversions')]),
-            True
-        ),
-        (
-            Target(
-                metrics=[
-                    Field(
-                        name='conversions',
-                        customizer=Customizer(
-                            CustomizerTypeEnum.INDEX, '0')),
-                    Field(name='impressions', alias='imp')]),
-            Target(
-                metrics=[
-                    Field(name='impressions', alias='imp'),
-                    Field(
-                        name='conversions',
-                        customizer=Customizer(
-                            CustomizerTypeEnum.INDEX, '0'))]
-            ),
-            True
-        ),
-        (
-            Target(
-                metrics=[
-                    Field(
-                        name='conversions',
-                        customizer=Customizer(
-                            CustomizerTypeEnum.INDEX, '0')),
-                    Field(name='impressions', alias='imp')],
-                dimensions=[Field(name='cost * 1e6', alias='cost')]),
-            Target(
-                metrics=[
-                    Field(name='impressions', alias='imp'),
-                    Field(
-                        name='conversions',
-                        customizer=Customizer(
-                            CustomizerTypeEnum.INDEX, '0'))],
-                dimensions=[Field(name='cost*1e6', alias='cost')]
-            ),
-            True
-        ),
-    ]
-)
+@pytest.mark.parametrize('target1, target2, expected', [
+    (Target(), Target(), True),
+    (Target(name='target1', metrics='clicks,conversions'),
+     Target(name='target2', metrics='clicks,conversions'), True),
+    (Target(name='target1', metrics='clicks,conversions'),
+     Target(name='target2', dimensions='clicks,conversions'), False),
+    (Target(metrics='clicks,conversions'),
+     Target(metrics=[Field(
+         name='clicks'), Field(name='conversions')]), True),
+    (Target(metrics='conversions,impressions'),
+     Target(metrics=[Field(name='impressions'),
+                     Field(name='conversions')]), True),
+    (Target(metrics=[
+        Field(name='conversions'),
+        Field(name='impressions', alias='imp')
+    ]),
+     Target(metrics=[
+         Field(name='impressions', alias='imp'),
+         Field(name='conversions')
+     ]), True),
+    (Target(metrics=[
+        Field(name='conversions',
+              customizer=Customizer(CustomizerTypeEnum.INDEX, '0')),
+        Field(name='impressions', alias='imp')
+    ]),
+     Target(metrics=[
+         Field(name='impressions', alias='imp'),
+         Field(name='conversions',
+               customizer=Customizer(CustomizerTypeEnum.INDEX, '0'))
+     ]), True),
+    (Target(metrics=[
+        Field(name='conversions',
+              customizer=Customizer(CustomizerTypeEnum.INDEX, '0')),
+        Field(name='impressions', alias='imp')
+    ],
+            dimensions=[Field(name='cost * 1e6', alias='cost')]),
+     Target(metrics=[
+         Field(name='impressions', alias='imp'),
+         Field(name='conversions',
+               customizer=Customizer(CustomizerTypeEnum.INDEX, '0'))
+     ],
+            dimensions=[Field(name='cost*1e6', alias='cost')]), True),
+])
 def test_targets_equality(target1, target2, expected):
     actual_equality = target1 == target2
     actual_hash_equality = hash(target1) == hash(target2)
@@ -347,43 +310,38 @@ def test_targets_equality(target1, target2, expected):
 
 
 @pytest.mark.parametrize(
-    'target1, target2, expected_similarity, expected_equality',
-    [
-        (
-            Target(name='target1', metrics='clicks,conversions',
-                   level=TargetLevel.AD_GROUP),
-            Target(name='target2', metrics='clicks,conversions',
-                   level=TargetLevel.AD_GROUP_AD),
-            True,
-            False
-        ),
-    ]
-)
-def test_target_similarity(
-        target1, target2, expected_similarity, expected_equality):
+    'target1, target2, expected_similarity, expected_equality', [
+        (Target(name='target1',
+                metrics='clicks,conversions',
+                level=TargetLevel.AD_GROUP),
+         Target(name='target2',
+                metrics='clicks,conversions',
+                level=TargetLevel.AD_GROUP_AD), True, False),
+    ])
+def test_target_similarity(target1, target2, expected_similarity,
+                           expected_equality):
     actual_similarity = target1.is_similar(target2)
     actual_equality = target1 == target2
     assert actual_similarity == expected_similarity
     assert actual_equality == expected_equality
 
 
-@pytest.mark.parametrize(
-    'targets,expected',
-    [
-        (
-            [Target(name='target1', metrics='clicks,conversions',
-                    level=TargetLevel.CUSTOMER),
-             Target(name='target2', metrics='clicks,conversions',
-                    level=TargetLevel.AD_GROUP),
-             Target(name='target3', metrics='clicks,conversions',
-                    level=TargetLevel.AD_GROUP_AD),
-             Target(name='target4', metrics='clicks,conversions,impressions',
-                    level=TargetLevel.MCC)
-             ],
-            ['target3', 'target4']
-        ),
-    ]
-)
+@pytest.mark.parametrize('targets,expected', [
+    ([
+        Target(name='target1',
+               metrics='clicks,conversions',
+               level=TargetLevel.CUSTOMER),
+        Target(name='target2',
+               metrics='clicks,conversions',
+               level=TargetLevel.AD_GROUP),
+        Target(name='target3',
+               metrics='clicks,conversions',
+               level=TargetLevel.AD_GROUP_AD),
+        Target(name='target4',
+               metrics='clicks,conversions,impressions',
+               level=TargetLevel.MCC)
+    ], ['target3', 'target4']),
+])
 def test_targets_similarity_check(targets, expected):
     actual = targets_similarity_check(targets)
     assert set([t.name for t in actual]) == set(expected)

@@ -99,6 +99,7 @@ def test_tokenize_expression(expression, expected):
             """
               SeLeCt
                   average_cost
+                  campaign.bidding_strategy_type,
                   metrics.active_view_cpm as cpm
                   metrics.metrics.active_view_ctr As ctr,
                   metrics.absolute_top_impression_percentage~0 as p,

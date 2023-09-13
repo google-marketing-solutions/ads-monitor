@@ -24,11 +24,11 @@ def test_get_targets_with_multiple_counters():
 
 def test_get_targets_with_single_counter_set():
     actual = get_targets(registry, {'default'})
-    expected = ['conversion_action', 'disapproval', 'mapping', 'performance']
+    expected = ['conversion_action', 'disapprovals', 'mapping', 'performance']
     assert sorted([target.name for target in actual]) == expected
 
 
 def test_get_targets_with_counters_and_counter_set():
     actual = get_targets(registry, {'default', 'performance', 'mapping'})
-    expected = ['conversion_action', 'disapproval', 'mapping', 'performance']
+    expected = ['conversion_action', 'disapprovals', 'mapping', 'performance']
     assert sorted([target.name for target in actual]) == expected
