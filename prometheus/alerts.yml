@@ -1,4 +1,17 @@
 groups:
+  - name: aggregations
+    rules:
+      - record: googleads:ad_groups:ad_count
+        expr: count without(ad_id) (googleads_mapping_info)
+      - record: googleads:campaigns:ad_count
+        expr: count without(ad_group_id, ad_group_name, ad_id) (googleads_mapping_info)
+      - record: googleads:accounts:ad_count
+        expr: count without(campaign_name, campaign_id, campaign_type, campaign_subtype, ad_group_id, ad_group_name, ad_id) (googleads_mapping_info)
+      - record: googleads:campaigns:ad_group_count
+        expr: count without(ad_group_id, ad_group_name) (googleads:ad_groups:ad_count)
+      - record: googleads:account:campaign_count
+        expr: count without(campaign_name, campaign_id, campaign_type, campaign_subtype) (googleads:campaigns:ad_group_count)
+
   - name: googleads
     rules:
       - record: campaign_spend_threshold
