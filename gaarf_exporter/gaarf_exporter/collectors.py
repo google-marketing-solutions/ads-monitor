@@ -158,10 +158,12 @@ class MappingCollector:
     name = "mapping"
     target = Target(name=name,
                     metrics=[Field("1", "info")],
-                    level=TargetLevel.AD_GROUP,
+                    level=TargetLevel.AD_GROUP_AD,
                     dimensions=[
                         Field("customer.descriptive_name", "account_name"),
+                        Field("customer.id", "account_id"),
                         Field("campaign.name", "campaign_name"),
+                        Field("campaign.id", "campaign_id"),
                         Field("campaign.bidding_strategy_type",
                               "bidding_strategy_type"),
                         Field("campaign.advertising_channel_type",
@@ -172,7 +174,8 @@ class MappingCollector:
                         Field("ad_group.name", "ad_group_name")
                     ],
                     filters=("campaign.status = 'ENABLED'"
-                             " AND ad_group.status = 'ENABLED'"))
+                             " AND ad_group.status = 'ENABLED'"
+                             " AND ad_group_ad.status = 'ENABLED'"))
 
 
 # TODO (amarkin): Support registering without argument
