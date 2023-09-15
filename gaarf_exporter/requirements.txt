@@ -231,15 +231,15 @@ cryptography==41.0.3 \
     # via
     #   azure-storage-blob
     #   paramiko
-gaarf-exporter==0.4.0 \
-    --hash=sha256:ea2403c52ee833913f028ef572734efb165be95c2a074f537ffb267b8b48116a
+gaarf-exporter==0.4.2 \
+    --hash=sha256:853187293e11103b10ee84c5fe99ed20d72c2d773272285bf9b0331eb9c13a89
     # via -r requirements.in
 google-ads==21.2.0 \
     --hash=sha256:ce2adac2ca10dc25bde38402fc2423101fed01ef4ca33b016a2d67502ae90fb8 \
     --hash=sha256:d155a82d69700ae7c509aa62c789f34f260ac7f12db488a95a3a297e45d868b9
     # via google-ads-api-report-fetcher
-google-ads-api-report-fetcher==1.9.0 \
-    --hash=sha256:8859c2f8d40cf795d096871bb5778950306dcd6c66943010593f1292ce2be223
+google-ads-api-report-fetcher==1.10.1 \
+    --hash=sha256:8288f7f8f6a290fa90b1f0079859fc8b1f2e41af73febf252459b193e5aef970
     # via gaarf-exporter
 google-api-core[grpc]==2.11.0 \
     --hash=sha256:4b9bb5d5a380a0befa0573b302651b8a9a89262c1730e37bf423cec511804c22 \
