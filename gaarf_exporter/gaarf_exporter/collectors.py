@@ -170,6 +170,7 @@ class MappingCollector:
                               "campaign_type"),
                         Field("campaign.advertising_channel_sub_type",
                               "campaign_sub_type"),
+                        Field("campaign.start_date", "start_date"),
                         Field("ad_group.id", "ad_group_id"),
                         Field("ad_group.name", "ad_group_name")
                     ],
@@ -186,7 +187,7 @@ class SearchTermsCollector:
     target = Target(
         name=name,
         metrics=DEFAULT_METRICS,
-        level=TargetLevel.CUSTOMER,
+        level=TargetLevel.AD_GROUP,
         resource_name="search_term_view",
         dimensions=[Field("search_term_view.search_term", "search_term")],
         filters=("segments.date DURING TODAY "
@@ -297,18 +298,18 @@ class GenderCollector:
 @register_conversion_split_collector
 class KeywordsCollector:
     name = "keywords"
-    target = Target(name=name,
-                    metrics=DEFAULT_METRICS,
-                    level=TargetLevel.AD_GROUP,
-                    resource_name="keyword_view",
-                    dimensions=[
-                        Field("ad_group_criterion.keyword.text", "keyword"),
-                        Field("ad_group_criterion.keyword.match_type",
-                              "match_type")
-                    ],
-                    filters=("segments.date DURING TODAY "
-                             "AND campaign.status = 'ENABLED' "
-                             "AND metrics.clicks > 0"))
+    target = Target(
+        name=name,
+        metrics=DEFAULT_METRICS + [Field("historical_quality_score")],
+        level=TargetLevel.AD_GROUP,
+        resource_name="keyword_view",
+        dimensions=[
+            Field("ad_group_criterion.keyword.text", "keyword"),
+            Field("ad_group_criterion.keyword.match_type", "match_type")
+        ],
+        filters=("segments.date DURING TODAY "
+                 "AND campaign.status = 'ENABLED' "
+                 "AND metrics.clicks > 0"))
 
 
 @collector("all", "geo")
@@ -327,6 +328,80 @@ class UserLocationCollector:
                     filters=("segments.date DURING TODAY "
                              "AND campaign.status = 'ENABLED' "
                              "AND metrics.clicks > 0"))
+
+
+@collector("all")
+class CampaignOptimizationScoreCollector:
+    name = "optimization_score"
+    target = Target(name=name,
+                    metrics=[
+                        Field("campaign.optimization_score",
+                              "campaign_optimization_score")
+                    ],
+                    level=TargetLevel.CAMPAIGN,
+                    filters=("campaign.status = 'ENABLED'"),
+                    suffix="Remove")
+
+
+@collector("all")
+class AccountStatus:
+    name = "account_status"
+    target = Target(name=name,
+                    metrics=[Field("1", "info")],
+                    level=TargetLevel.CUSTOMER,
+                    dimensions=[Field("customer.status", "status")])
+
+
+# TODO (amarkin): Verify
+class OfflineConversionsImportCollector:
+    name = "offline_conversions_import"
+    target = Target(
+        name=name,
+        dimensions=[
+            Field("customer.offline_conversion_client_summaries:status",
+                  "status"),
+            Field(
+                "customer.offline_conversion_client_summaries:total_event_count",
+                "total_events"),
+            Field(
+                "customer.offline_conversion_client_summaries:successful_event_count",
+                "successful_event_count"),
+        ],
+        level=TargetLevel.CUSTOMER)
+
+
+# TODO: WIP
+class RemarketingListCollector:
+    name = "remarketing_list"
+    target = Target(
+        name=name,
+        resource_name="user_list",
+        metrics=[
+            Field("user_list.size_for_display", "size_for_display"),
+            Field("user_list.size_for_search", "size_for_search")
+        ],
+        dimensions=[
+            Field("user_list.id", "id"),
+            Field("user_list.type", "type"),
+            Field("user_list.name", "name")
+        ],
+        level=TargetLevel.CUSTOMER)
+
+
+@collector("all")
+class CampaignServingStatusCollector:
+    name = "campaign_serving_status"
+    target = Target(name=name,
+                    metrics=[Field("1", "info")],
+                    dimensions=[
+                        Field("campaign.id"),
+                        Field("campaign.primary_status", "primary_status"),
+                        Field("campaign.primary_status_reasons",
+                              "primary_status_reasons")
+                    ],
+                    level=TargetLevel.CAMPAIGN,
+                    filters=("campaign.primary_status NOT IN "
+                             "('ELIGIBLE', 'ENDED', 'PAUSED', 'REMOVED')"))
 
 
 def default_collectors() -> List[Target]:
