@@ -93,7 +93,8 @@ class GaarfExporter:
             for name, metric in metrics.items():
                 if (metric_value := getattr(row, name)
                         or self.expose_metrics_with_zero_values):
-                    metric.labels(*label_values).set(metric_value)
+                    if not isinstance(metric_value, str):
+                        metric.labels(*label_values).set(metric_value)
         if self.pushgateway_url:
             push_to_gateway(self.pushgateway_url,
                             job=self.job_name,
