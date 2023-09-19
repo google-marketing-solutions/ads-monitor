@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and limitations under the License.
 
 import argparse
+from concurrent import futures
 import yaml
 import logging
 from gaarf.cli.utils import init_logging
@@ -134,13 +135,27 @@ def main():
             if exclude_queries := runtime_options.get("exclude_queries"):
                 if name in exclude_queries:
                     continue
-            report = report_fetcher.fetch(query_text, accounts)
-            if dependencies.get("convert_fake_report"):
-                report.is_fake = False
             suffix = content.get("suffix") or name
-            logging.info(f"Started export for query {name}")
-            gaarf_exporter.export(report=report, suffix=suffix)
-            logging.info(f"Ended export for query {name}")
+            logger.info("Beginning export")
+            with futures.ThreadPoolExecutor() as executor:
+                future_to_account = {
+                    executor.submit(report_fetcher.fetch, query_text, account):
+                    account
+                    for account in accounts
+                }
+                for future in futures.as_completed(future_to_account):
+                    account = future_to_account[future]
+                    report = future.result()
+                    # report = report_fetcher.fetch(query_text, accounts)
+                    if dependencies.get("convert_fake_report"):
+                        report.is_fake = False
+                    logging.info(
+                        f"Started export for query {name} for account {account}"
+                    )
+                    gaarf_exporter.export(report=report, suffix=suffix)
+                    logging.info(
+                        f"Ended export for query {name} for account {account}")
+        logger.info("Export completed")
         if gaarf_exporter.pushgateway_url:
             logger.info("Saving data to pushgateway at %s",
                         gaarf_exporter.pushgateway_url)

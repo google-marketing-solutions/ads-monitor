@@ -86,7 +86,7 @@ class GaarfExporter:
             label_values = []
             for label in labels:
                 if isinstance(row.get(label), abc.MutableSequence):
-                    label_value = ",".join(row.get(label))
+                    label_value = ",".join([str(r) for r in row.get(label)])
                 else:
                     label_value = row.get(label)
                 label_values.append(label_value)
