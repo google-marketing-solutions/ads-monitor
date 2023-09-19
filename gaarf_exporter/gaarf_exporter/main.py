@@ -18,7 +18,7 @@ import logging
 from gaarf.cli.utils import init_logging
 from prometheus_client import start_http_server
 from smart_open import open
-from time import sleep
+from time import time, sleep
 
 from gaarf_exporter.bootstrap import inject_dependencies
 from gaarf_exporter.config import Config
@@ -126,6 +126,7 @@ def main():
         logger.info("Started http_server at http://%s",
                     gaarf_exporter.http_server_url)
     while True:
+        start_export_time = time()
         for name, content in queries.items():
             if not (query_text := content.get("query")):
                 raise ValueError("Missing query text for query %s", name)
@@ -145,17 +146,29 @@ def main():
                 }
                 for future in futures.as_completed(future_to_account):
                     account = future_to_account[future]
+                    start = time()
                     report = future.result()
+                    end = time()
+                    gaarf_exporter.report_fetcher_gauge.labels(
+                        collector=name, account=account).set(end - start)
                     # report = report_fetcher.fetch(query_text, accounts)
                     if dependencies.get("convert_fake_report"):
                         report.is_fake = False
                     logging.info(
                         f"Started export for query {name} for account {account}"
                     )
-                    gaarf_exporter.export(report=report, suffix=suffix)
+                    gaarf_exporter.export(report=report,
+                                          suffix=suffix,
+                                          collector=name,
+                                          account=account)
                     logging.info(
                         f"Ended export for query {name} for account {account}")
         logger.info("Export completed")
+        end_export_time = time()
+        gaarf_exporter.total_export_time_gauge.set(end_export_time -
+                                                   start_export_time)
+        gaarf_exporter.delay_gauge.set(args.delay * 60)
+
         if gaarf_exporter.pushgateway_url:
             logger.info("Saving data to pushgateway at %s",
                         gaarf_exporter.pushgateway_url)

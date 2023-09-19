@@ -16,9 +16,10 @@ from typing import Dict, List, Optional, Sequence
 
 from collections import abc
 import logging
-from prometheus_client import Gauge, push_to_gateway, CollectorRegistry
+from prometheus_client import Counter, Gauge, push_to_gateway, CollectorRegistry
 from gaarf.query_editor import QuerySpecification
 from gaarf.report import GaarfReport
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -33,19 +34,13 @@ METRICS = ("campaign.target_cpa.target_cpa_micros",
            "campaign.target_roas.cpc_bid_floor_micros",
            "campaign.target_cpa.cpc_bid_ceiling_micros",
            "campaign.target_cpa.cpc_bid_floor_micros",
-           "ad_group.cpc_bid_micros",
-           "ad_group.cpm_bid_micros",
-           "ad_group.cpv_bid_micros",
-           "ad_group.effective_target_cpa_micros",
+           "ad_group.cpc_bid_micros", "ad_group.cpm_bid_micros",
+           "ad_group.cpv_bid_micros", "ad_group.effective_target_cpa_micros",
            "ad_group.effective_target_cpa_source",
-           "ad_group.effective_target_roas",
-           "ad_group.percent_cpc_bid_micros",
-           "ad_group.target_cpa_micros",
-           "ad_group.target_cpm_micros",
-           "ad_group.target_roas",
-           "campaign.optimization_score",
-           "customer.optimization_score"
-           )
+           "ad_group.effective_target_roas", "ad_group.percent_cpc_bid_micros",
+           "ad_group.target_cpa_micros", "ad_group.target_cpm_micros",
+           "ad_group.target_roas", "campaign.optimization_score",
+           "customer.optimization_score")
 
 
 class GaarfExporter:
@@ -68,7 +63,21 @@ class GaarfExporter:
         self.job_name = job_name
         self.expose_metrics_with_zero_values = expose_metrics_with_zero_values
         self.registry: CollectorRegistry = CollectorRegistry()
+        self._init_service_metrics()
         logger.debug(str(self))
+
+    def _init_service_metrics(self, namespace: str = "gaarf_") -> None:
+        self.total_export_time_gauge = self._define_gauge("exporting_seconds",
+                                                          suffix="Remove",
+                                                          namespace=namespace)
+        self.report_fetcher_gauge = self._define_gauge(
+            name="report_fetching_seconds",
+            suffix="Remove",
+            labelnames=("collector", "account"),
+            namespace=namespace)
+        self.delay_gauge = self._define_gauge("delay_seconds",
+                                              suffix="Remove",
+                                              namespace=namespace)
 
     def reset_registry(self):
         self.registry._collector_to_names.clear()
@@ -77,7 +86,16 @@ class GaarfExporter:
     def export(self,
                report: GaarfReport,
                namespace: Optional[str] = None,
-               suffix: str = "") -> None:
+               suffix: str = "",
+               collector: Optional[str] = None,
+               account: Optional[str] = None) -> None:
+        start = time.time()
+        export_time_gauge = self._define_gauge(
+            name="query_export_time_seconds",
+            suffix="Remove",
+            labelnames=("collector", "account"),
+            namespace="gaarf_")
+        api_requests_counter = self._define_counter(name="api_requests_count")
         metrics = self._define_metrics(report.query_specification, suffix)
         labels = self._define_labels(report.query_specification)
         if not report:
@@ -95,6 +113,10 @@ class GaarfExporter:
                         or self.expose_metrics_with_zero_values):
                     if not isinstance(metric_value, str):
                         metric.labels(*label_values).set(metric_value)
+        end = time.time()
+        export_time_gauge.labels(collector=collector,
+                                 account=account).set(end - start)
+        api_requests_counter.inc()
         if self.pushgateway_url:
             push_to_gateway(self.pushgateway_url,
                             job=self.job_name,
@@ -130,19 +152,32 @@ class GaarfExporter:
         logger.debug(f"labelnames: {labelnames}")
         return labelnames
 
-    def _define_gauge(self, name: str, suffix: str,
-                      labelnames: Sequence[str]) -> Gauge:
+    def _define_gauge(self,
+                      name: str,
+                      suffix: str,
+                      labelnames: Sequence[str] = (),
+                      namespace: Optional[str] = None) -> Gauge:
 
+        if not namespace:
+            namespace = self.namespace
         if suffix and suffix != "Remove":
-            gauge_name = f"{self.namespace}{suffix}_{name}"
+            gauge_name = f"{namespace}{suffix}_{name}"
         else:
-            gauge_name = f"{self.namespace}{name}"
+            gauge_name = f"{namespace}{name}"
         if gauge_name in self.registry._names_to_collectors:
             return self.registry._names_to_collectors.get(gauge_name)
         return Gauge(name=gauge_name,
                      documentation=name,
                      labelnames=labelnames,
                      registry=self.registry)
+
+    def _define_counter(self, name: str) -> Counter:
+        counter_name = f"gaarf_{name}"
+        if counter_name in self.registry._names_to_collectors:
+            return self.registry._names_to_collectors.get(counter_name)
+        return Counter(name=counter_name,
+                       documentation=name,
+                       registry=self.registry)
 
     def _get_non_virtual_columns(
             self, query_specification: QuerySpecification) -> List[str]:
