@@ -6,11 +6,48 @@ groups:
       - record: googleads:campaigns:ad_count
         expr: count without(ad_group_id, ad_group_name, ad_id) (googleads_mapping_info)
       - record: googleads:accounts:ad_count
-        expr: count without(campaign_name, campaign_id, campaign_type, campaign_subtype, ad_group_id, ad_group_name, ad_id) (googleads_mapping_info)
+        expr: |
+          count without(
+            campaign_name, campaign_id, campaign_type, campaign_sub_type,
+            bidding_strategy_type, ad_group_id, ad_group_name, ad_id)
+          (googleads_mapping_info)
       - record: googleads:campaigns:ad_group_count
-        expr: count without(ad_group_id, ad_group_name) (googleads:ad_groups:ad_count)
+        expr: |
+          count without(ad_group_id, ad_group_name)
+          (googleads:ad_groups:ad_count)
       - record: googleads:account:campaign_count
-        expr: count without(campaign_name, campaign_id, campaign_type, campaign_subtype) (googleads:campaigns:ad_group_count)
+        expr: |
+          count without(
+          campaign_name, campaign_id, campaign_type, campaign_sub_type,
+          bidding_strategy_type) (googleads:campaigns:ad_group_count)
+  - name: groupings
+    rules:
+      - record: googleads:clicks
+        expr: |
+          googleads_clicks
+          * on (ad_group_id) group_left (account_name, campaign_name, ad_group_name)
+          googleads:ad_groups:ad_count
+      - record: googleads:impressions
+        expr: |
+          googleads_impressions
+          * on (ad_group_id) group_left (account_name, campaign_name, ad_group_name)
+          googleads:ad_groups:ad_count
+      - record: googleads:cost
+        expr: |
+          googleads_cost
+          * on (ad_group_id) group_left (account_name, campaign_name, ad_group_name)
+          googleads:ad_groups:ad_count
+      - record: googleads:conversions
+        expr: |
+          googleads_conversions
+          * on (ad_group_id) group_left (account_name, campaign_name, ad_group_name)
+          googleads:ad_groups:ad_count
+      - record: googleads:campaigns:budgets
+        expr: |
+          googleads_bid_budgets_budget
+          * on (campaign_id)
+          group_left (account_name, account_id, campaign_name, campaign_type, campaign_sub_type)
+            (googleads:campaigns:ad_group_count * 0 + 1)
 
   - name: googleads
     rules:
