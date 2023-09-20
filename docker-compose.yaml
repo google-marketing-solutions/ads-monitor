@@ -64,6 +64,12 @@ services:
     command:
       - "--account=$GAARF_EXPORTER_ACCOUNT_ID"
       - "--ads-config=/google-ads.yaml"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000"]
+      interval: 2m
+      timeout: 10s
+      retries: 3
+      start_period: 1m
     restart: unless-stopped
     depends_on:
       - prometheus

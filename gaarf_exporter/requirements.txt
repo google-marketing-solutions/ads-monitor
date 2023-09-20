@@ -231,8 +231,8 @@ cryptography==41.0.3 \
     # via
     #   azure-storage-blob
     #   paramiko
-gaarf-exporter==0.4.2 \
-    --hash=sha256:853187293e11103b10ee84c5fe99ed20d72c2d773272285bf9b0331eb9c13a89
+gaarf-exporter==0.5.0 \
+    --hash=sha256:61d9c17037c67151f4ed8794f0c46f9dc66dbcf855c289039e01be01ff741c6f
     # via -r requirements.in
 google-ads==21.2.0 \
     --hash=sha256:ce2adac2ca10dc25bde38402fc2423101fed01ef4ca33b016a2d67502ae90fb8 \
