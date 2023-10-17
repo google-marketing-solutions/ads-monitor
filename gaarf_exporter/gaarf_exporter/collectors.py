@@ -15,11 +15,12 @@
 from typing import (Callable, Dict, List, Protocol, Type, TypeVar,
                     runtime_checkable)
 
+from datetime import datetime
+from gaarf.cli.utils import convert_date
 from .target import Target, TargetLevel
 from .query_elements import Field, Customizer, CustomizerTypeEnum
 
 
-@runtime_checkable
 class BaseCollector(Protocol):
     name: str
     target: Target
@@ -86,16 +87,41 @@ DEFAULT_CONVERSION_SPLIT_DIMENSIONS = [
 ]
 
 
+class CollectorCustomizerMixin:
+
+    def customize_target(target, **kwargs) -> None:
+        CollectorCustomizerMixin._format_date_range(target, **kwargs)
+
+    def _format_date_range(target, **kwargs) -> None:
+        if kwargs and (start_date :=
+                       kwargs.get("start_date")) and (end_date :=
+                                                      kwargs.get("end_date")):
+            start_date = convert_date(start_date)
+            end_date = convert_date(end_date)
+            target.filters = target.filters.replace(
+                "DURING TODAY", f"BETWEEN '{start_date}' AND '{end_date}'")
+            n_days = (datetime.strptime(end_date, "%Y-%m-%d") -
+                      datetime.strptime(start_date, "%Y-%m-%d")).days + 1
+            if target.dimensions:
+                target.dimensions += [Field(str(n_days), "n_days")]
+            else:
+                target.dimensions = [Field(str(n_days), "n_days")]
+
+
 # TODO (amarkin): Make collector dynamically customizable
 @collector("default", "generic")
 @register_conversion_split_collector
-class PerformanceCollector:
+class PerformanceCollector(CollectorCustomizerMixin):
     name = "performance"
     target = Target(name=name,
                     metrics=DEFAULT_METRICS,
                     level=TargetLevel.AD_GROUP,
                     dimensions=[Field("segments.ad_network_type", "network")],
+                    filters="segments.date DURING TODAY",
                     suffix="Remove")
+
+    def __init__(self, **kwargs):
+        CollectorCustomizerMixin.customize_target(self.target, **kwargs)
 
 
 @collector("default", "generic")
@@ -130,6 +156,8 @@ class ConversionActionCollector:
                     level=TargetLevel.CUSTOMER,
                     dimensions=[
                         Field("customer.id", "account_id"),
+                        Field("segments.conversion_action_name",
+                              "conversion_name"),
                         Field("segments.conversion_action", "conversion_id",
                               Customizer(CustomizerTypeEnum.INDEX, '0'))
                     ],
@@ -182,7 +210,7 @@ class MappingCollector:
 # TODO (amarkin): Support registering without argument
 @collector("all", "search")
 @register_conversion_split_collector
-class SearchTermsCollector:
+class SearchTermsCollector(CollectorCustomizerMixin):
     name = "search_terms"
     target = Target(
         name=name,
@@ -194,10 +222,13 @@ class SearchTermsCollector:
                  "AND campaign.status = 'ENABLED' "
                  "AND metrics.clicks > 0"))
 
+    def __init__(self, **kwargs):
+        CollectorCustomizerMixin.customize_target(self.target, **kwargs)
+
 
 @collector("all")
 @register_conversion_split_collector
-class PlacementsCollector:
+class PlacementsCollector(CollectorCustomizerMixin):
     name = "placements"
     target = Target(name=name,
                     metrics=DEFAULT_METRICS,
@@ -210,6 +241,9 @@ class PlacementsCollector:
                     filters=("segments.date DURING TODAY "
                              "AND campaign.status = 'ENABLED' "
                              "AND metrics.clicks > 0"))
+
+    def __init__(self, **kwargs):
+        CollectorCustomizerMixin.customize_target(self.target, **kwargs)
 
 
 @collector("all")
@@ -230,7 +264,7 @@ class BidBudgetCollector:
 
 @collector("all")
 @register_conversion_split_collector
-class AssetPerformanceCollector:
+class AssetPerformanceCollector(CollectorCustomizerMixin):
     name = "ad_group_asset"
     target = Target(
         name=name,
@@ -263,10 +297,13 @@ class AssetPerformanceCollector:
                  "AND ad_group.status = 'ENABLED' "
                  "AND ad_group_ad_asset_view.enabled = TRUE"))
 
+    def __init__(self, **kwargs):
+        CollectorCustomizerMixin.customize_target(self.target, **kwargs)
+
 
 @collector("all", "demographics")
 @register_conversion_split_collector
-class AgeRangeCollector:
+class AgeRangeCollector(CollectorCustomizerMixin):
     name = "age"
     target = Target(
         name=name,
@@ -278,10 +315,13 @@ class AgeRangeCollector:
                  "AND campaign.status = 'ENABLED' "
                  "AND metrics.clicks > 0"))
 
+    def __init__(self, **kwargs):
+        CollectorCustomizerMixin.customize_target(self.target, **kwargs)
+
 
 @collector("all", "demographics")
 @register_conversion_split_collector
-class GenderCollector:
+class GenderCollector(CollectorCustomizerMixin):
     name = "gender"
     target = Target(
         name=name,
@@ -293,10 +333,13 @@ class GenderCollector:
                  "AND campaign.status = 'ENABLED' "
                  "AND metrics.clicks > 0"))
 
+    def __init__(self, **kwargs):
+        CollectorCustomizerMixin.customize_target(self.target, **kwargs)
+
 
 @collector("all", "search")
 @register_conversion_split_collector
-class KeywordsCollector:
+class KeywordsCollector(CollectorCustomizerMixin):
     name = "keywords"
     target = Target(
         name=name,
@@ -311,10 +354,13 @@ class KeywordsCollector:
                  "AND campaign.status = 'ENABLED' "
                  "AND metrics.clicks > 0"))
 
+    def __init__(self, **kwargs):
+        CollectorCustomizerMixin.customize_target(self.target, **kwargs)
+
 
 @collector("all", "geo")
 @register_conversion_split_collector
-class UserLocationCollector:
+class UserLocationCollector(CollectorCustomizerMixin):
     name = "user_location"
     target = Target(name=name,
                     metrics=DEFAULT_METRICS,
@@ -328,6 +374,9 @@ class UserLocationCollector:
                     filters=("segments.date DURING TODAY "
                              "AND campaign.status = 'ENABLED' "
                              "AND metrics.clicks > 0"))
+
+    def __init__(self, **kwargs):
+        CollectorCustomizerMixin.customize_target(self.target, **kwargs)
 
 
 @collector("all")
@@ -373,19 +422,19 @@ class OfflineConversionsImportCollector:
 # TODO: WIP
 class RemarketingListCollector:
     name = "remarketing_list"
-    target = Target(
-        name=name,
-        resource_name="user_list",
-        metrics=[
-            Field("user_list.size_for_display", "size_for_display"),
-            Field("user_list.size_for_search", "size_for_search")
-        ],
-        dimensions=[
-            Field("user_list.id", "id"),
-            Field("user_list.type", "type"),
-            Field("user_list.name", "name")
-        ],
-        level=TargetLevel.CUSTOMER)
+    target = Target(name=name,
+                    resource_name="user_list",
+                    metrics=[
+                        Field("user_list.size_for_display",
+                              "size_for_display"),
+                        Field("user_list.size_for_search", "size_for_search")
+                    ],
+                    dimensions=[
+                        Field("user_list.id", "id"),
+                        Field("user_list.type", "type"),
+                        Field("user_list.name", "name")
+                    ],
+                    level=TargetLevel.CUSTOMER)
 
 
 @collector("all")
@@ -404,8 +453,8 @@ class CampaignServingStatusCollector:
                              "('ELIGIBLE', 'ENDED', 'PAUSED', 'REMOVED')"))
 
 
-def default_collectors() -> List[Target]:
+def default_collectors(kwargs) -> List[Target]:
     return [
-        collector().target for name, collectors in registry.items()
+        collector(**kwargs).target for name, collectors in registry.items()
         for collector in collectors.values() if name == "default"
     ]

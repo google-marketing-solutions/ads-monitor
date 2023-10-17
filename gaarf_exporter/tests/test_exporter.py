@@ -48,23 +48,25 @@ class TestGaaarfExporter:
         assert not gaarf_exporter.pushgateway_url
         assert not gaarf_exporter.registry.get_target_info()
 
-    def test_gaarf_exporter_exporter_report_returns_correct_metric_name(
+    def test_gaarf_exporter_report_returns_correct_metric_name(
             self, gaarf_exporter, report):
         gaarf_exporter.export(report)
-        [metric] = list(gaarf_exporter.registry.collect())
-        assert metric.name == "googleads_clicks"
+        metrics = list(gaarf_exporter.registry.collect())
+        assert "googleads_clicks" in [metric.name for metric in metrics]
 
-    def test_gaarf_exporter_exporter_report_returns_correct_metric_documentation(
+    def test_gaarf_exporter_report_returns_correct_metric_documentation(
             self, gaarf_exporter, report):
         gaarf_exporter.export(report)
-        [metric] = list(gaarf_exporter.registry.collect())
-        assert metric.documentation == "clicks"
-        assert len(metric.samples) == len(report.results)
+        metrics = list(gaarf_exporter.registry.collect())
+        assert "clicks" in [metric.documentation for metric in metrics]
 
-    def test_gaarf_exporter_exporter_report_returns_correct_metric_samples(
+    def test_gaarf_exporter_report_returns_correct_metric_samples(
             self, gaarf_exporter, report):
         gaarf_exporter.export(report)
-        [metric] = list(gaarf_exporter.registry.collect())
+        metrics = list(gaarf_exporter.registry.collect())
+        for metric in metrics:
+            if metric.name == "googleads_clicks":
+                break
         assert len(metric.samples) == len(report.results)
 
     @pytest.mark.parametrize('expected_samples', [[
@@ -73,10 +75,13 @@ class TestGaaarfExporter:
         Sample(
             name='googleads_clicks', labels={'campaign_id': '2'}, value=20.0)
     ]])
-    def test_gaarf_exporter_exporter_report_returns_correct_metric_samples_values(
+    def test_gaarf_exporter_report_returns_correct_metric_samples_values(
             self, gaarf_exporter, report, query, expected_samples):
         gaarf_exporter.export(report, query)
-        [metric] = list(gaarf_exporter.registry.collect())
+        metrics = list(gaarf_exporter.registry.collect())
+        for metric in metrics:
+            if metric.name == "googleads_clicks":
+                break
         assert metric.samples == expected_samples
 
     def test_gaarf_exporter_raises_value_error_when_url_not_provided(self):

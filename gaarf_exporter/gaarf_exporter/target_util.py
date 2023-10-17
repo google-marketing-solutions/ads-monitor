@@ -20,7 +20,8 @@ from .target import Target
 
 def get_targets(
         collector_sets: Dict[str, Dict[str, Type[BaseCollector]]],
-        collector_names: Optional[Set[str]] = None) -> Optional[List[Target]]:
+        collector_names: Optional[Set[str]] = None,
+    kwargs: Dict[str, str] = {}) -> Optional[List[Target]]:
     collector_dict = {}
     if not collector_names:
         return None
@@ -30,11 +31,11 @@ def get_targets(
             for collector_name in collector_sets[name]:
                 if collector_name not in collector_dict:
                     collector = collector_sets[name][collector_name]
-                    collector_dict[collector.name] = collector().target
+                    collector_dict[collector.name] = collector(**kwargs).target
         else:
             for registered_collectors in collector_sets.values():
                 if name in registered_collectors:
                     if name not in collector_dict:
                         collector = registered_collectors[name]
-                        collector_dict[collector.name] = collector().target
+                        collector_dict[collector.name] = collector(**kwargs).target
     return list(collector_dict.values())

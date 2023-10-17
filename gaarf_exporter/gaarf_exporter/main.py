@@ -15,7 +15,7 @@ import argparse
 from concurrent import futures
 import yaml
 import logging
-from gaarf.cli.utils import init_logging
+from gaarf.cli.utils import ParamsParser, init_logging
 from prometheus_client import start_http_server
 from smart_open import open
 from time import time, sleep
@@ -72,14 +72,16 @@ def main():
     logger = init_logging(loglevel=args.loglevel.upper(),
                           logger_type=args.logger)
 
+    params = ParamsParser(["macro", "sql", "template"]).parse(args_bag[1])
+    macros = params.get("macro", {})
     if config_file := args.config:
         with open(config_file, encoding="utf-8") as f:
             config = yaml.safe_load(f)
             queries = config.get("queries")
     else:
         if not (selected_collectors := get_targets(
-                collectors.registry, other_arg_dict.get('collectors'))):
-            selected_collectors = collectors.default_collectors()
+                collectors.registry, other_arg_dict.get('collectors'), macros)):
+            selected_collectors = collectors.default_collectors(macros)
         checked_targets = targets_similarity_check(selected_collectors)
         config = Config.from_targets(checked_targets)
         queries = config.queries

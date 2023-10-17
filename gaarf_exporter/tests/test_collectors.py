@@ -17,5 +17,5 @@ from gaarf_exporter.target import Target
 
 
 def test_default_collectors():
-    default_collectors = collectors.default_collectors()
+    default_collectors = collectors.default_collectors({})
     assert isinstance(default_collectors[0], Target)
