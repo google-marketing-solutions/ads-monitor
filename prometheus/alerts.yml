@@ -20,6 +20,35 @@ groups:
           count without(
           campaign_name, campaign_id, campaign_type, campaign_sub_type,
           bidding_strategy_type) (googleads:campaigns:ad_group_count)
+      - record: googleads:ads:new
+        expr: |
+          googleads_mapping_info * 0 + 1
+          unless
+          max_over_time(googleads_mapping_info[3h] offset 1h) * 0 + 1
+      - record: googleads:ad_groups:new
+        expr: |
+          max without (ad_id) (googleads:ads:new)
+          unless
+          max without (ad_id) (max_over_time(googleads:ads:new[3h] offset 30m) * 0 + 1)
+      - record: googleads:campaigns:new
+        expr: |
+          max without (ad_group_id, ad_group_name) (googleads:ad_groups:new)
+          unless
+          max without (ad_group_id, ad_group_name) (max_over_time(googleads:ad_groups:new[3h] offset 30m) * 0 + 1)
+      - record: googleads:ads:disabled
+        expr: |
+          max_over_time(googleads_mapping_info[3h] offset 1h) * 0 + 1
+          unless googleads_mapping_info * 0 + 1
+      - record: googleads:ad_groups:disabled
+        expr: |
+          max without (ad_id) (max_over_time(googleads:ads:disabled[3h] offset 30m) * 0 + 1)
+          unless
+          max without (ad_id) (googleads:ads:disabled)
+      - record: googleads:campaigns:disabled
+        expr: |
+          max without (ad_group_id, ad_group_name) (max_over_time(googleads:ad_groups:disabled[3h] offset 30m) * 0 + 1)
+          unless
+          max without (ad_group_id, ad_group_name) (googleads:ad_groups:disabled)
   - name: groupings
     rules:
       - record: googleads:clicks
@@ -48,6 +77,11 @@ groups:
           * on (campaign_id)
           group_left (account_name, account_id, campaign_name, campaign_type, campaign_sub_type)
             (googleads:campaigns:ad_group_count * 0 + 1)
+      - record: googleads:ads:disapprovals
+        expr: |
+          googleads_disapprovals_ad_count
+          * on (ad_group_id, ad_id) group_left (account_name, campaign_name, ad_group_name, campaign_type)
+          googleads_mapping_info
 
   - name: googleads
     rules:
