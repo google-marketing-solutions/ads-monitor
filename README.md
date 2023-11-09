@@ -25,11 +25,6 @@ stored in a Prometheus.
 ### Prerequisites
 
 * Google Ads API access and [google-ads.yaml](https://github.com/google/ads-api-report-fetcher/blob/main/docs/how-to-authenticate-ads-api.md#setting-up-using-google-adsyaml) file - follow documentation on [API authentication](https://github.com/google/ads-api-report-fetcher/blob/main/docs/how-to-authenticate-ads-api.md).
-* Access to repository configured. In order to clone this repository you need
-to do the following:
-
-  *   Visit https://professional-services.googlesource.com/new-password and login with your account.
-  *   Once authenticated please copy all lines in box and paste them in the terminal.
 * (Optional) `prometheus.yml` file configured. Learn more at [how to configure Prometheus](docs/how-to-configure-prometheus.md).
 * (Optional) [Docker Compose](https://docs.docker.com/compose/install/) installed.
 
