@@ -140,31 +140,34 @@ def main():
                     continue
             suffix = content.get("suffix") or name
             logger.info("Beginning export")
-            with futures.ThreadPoolExecutor() as executor:
-                future_to_account = {
-                    executor.submit(report_fetcher.fetch, query_text, account):
-                    account
-                    for account in accounts
-                }
-                for future in futures.as_completed(future_to_account):
-                    account = future_to_account[future]
-                    start = time()
-                    report = future.result()
-                    end = time()
-                    gaarf_exporter.report_fetcher_gauge.labels(
-                        collector=name, account=account).set(end - start)
-                    # report = report_fetcher.fetch(query_text, accounts)
-                    if dependencies.get("convert_fake_report"):
-                        report.is_fake = False
-                    logging.info(
-                        f"Started export for query {name} for account {account}"
-                    )
-                    gaarf_exporter.export(report=report,
-                                          suffix=suffix,
-                                          collector=name,
-                                          account=account)
-                    logging.info(
-                        f"Ended export for query {name} for account {account}")
+            if not accounts:
+                report = report_fetcher.fetch(query_text, accounts)
+            else:
+                with futures.ThreadPoolExecutor() as executor:
+                    future_to_account = {
+                        executor.submit(report_fetcher.fetch, query_text, account):
+                        account
+                        for account in accounts
+                    }
+                    for future in futures.as_completed(future_to_account):
+                        account = future_to_account[future]
+                        start = time()
+                        report = future.result()
+                        end = time()
+                        gaarf_exporter.report_fetcher_gauge.labels(
+                            collector=name, account=account).set(end - start)
+                        # report = report_fetcher.fetch(query_text, accounts)
+                        if dependencies.get("convert_fake_report"):
+                            report.is_fake = False
+                        logging.info(
+                            f"Started export for query {name} for account {account}"
+                        )
+                        gaarf_exporter.export(report=report,
+                                              suffix=suffix,
+                                              collector=name,
+                                              account=account)
+                        logging.info(
+                            f"Ended export for query {name} for account {account}")
         logger.info("Export completed")
         end_export_time = time()
         gaarf_exporter.total_export_time_gauge.set(end_export_time -
