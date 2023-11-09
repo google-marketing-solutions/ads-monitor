@@ -1850,7 +1850,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum (googleads_cost{network=\"$network\"} * on(ad_group_id) group_left(account_name) googleads:ad_groups:ad_count{account_name=~\"$account_name\"})  - sum (googleads_cost{network=\"SEARCH\"} offset $lookback_interval * on(ad_group_id) group_left(account_name) googleads:ad_groups:ad_count{account_name=~\"$account_name\"})",
+              "expr": "sum (googleads_cost{network=\"$network\"} * on(ad_group_id) group_left(account_name) googleads:ad_groups:ad_count{account_name=~\"$account_name\"})  - sum (googleads_cost{network=\"$network\"} offset $lookback_interval * on(ad_group_id) group_left(account_name) googleads:ad_groups:ad_count{account_name=~\"$account_name\"})",
               "hide": false,
               "legendFormat": "cost",
               "range": true,
