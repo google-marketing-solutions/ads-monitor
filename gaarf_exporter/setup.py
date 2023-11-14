@@ -36,7 +36,7 @@ setup(
     ],
     packages=find_packages(),
     install_requires=[
-        "prometheus-client", "google-ads-api-report-fetcher>=1.11.5"
+        "prometheus-client", "google-ads-api-report-fetcher>=1.12.0"
     ],
     setup_requires=["pytest-runner"],
     tests_requires=["pytest"],

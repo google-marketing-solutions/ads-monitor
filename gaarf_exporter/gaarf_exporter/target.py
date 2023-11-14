@@ -23,6 +23,7 @@ from .query_elements import Field
 
 
 class TargetLevel(Enum):
+    UNKNOWN = 0
     AD_GROUP_AD_ASSET = 1
     AD_GROUP_AD = 2
     AD_GROUP = 3
@@ -60,7 +61,7 @@ class Target:
     def __init__(self,
                  name: Optional[str] = None,
                  metrics: Optional[Union[str, List[Field]]] = None,
-                 level: TargetLevel = TargetLevel.AD_GROUP,
+                 level: TargetLevel | None = TargetLevel.AD_GROUP,
                  resource_name: Optional[str] = None,
                  dimensions: Optional[Union[str, List[Field]]] = None,
                  filters: Optional[str] = None,

@@ -148,6 +148,57 @@ class DisapprovalCollector:
             " AND ad_group_ad.policy_summary.approval_status != 'APPROVED'"))
 
 
+@collector("disapprovals")
+class AdGroupAdAssetDisapprovalCollector:
+    name = "ad_group_ad_asset_disapprovals"
+    target = Target(
+        name=name,
+        level=TargetLevel.AD_GROUP,
+        dimensions=[
+            Field("asset.id", "asset_id"),
+            Field("ad_group_ad_asset_view.field_type", "field_type"),
+            Field("ad_group_ad_asset_view.policy_summary:approval_status",
+                  "approval_status"),
+            Field("ad_group_ad_asset_view.policy_summary:review_status",
+                  "review_status"),
+            Field(
+                "ad_group_ad_asset_view.policy_summary:policy_topic_entries.type",
+                "topic_type"),
+            Field(
+                "ad_group_ad_asset_view.policy_summary:policy_topic_entries.topic",
+                "topic"),
+            Field("1", "ad_count")
+        ],
+        resource_name="ad_group_ad_asset_view",
+        filters=("campaign.status = 'ENABLED'"
+                 " AND ad_group.status = 'ENABLED'"
+                 " AND ad_group_ad_asset_view.enabled = True"))
+
+
+@collector("disapprovals")
+class SitelinkDisapprovalCollector:
+    name = "sitelink_disapprovals"
+    target = Target(
+        name=name,
+        level=TargetLevel.UNKNOWN,
+        dimensions=[
+            Field("asset.id", "asset_id"),
+            Field("asset.sitelink_asset.link_text", "sitelink_title"),
+            Field("asset.sitelink_asset.description1", "sitelink_description1"),
+            Field("asset.sitelink_asset.description2", "sitelink_description2"),
+            Field("asset.policy_summary.approval_status", "approval_status"),
+            Field("asset.policy_summary.review_status", "review_status"),
+            Field("asset.policy_summary.policy_topic_entries:type",
+                  "topic_type"),
+            Field("asset.policy_summary.policy_topic_entries:topic", "topic"),
+            Field("1", "ad_count")
+        ],
+        resource_name="asset",
+        filters=
+        ("asset.type = 'SITELINK' AND asset.policy_summary.approval_status != 'APPROVED'"
+         ))
+
+
 @collector("default", "generic")
 class ConversionActionCollector:
     name = "conversion_action"
