@@ -232,6 +232,34 @@ class AppCampaignMappingCollector:
                     filters="campaign.status = 'ENABLED'")
 
 
+@collector("pmax")
+class PmaxMappingCollector:
+    name = "pmax_mapping"
+    target = Target(name=name,
+                    metrics=[Field("1", "info")],
+                    level=TargetLevel.UNKNOWN,
+                    dimensions=[
+                        Field("customer.descriptive_name", "account_name"),
+                        Field("customer.id", "account_id"),
+                        Field("campaign.name", "campaign_name"),
+                        Field("campaign.id", "campaign_id"),
+                        Field("campaign.bidding_strategy_type",
+                              "bidding_strategy_type"),
+                        Field("campaign.advertising_channel_type",
+                              "campaign_type"),
+                        Field("campaign.advertising_channel_sub_type",
+                              "campaign_sub_type"),
+                        Field("campaign.start_date", "start_date"),
+                        Field("asset_group.id", "ad_group_id"),
+                        Field("asset_group.name", "ad_group_name")
+                    ],
+                    resource_name="asset_group",
+                    filters=("campaign.status = 'ENABLED'"
+                             " AND campaign.advertising_channel_type = 'PERFORMANCE_MAX'"
+                             " AND asset_group.status = 'ENABLED'")
+                    )
+
+
 @collector("default", "generic")
 class MappingCollector:
     name = "mapping"
