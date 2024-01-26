@@ -54,8 +54,7 @@ services:
       - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
       - grafana_data:/var/lib/grafana
   gaarf_exporter:
-    build: gaarf_exporter/.
-    image: gaarf_exporter
+    image: ghcr.io/google-marketing-solutions/gaarf-exporter:latest
     container_name: gaarf_exporter
     networks:
       - ads-monitor
