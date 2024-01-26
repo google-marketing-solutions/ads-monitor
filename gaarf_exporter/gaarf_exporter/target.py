@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
 from collections import namedtuple
 import copy
 from enum import Enum
 import itertools
-from typing import List, Optional, Union
 
 from . import util
 from .query_elements import Field
@@ -37,12 +37,10 @@ Level = namedtuple('Level',
 
 LEVELS = (
     None,
-    Level('ad_group_ad_asset_view', 'asset.id', 'asset_id',
-          'asset.name', 'asset',
-          "ad_group_ad_asset_view.enabled = TRUE"),
-    Level('ad_group_ad', 'ad_group_ad.ad.id', 'ad_id',
-          'ad_group_ad.ad.name', 'ad_name',
-          "ad_group_ad.status = 'ENABLED'"),
+    Level('ad_group_ad_asset_view', 'asset.id', 'asset_id', 'asset.name',
+          'asset', "ad_group_ad_asset_view.enabled = TRUE"),
+    Level('ad_group_ad', 'ad_group_ad.ad.id', 'ad_id', 'ad_group_ad.ad.name',
+          'ad_name', "ad_group_ad.status = 'ENABLED'"),
     Level('ad_group', 'ad_group.id', 'ad_group_id', 'ad_group.name',
           'ad_group_name', "ad_group.status = 'ENABLED'"),
     Level('campaign', 'campaign.id', 'campaign_id', 'campaign.name',
@@ -59,13 +57,13 @@ LEVELS = (
 class Target:
 
     def __init__(self,
-                 name: Optional[str] = None,
-                 metrics: Optional[Union[str, List[Field]]] = None,
+                 name: str | None = None,
+                 metrics: str | list[Field] | None = None,
                  level: TargetLevel | None = TargetLevel.AD_GROUP,
-                 resource_name: Optional[str] = None,
-                 dimensions: Optional[Union[str, List[Field]]] = None,
-                 filters: Optional[str] = None,
-                 suffix: Optional[str] = None) -> None:
+                 resource_name: str | None = None,
+                 dimensions: str | list[Field] | None = None,
+                 filters: str | None = None,
+                 suffix: str | None = None) -> None:
         self.name = name
         self.level = level
         self.resource_name = resource_name
@@ -88,8 +86,8 @@ class Target:
         return token in ['+', '-', '*', '/']
 
     @staticmethod
-    def _init_fields(fields: Union[str, List[Field]],
-                     prefix: str = '') -> List[Field]:
+    def _init_fields(fields: str | list[Field],
+                     prefix: str = '') -> list[Field]:
         if not fields:
             return []
 
@@ -169,12 +167,12 @@ class Target:
                 f'WHERE {self._get_filters()}')
 
     @staticmethod
-    def to_comparable_str(val: Optional[Union[str, List[Field]]]) -> str:
+    def to_comparable_str(val: str | list[Field] | None) -> str:
         if not val:
             return ''
         if isinstance(val, str):
             return util.remove_spaces(val)
-        elif isinstance(val, List):
+        elif isinstance(val, list):
             return util.remove_spaces(''.join(sorted([str(f) for f in val])))
 
     def is_similar(self, other):
@@ -255,7 +253,7 @@ def create_default_service_target(level: TargetLevel):
                          filters=filters)
 
 
-def targets_similarity_check(targets: List[Target]) -> List[Target]:
+def targets_similarity_check(targets: list[Target]) -> list[Target]:
     cloned_targets = copy.deepcopy(targets)
     combinations = itertools.combinations(targets, 2)
     for target1, target2 in combinations:
