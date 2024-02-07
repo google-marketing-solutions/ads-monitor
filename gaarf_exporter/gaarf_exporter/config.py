@@ -11,11 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+'''Module for defining gaarf GaarfExporter config to hold queries.'''
 
-from typing import Sequence
+
+from collections.abc import Sequence
 import yaml
 
-from .target import Target, TargetLevel, ServiceTarget, create_default_service_target
+from gaarf_exporter.target import Target, TargetLevel, ServiceTarget, create_default_service_target
 
 
 class Config:
@@ -24,7 +26,7 @@ class Config:
         self.targets = list(targets)
 
     @property
-    def queries(self):
+    def queries(self) -> dict[str, dict[str, str]]:
         return {
             target.name: {
                 'query': target.query,
@@ -35,7 +37,7 @@ class Config:
         }
 
     @property
-    def service_queries(self):
+    def service_queries(self) -> dict[str, dict[str, str]]:
         return {
             target.name: {
                 'query': target.query
@@ -44,7 +46,7 @@ class Config:
         }
 
     @property
-    def service_targets(self):
+    def service_targets(self) -> dict[str, Target]:
         return {
             target.name: target
             for target in self.targets if isinstance(target, ServiceTarget)
@@ -67,7 +69,7 @@ class Config:
             targets.append(default_service_target)
         return cls(targets)
 
-    def save(self, path):
+    def save(self, path) -> None:
         all_queries = dict(self.queries)
         all_queries.update(self.service_queries)
         config_yaml = yaml.safe_dump({'queries': all_queries})

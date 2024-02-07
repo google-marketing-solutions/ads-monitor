@@ -11,12 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+'''Module for building Prometheus alert.'''
 
-from typing import Optional
 import yaml
 
-from .alert_elements import AlertRule
-from .target import Target
+from gaarf_exporter.alert_elements import AlertRule
+from gaarf_exporter.target import Target
 
 
 class Alert:
@@ -24,9 +24,9 @@ class Alert:
     def __init__(self,
                  name: str,
                  alert_rule: AlertRule,
-                 labels: Optional[str] = None,
+                 labels: str | None = None,
                  duration: str = '1h',
-                 target: Optional[Target] = None) -> None:
+                 target: Target | None = None) -> None:
         self.name = name
         self.alert_rule = str(alert_rule)
         self.labels = labels
@@ -34,10 +34,6 @@ class Alert:
         self.target = target
 
     @property
-    def text(self):
-        d = {
-            'alert': self.name,
-            'expr': self.alert_rule,
-            'for': self.duration
-        }
+    def text(self) -> dict[str, str]:
+        d = {'alert': self.name, 'expr': self.alert_rule, 'for': self.duration}
         return yaml.safe_dump(d)

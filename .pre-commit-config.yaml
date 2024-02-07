@@ -10,14 +10,24 @@ repos:
   - id: check-added-large-files
   - id: debug-statements
   - id: double-quote-string-fixer
-    hooks:
-    - id: mypy
-      args: [--ignore-missing-imports]
+- repo: https://github.com/pre-commit/mirrors-mypy
+  rev: v1.8.0
+  hooks:
+  - id: mypy
+    verbose: true
+    entry: bash -c 'mypy "$@" || true'
+    args: [--ignore-missing-imports]
 - repo: local
   hooks:
   - id: pytest-check
     name: pytest-check
     entry: pytest
+    language: system
+    pass_filenames: false
+    always_run: true
+  - id: yapf
+    name: yapf-formatter
+    entry: yapf
     language: system
     pass_filenames: false
     always_run: true

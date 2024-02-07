@@ -18,8 +18,8 @@ import copy
 from enum import Enum
 import itertools
 
-from . import util
-from .query_elements import Field
+from gaarf_exporter import util
+from gaarf_exporter.query_elements import Field
 
 
 class TargetLevel(Enum):
@@ -38,7 +38,7 @@ Level = namedtuple('Level',
 LEVELS = (
     None,
     Level('ad_group_ad_asset_view', 'asset.id', 'asset_id', 'asset.name',
-          'asset', "ad_group_ad_asset_view.enabled = TRUE"),
+          'asset', 'ad_group_ad_asset_view.enabled = TRUE'),
     Level('ad_group_ad', 'ad_group_ad.ad.id', 'ad_id', 'ad_group_ad.ad.name',
           'ad_name', "ad_group_ad.status = 'ENABLED'"),
     Level('ad_group', 'ad_group.id', 'ad_group_id', 'ad_group.name',

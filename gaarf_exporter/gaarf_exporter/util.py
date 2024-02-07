@@ -12,28 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 import re
-from typing import Dict, List
 
-TOKEN_PATTERNS = (
-    r'(?i)(?P<INDEX>~\d+)'
-    r'|(?P<NESTED_RESOURCE>:(\w+\.)+\w+)'
-    r'|(?P<STRING>".*?")'
-    r'|(?P<SEPARATOR>,)'
-    r'|(?P<KEYWORD_AS>AS)'
-    r'|(?P<KEYWORD_FROM>FROM)'
-    r'|(?P<KEYWORD>SELECT|WHERE|DURING|TODAY|AND|OR|NOT)'
-    r'|(?P<NUMBER>\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)'
-    r'|(?P<PREFIXED_IDENTIFIER>(\w+\.)+\w+)'
-    r'|(?P<IDENTIFIER>\w+)'
-    r'|(?P<MATH_OPERATOR>((\>\=)|(\<\=))|([\+\-\*/\(\)\=\>\<]))')
-
+TOKEN_PATTERNS = (r'(?i)(?P<INDEX>~\d+)'
+                  r'|(?P<NESTED_RESOURCE>:(\w+\.)+\w+)'
+                  r'|(?P<STRING>".*?")'
+                  r'|(?P<SEPARATOR>,)'
+                  r'|(?P<KEYWORD_AS>AS)'
+                  r'|(?P<KEYWORD_FROM>FROM)'
+                  r'|(?P<KEYWORD>SELECT|WHERE|DURING|TODAY|AND|OR|NOT)'
+                  r'|(?P<NUMBER>\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)'
+                  r'|(?P<PREFIXED_IDENTIFIER>(\w+\.)+\w+)'
+                  r'|(?P<IDENTIFIER>\w+)'
+                  r'|(?P<MATH_OPERATOR>((\>\=)|(\<\=))|([\+\-\*/\(\)\=\>\<]))')
 
 RELATIVE_METRIC_PATTERNS = r'(?i)average_|_cpm|ctr|_percentage|_rate|_share'
 
 
-def parse_other_args(other_args: List[str]) -> Dict[str, set]:
-    result = {}
+def parse_other_args(other_args: list[str]) -> dict[str, set]:
+    result: dict[str, set] = {}
 
     for i in range(len(other_args)):
         if other_args[i].startswith('--'):
@@ -47,20 +46,19 @@ def parse_other_args(other_args: List[str]) -> Dict[str, set]:
             else:
                 arg_name = other_args[i][2:]
                 result.setdefault(arg_name, set())
-                while (i + 1 < len(other_args) and
-                       not other_args[i + 1].startswith('--')):
+                while (i + 1 < len(other_args)
+                       and not other_args[i + 1].startswith('--')):
                     i += 1
                     result.setdefault(arg_name, set()).update(
                         list(filter(None, other_args[i].split(','))))
-
     return result
 
 
-def remove_spaces(s):
+def remove_spaces(s) -> str:
     return re.sub(r'\s+', '', s)
 
 
-def tokenize(expression):
+def tokenize(expression) -> list[tuple[str, str | None]]:
     tokens = []
     prev_token_type = None
     for match in re.finditer(TOKEN_PATTERNS, expression):
@@ -70,11 +68,10 @@ def tokenize(expression):
             (token_value,
              'ALIAS' if prev_token_type == 'KEYWORD_AS' else token_type))
         prev_token_type = token_type
-
     return tokens
 
 
-def find_relative_metrics(query):
+def find_relative_metrics(query) -> list[str]:
     result = set()
     raw_tokens = tokenize(query)
     for token_value, token_type in raw_tokens:
