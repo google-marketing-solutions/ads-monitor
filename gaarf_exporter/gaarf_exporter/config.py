@@ -12,66 +12,66 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 '''Module for defining gaarf GaarfExporter config to hold queries.'''
-
+from __future__ import annotations
 
 from collections.abc import Sequence
+
 import yaml
 
-from gaarf_exporter.target import Target, TargetLevel, ServiceTarget, create_default_service_target
+from gaarf_exporter.target import create_default_service_target
+from gaarf_exporter.target import ServiceTarget
+from gaarf_exporter.target import Target
+from gaarf_exporter.target import TargetLevel
 
 
 class Config:
 
-    def __init__(self, targets: Sequence[Target]) -> None:
-        self.targets = list(targets)
+  def __init__(self, targets: Sequence[Target]) -> None:
+    self.targets = list(targets)
 
-    @property
-    def queries(self) -> dict[str, dict[str, str]]:
-        return {
-            target.name: {
-                'query': target.query,
-                'suffix': target.suffix
-            }
-            for target in self.targets
-            if not isinstance(target, ServiceTarget)
-        }
+  @property
+  def queries(self) -> dict[str, dict[str, str]]:
+    return {
+        target.name: {
+            'query': target.query,
+            'suffix': target.suffix
+        } for target in self.targets if not isinstance(target, ServiceTarget)
+    }
 
-    @property
-    def service_queries(self) -> dict[str, dict[str, str]]:
-        return {
-            target.name: {
-                'query': target.query
-            }
-            for target in self.targets if isinstance(target, ServiceTarget)
-        }
+  @property
+  def service_queries(self) -> dict[str, dict[str, str]]:
+    return {
+        target.name: {
+            'query': target.query
+        } for target in self.targets if isinstance(target, ServiceTarget)
+    }
 
-    @property
-    def service_targets(self) -> dict[str, Target]:
-        return {
-            target.name: target
-            for target in self.targets if isinstance(target, ServiceTarget)
-        }
+  @property
+  def service_targets(self) -> dict[str, Target]:
+    return {
+        target.name: target
+        for target in self.targets
+        if isinstance(target, ServiceTarget)
+    }
 
-    @property
-    def lowest_target_level(self):
-        return TargetLevel(min([target.level.value
-                                for target in self.targets]))
+  @property
+  def lowest_target_level(self):
+    return TargetLevel(min([target.level.value for target in self.targets]))
 
-    @classmethod
-    def from_targets(cls, targets: Sequence[Target]):
-        has_service_target = any(
-            [isinstance(target, ServiceTarget) for target in targets])
-        if not has_service_target:
-            min_level = TargetLevel(
-                min([target.level.value for target in targets]))
-            default_service_target = create_default_service_target(min_level)
-            targets = list(targets)
-            targets.append(default_service_target)
-        return cls(targets)
+  @classmethod
+  def from_targets(cls, targets: Sequence[Target]):
+    has_service_target = any(
+        [isinstance(target, ServiceTarget) for target in targets])
+    if not has_service_target:
+      min_level = TargetLevel(min([target.level.value for target in targets]))
+      default_service_target = create_default_service_target(min_level)
+      targets = list(targets)
+      targets.append(default_service_target)
+    return cls(targets)
 
-    def save(self, path) -> None:
-        all_queries = dict(self.queries)
-        all_queries.update(self.service_queries)
-        config_yaml = yaml.safe_dump({'queries': all_queries})
-        with open(path, 'w') as file_handle:
-            file_handle.write(config_yaml)
+  def save(self, path) -> None:
+    all_queries = dict(self.queries)
+    all_queries.update(self.service_queries)
+    config_yaml = yaml.safe_dump({'queries': all_queries})
+    with open(path, 'w') as file_handle:
+      file_handle.write(config_yaml)

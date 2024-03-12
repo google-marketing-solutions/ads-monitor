@@ -11,92 +11,78 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import annotations
 
 import pytest
 
 from gaarf_exporter import util
 
-
 EQUALS_SIGN_SEPARATOR = ['--collectors=performance,mapping']
 SPACE_SEPARATOR = ['--collectors', 'mapping', 'disapproval,conversion']
-OTHER_ARG = ['--other_arg_1', 'other_val_1', 'other_val_2,other_val_3',
-             '--other_arg_2=other_val_4,other_val_5', 'other_arg_0',
-             '--other_arg_3']
+OTHER_ARG = [
+    '--other_arg_1', 'other_val_1', 'other_val_2,other_val_3',
+    '--other_arg_2=other_val_4,other_val_5', 'other_arg_0', '--other_arg_3'
+]
 
 
 def test_parse_args_equals_sign_separator():
-    actual = util.parse_other_args(EQUALS_SIGN_SEPARATOR)
-    expected = {
-        'collectors': {'performance', 'mapping'}
-    }
-    assert actual == expected
+  actual = util.parse_other_args(EQUALS_SIGN_SEPARATOR)
+  expected = {'collectors': {'performance', 'mapping'}}
+  assert actual == expected
 
 
 def test_parse_args_space_separator():
-    actual = util.parse_other_args(SPACE_SEPARATOR)
-    expected = {
-        'collectors': {'mapping', 'disapproval', 'conversion'}
-    }
-    assert actual == expected
+  actual = util.parse_other_args(SPACE_SEPARATOR)
+  expected = {'collectors': {'mapping', 'disapproval', 'conversion'}}
+  assert actual == expected
 
 
 def test_parse_args_mixed():
-    test_input = list(EQUALS_SIGN_SEPARATOR)
-    test_input.extend(SPACE_SEPARATOR)
-    actual = util.parse_other_args(test_input)
-    expected = {
-        'collectors': {'performance', 'mapping', 'disapproval', 'conversion'}
-    }
-    assert actual == expected
+  test_input = list(EQUALS_SIGN_SEPARATOR)
+  test_input.extend(SPACE_SEPARATOR)
+  actual = util.parse_other_args(test_input)
+  expected = {
+      'collectors': {'performance', 'mapping', 'disapproval', 'conversion'}
+  }
+  assert actual == expected
 
 
 def test_parse_args_multiple_args():
-    test_input = list(EQUALS_SIGN_SEPARATOR)
-    test_input.extend(SPACE_SEPARATOR)
-    test_input.extend(OTHER_ARG)
-    actual = util.parse_other_args(test_input)
-    expected = {
-        'collectors': {'performance', 'mapping', 'disapproval', 'conversion'},
-        'other_arg_1': {'other_val_1', 'other_val_2', 'other_val_3'},
-        'other_arg_2': {'other_val_4', 'other_val_5'},
-        'other_arg_3': set()
-    }
-    assert actual == expected
+  test_input = list(EQUALS_SIGN_SEPARATOR)
+  test_input.extend(SPACE_SEPARATOR)
+  test_input.extend(OTHER_ARG)
+  actual = util.parse_other_args(test_input)
+  expected = {
+      'collectors': {'performance', 'mapping', 'disapproval', 'conversion'},
+      'other_arg_1': {'other_val_1', 'other_val_2', 'other_val_3'},
+      'other_arg_2': {'other_val_4', 'other_val_5'},
+      'other_arg_3': set()
+  }
+  assert actual == expected
 
 
 @pytest.mark.parametrize(
     'expression, expected',
-    [
-        ('clicks',
-         [('clicks', 'IDENTIFIER')]),
-        ('metrics.clicks',
-         [('metrics.clicks', 'PREFIXED_IDENTIFIER')]),
-        ('prefix_1.metrics.clicks',
-         [('prefix_1.metrics.clicks', 'PREFIXED_IDENTIFIER')]),
-        ('prefix_2.prefix_1.metrics.clicks',
-         [('prefix_2.prefix_1.metrics.clicks', 'PREFIXED_IDENTIFIER')]),
-        ('(prefix_1.metrics.clicks + var1)/20',
-         [
-             ('(', 'MATH_OPERATOR'),
-             ('prefix_1.metrics.clicks', 'PREFIXED_IDENTIFIER'),
-             ('+', 'MATH_OPERATOR'),
-             ('var1', 'IDENTIFIER'),
-             (')', 'MATH_OPERATOR'),
-             ('/', 'MATH_OPERATOR'),
-             ('20', 'NUMBER')
-         ])
-    ]
-)
+    [('clicks', [('clicks', 'IDENTIFIER')]),
+     ('metrics.clicks', [('metrics.clicks', 'PREFIXED_IDENTIFIER')]),
+     ('prefix_1.metrics.clicks', [
+         ('prefix_1.metrics.clicks', 'PREFIXED_IDENTIFIER')
+     ]),
+     ('prefix_2.prefix_1.metrics.clicks', [
+         ('prefix_2.prefix_1.metrics.clicks', 'PREFIXED_IDENTIFIER')
+     ]),
+     ('(prefix_1.metrics.clicks + var1)/20', [
+         ('(', 'MATH_OPERATOR'),
+         ('prefix_1.metrics.clicks', 'PREFIXED_IDENTIFIER'),
+         ('+', 'MATH_OPERATOR'), ('var1', 'IDENTIFIER'), (')', 'MATH_OPERATOR'),
+         ('/', 'MATH_OPERATOR'), ('20', 'NUMBER')
+     ])])
 def test_tokenize_expression(expression, expected):
-    actual = util.tokenize(expression)
-    assert actual == expected
+  actual = util.tokenize(expression)
+  assert actual == expected
 
 
-@pytest.mark.parametrize(
-    'query,expected',
-    [
-        (
-            """
+@pytest.mark.parametrize('query,expected', [("""
               SeLeCt
                   average_cost
                   campaign.bidding_strategy_type,
@@ -111,13 +97,11 @@ def test_tokenize_expression(expression, expected):
                   AND campaign.status = "ENABLED"
                   AND ad_group.status = "ENABLED"
                   AND metrics.cost_micros >= 0
-            """,
-            ['absolute_top_impression_percentage', 'active_view_cpm',
-             'active_view_ctr', 'all_conversions_from_interactions_rate',
-             'auction_insight_search_impression_share','average_cost']
-        )
-    ]
-)
+            """, [
+    'absolute_top_impression_percentage', 'active_view_cpm', 'active_view_ctr',
+    'all_conversions_from_interactions_rate',
+    'auction_insight_search_impression_share', 'average_cost'
+])])
 def test_find_relative_metrics(query, expected):
-    actual = util.find_relative_metrics(query)
-    assert sorted(actual) == expected
+  actual = util.find_relative_metrics(query)
+  assert sorted(actual) == expected

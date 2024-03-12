@@ -11,11 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import annotations
 
 import gaarf_exporter.collectors as collectors
 from gaarf_exporter.target import Target
 
 
 def test_default_collectors():
-    default_collectors = collectors.default_collectors({})
-    assert isinstance(default_collectors[0], Target)
+  default_collectors = collectors.default_collectors({})
+  assert isinstance(default_collectors[0], Target)

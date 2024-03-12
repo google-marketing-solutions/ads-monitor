@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from __future__ import annotations
 
 import re
@@ -32,54 +31,53 @@ RELATIVE_METRIC_PATTERNS = r'(?i)average_|_cpm|ctr|_percentage|_rate|_share'
 
 
 def parse_other_args(other_args: list[str]) -> dict[str, set]:
-    result: dict[str, set] = {}
+  result: dict[str, set] = {}
 
-    for i in range(len(other_args)):
-        if other_args[i].startswith('--'):
-            if '=' in other_args[i]:
-                parts = other_args[i][2:].split('=')
-                if len(parts) != 2:
-                    continue
-                name, raw_val = parts
-                result.setdefault(name, set()).update(
-                    list(filter(None, raw_val.split(','))))
-            else:
-                arg_name = other_args[i][2:]
-                result.setdefault(arg_name, set())
-                while (i + 1 < len(other_args)
-                       and not other_args[i + 1].startswith('--')):
-                    i += 1
-                    result.setdefault(arg_name, set()).update(
-                        list(filter(None, other_args[i].split(','))))
-    return result
+  for i in range(len(other_args)):
+    if other_args[i].startswith('--'):
+      if '=' in other_args[i]:
+        parts = other_args[i][2:].split('=')
+        if len(parts) != 2:
+          continue
+        name, raw_val = parts
+        result.setdefault(name,
+                          set()).update(list(filter(None, raw_val.split(','))))
+      else:
+        arg_name = other_args[i][2:]
+        result.setdefault(arg_name, set())
+        while (i + 1 < len(other_args) and
+               not other_args[i + 1].startswith('--')):
+          i += 1
+          result.setdefault(arg_name, set()).update(
+              list(filter(None, other_args[i].split(','))))
+  return result
 
 
 def remove_spaces(s) -> str:
-    return re.sub(r'\s+', '', s)
+  return re.sub(r'\s+', '', s)
 
 
 def tokenize(expression) -> list[tuple[str, str | None]]:
-    tokens = []
-    prev_token_type = None
-    for match in re.finditer(TOKEN_PATTERNS, expression):
-        token_type = match.lastgroup
-        token_value = match.group()
-        tokens.append(
-            (token_value,
-             'ALIAS' if prev_token_type == 'KEYWORD_AS' else token_type))
-        prev_token_type = token_type
-    return tokens
+  tokens = []
+  prev_token_type = None
+  for match in re.finditer(TOKEN_PATTERNS, expression):
+    token_type = match.lastgroup
+    token_value = match.group()
+    tokens.append((token_value,
+                   'ALIAS' if prev_token_type == 'KEYWORD_AS' else token_type))
+    prev_token_type = token_type
+  return tokens
 
 
 def find_relative_metrics(query) -> list[str]:
-    result = set()
-    raw_tokens = tokenize(query)
-    for token_value, token_type in raw_tokens:
-        if token_type == 'KEYWORD_FROM':
-            break
+  result = set()
+  raw_tokens = tokenize(query)
+  for token_value, token_type in raw_tokens:
+    if token_type == 'KEYWORD_FROM':
+      break
 
-        if token_type in ('IDENTIFIER', 'PREFIXED_IDENTIFIER'):
-            metric_name = token_value.split('.')[-1]
-            if re.search(RELATIVE_METRIC_PATTERNS, metric_name):
-                result.add(metric_name)
-    return list(result)
+    if token_type in ('IDENTIFIER', 'PREFIXED_IDENTIFIER'):
+      metric_name = token_value.split('.')[-1]
+      if re.search(RELATIVE_METRIC_PATTERNS, metric_name):
+        result.add(metric_name)
+  return list(result)

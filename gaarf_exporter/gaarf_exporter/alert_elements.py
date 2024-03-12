@@ -12,52 +12,53 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 '''Module for building Prometheus Alert expression.'''
+from __future__ import annotations
 
 
 class Label:
 
-    def __init__(self, name: str, value: str, operator: str = '=') -> None:
-        self.name = name
-        self.value = value
-        # TODO: Add support for regexp operators
-        self.operator = operator
+  def __init__(self, name: str, value: str, operator: str = '=') -> None:
+    self.name = name
+    self.value = value
+    # TODO: Add support for regexp operators
+    self.operator = operator
 
-    def __str__(self) -> str:
-        return f'{self.name}{self.operator}"{self.value}"'
+  def __str__(self) -> str:
+    return f'{self.name}{self.operator}"{self.value}"'
 
 
 class MetricDefinition:
 
-    def __init__(self, metric, label: Label):
-        self.metric = metric
-        self.label = str(label)
+  def __init__(self, metric, label: Label):
+    self.metric = metric
+    self.label = str(label)
 
-    def __str__(self) -> str:
-        return f'{self.metric}{{{self.label}}}'
+  def __str__(self) -> str:
+    return f'{self.metric}{{{self.label}}}'
 
-    # TODO: implement
-    @classmethod
-    def from_raw_string(cls, raw_string):
-        pass
+  # TODO: implement
+  @classmethod
+  def from_raw_string(cls, raw_string):
+    pass
 
 
 class AlertRule:
 
-    def __init__(
-            self,
-            metric_definition: MetricDefinition,
-            aggregation_level: str = 'campaign_id',  # Available from Target only
-            offset: str = '30m',
-            threshold: float = 2.0) -> None:
-        self.metric_definition = str(metric_definition)
-        self.aggregation_level = aggregation_level
-        self.offset = offset
-        self.threshold = threshold
+  def __init__(
+      self,
+      metric_definition: MetricDefinition,
+      aggregation_level: str = 'campaign_id',  # Available from Target only
+      offset: str = '30m',
+      threshold: float = 2.0) -> None:
+    self.metric_definition = str(metric_definition)
+    self.aggregation_level = aggregation_level
+    self.offset = offset
+    self.threshold = threshold
 
-    def __str__(self) -> str:
-        text = f"""
+  def __str__(self) -> str:
+    text = f"""
         sum by({self.aggregation_level}) ({self.metric_definition})
         / sum by({self.aggregation_level}) ({self.metric_definition} offset {self.offset})
         > {self.threshold}
         """
-        return text
+    return text

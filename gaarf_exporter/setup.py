@@ -11,37 +11,37 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import annotations
 
 import pathlib
-from setuptools import setup, find_packages
 
+from setuptools import find_packages
+from setuptools import setup
 
 HERE = pathlib.Path(__file__).parent
-README = (HERE / "README.md").read_text()
+README = (HERE / 'README.md').read_text()
 
 setup(
-    name="gaarf-exporter",
-    version="0.6.1",
-    long_description=README,
-    long_description_content_type="text/markdown",
-    author="Google Inc. (gTech gPS CSE team)",
-    author_email="no-reply@google.com",
-    license="Apache 2.0",
-    classifiers=[
-        "Programming Language :: Python :: 3",
-        "Intended Audience :: Developers",
-        "Topic :: Software Development :: Libraries :: Python Modules",
-        "Operating System :: OS Independent",
-        "License :: OSI Approved :: Apache Software License"
-    ],
-    packages=find_packages(),
-    install_requires=[
-        "prometheus-client", "google-ads-api-report-fetcher>=1.12.0"
-    ],
-    setup_requires=["pytest-runner"],
-    tests_requires=["pytest"],
-    entry_points={
-        "console_scripts": [
-            "gaarf-exporter=gaarf_exporter.main:main",
-        ]
-    })
+  name='gaarf-exporter',
+  version='0.6.1',
+  long_description=README,
+  long_description_content_type='text/markdown',
+  author='Google Inc. (gTech gPS CSE team)',
+  author_email='no-reply@google.com',
+  license='Apache 2.0',
+  classifiers=[
+    'Programming Language :: Python :: 3',
+    'Intended Audience :: Developers',
+    'Topic :: Software Development :: Libraries :: Python Modules',
+    'Operating System :: OS Independent',
+    'License :: OSI Approved :: Apache Software License'
+  ],
+  packages=find_packages(),
+  install_requires=[
+    'prometheus-client', 'google-ads-api-report-fetcher>=1.12.0'
+  ],
+  setup_requires=['pytest-runner'],
+  tests_requires=['pytest'],
+  entry_points={
+    'console_scripts': ['gaarf-exporter=gaarf_exporter.main:main',]
+  })

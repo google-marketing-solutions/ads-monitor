@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 '''Module for building Prometheus alert.'''
+from __future__ import annotations
 
 import yaml
 
@@ -21,19 +22,19 @@ from gaarf_exporter.target import Target
 
 class Alert:
 
-    def __init__(self,
-                 name: str,
-                 alert_rule: AlertRule,
-                 labels: str | None = None,
-                 duration: str = '1h',
-                 target: Target | None = None) -> None:
-        self.name = name
-        self.alert_rule = str(alert_rule)
-        self.labels = labels
-        self.duration = duration
-        self.target = target
+  def __init__(self,
+               name: str,
+               alert_rule: AlertRule,
+               labels: str | None = None,
+               duration: str = '1h',
+               target: Target | None = None) -> None:
+    self.name = name
+    self.alert_rule = str(alert_rule)
+    self.labels = labels
+    self.duration = duration
+    self.target = target
 
-    @property
-    def text(self) -> dict[str, str]:
-        d = {'alert': self.name, 'expr': self.alert_rule, 'for': self.duration}
-        return yaml.safe_dump(d)
+  @property
+  def text(self) -> dict[str, str]:
+    d = {'alert': self.name, 'expr': self.alert_rule, 'for': self.duration}
+    return yaml.safe_dump(d)
