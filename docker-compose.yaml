@@ -25,6 +25,7 @@ volumes:
 services:
   prometheus:
     image: prom/prometheus:main
+    user: root
     container_name: ads_prometheus
     networks:
       - ads-monitor
@@ -54,7 +55,8 @@ services:
       - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
       - grafana_data:/var/lib/grafana
   gaarf_exporter:
-    image: ghcr.io/google-marketing-solutions/gaarf-exporter:latest
+    build: gaarf_exporter/.
+    image: gaarf_exporter
     container_name: gaarf_exporter
     networks:
       - ads-monitor
