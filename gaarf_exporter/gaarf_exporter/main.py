@@ -81,7 +81,7 @@ def main():
         collectors.registry, other_arg_dict.get('collectors'), macros)):
       selected_collectors = collectors.default_collectors(macros)
     checked_targets = targets_similarity_check(selected_collectors)
-    config = Config.from_targets(checked_targets)
+    config = Config(checked_targets)
     queries = config.queries
   for query_name, query in queries.items():
     if relative_metrics := find_relative_metrics(query['query']):
