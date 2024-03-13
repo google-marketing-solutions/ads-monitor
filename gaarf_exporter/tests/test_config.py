@@ -13,44 +13,54 @@
 # limitations under the License.
 from __future__ import annotations
 
-import pytest
 import yaml
 
-from gaarf_exporter.config import Config
+from gaarf_exporter import config
 
 
-@pytest.fixture
-def simple_config(no_metric_target, simple_target):
-  return Config.from_targets([no_metric_target, simple_target])
+class TestConfig:
 
+  def test_config_contains_correct_regular_target_mapping(self, simple_target):
+    test_config = config.Config([simple_target])
 
-def test_create_config_from_one_simple_target_contains_one_query(simple_target):
-  config = Config.from_targets([simple_target])
-  assert len(config.queries) == 1
+    assert test_config.regular_targets == {simple_target.name: simple_target}
 
+  def test_config_creates_service_target_when_regular_target_is_defined(
+      self, simple_target, simple_target_at_customer_level, no_metric_target):
+    test_config = config.Config(
+        [simple_target, simple_target_at_customer_level])
 
-def test_create_service_target_when_regular_target_is_defined(
-    simple_target, simple_target_at_customer_level, no_metric_target):
-  config = Config.from_targets([simple_target, simple_target_at_customer_level])
-  assert len(config.service_queries) == 1
-  assert config.service_queries.get('mapping') == {
-      'query': no_metric_target.query
-  }
-  assert (simple_target.level == config.service_targets.get('mapping').level)
+    assert test_config.service_queries == {
+        'mapping': {
+            'query': no_metric_target.query
+        }
+    }
 
+  def test_config_creates_service_target_at_the_lowest_regular_target_level(
+      self, simple_target, simple_target_at_customer_level, no_metric_target):
+    test_config = config.Config(
+        [simple_target, simple_target_at_customer_level])
 
-def test_create_service_target_automatically(no_metric_target):
-  config = Config.from_targets([no_metric_target])
-  assert len(config.service_queries) == 1
-  assert config.service_queries.get('mapping') == {
-      'query': no_metric_target.query
-  }
+    assert simple_target.level == (
+        test_config.service_targets.get('mapping').level)
 
+  def test_config_creates_service_target_when_only_service_target_is_provided(
+      self, no_metric_target):
+    test_config = config.Config([no_metric_target])
 
-def test_write_to_yaml(simple_config):
-  simple_config.save('/tmp/config.yaml')
-  with open('/tmp/config.yaml') as f:
-    loaded_config = yaml.safe_load(f)
+    assert test_config.service_queries == {
+        'mapping': {
+            'query': no_metric_target.query
+        }
+    }
 
-  assert 'queries' in loaded_config.keys()
-  assert tuple(loaded_config['queries']) == ('mapping', 'simple')
+  def test_save_config_returns_correct_queries(self, no_metric_target,
+                                               simple_target):
+    simple_config = config.Config([no_metric_target, simple_target])
+
+    simple_config.save('/tmp/config.yaml')
+    with open('/tmp/config.yaml', encoding='utf-8') as f:
+      loaded_config = yaml.safe_load(f)
+
+    assert 'queries' in loaded_config.keys()
+    assert tuple(loaded_config['queries']) == ('mapping', 'simple')

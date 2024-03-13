@@ -14,64 +14,96 @@
 '''Module for defining gaarf GaarfExporter config to hold queries.'''
 from __future__ import annotations
 
+import functools
 from collections.abc import Sequence
 
 import yaml
 
-from gaarf_exporter.target import create_default_service_target
-from gaarf_exporter.target import ServiceTarget
-from gaarf_exporter.target import Target
-from gaarf_exporter.target import TargetLevel
+from gaarf_exporter import target
 
 
 class Config:
+  """Holds all regular and service targets to be converted to API requests.
 
-  def __init__(self, targets: Sequence[Target]) -> None:
-    self.targets = list(targets)
+  Attributes:
+    targets: All targets for the config.
+    regular_targets: All targets that fetching states or performance.
+    queries: Query texts and suffixes from regular targets.
+    service_targets: All targets that fetching mapping of entities.
+    service_queries: Query texts and suffixes from regular targets.
+    lowest_target_level: Lowest level (AD_GROUP, CAMPAIGN, etc.) of all targets.
+  """
+
+  def __init__(self, targets: Sequence[target.Target]) -> None:
+    """Initializes Config from targets."""
+    self._targets = list(targets)
+
+  @functools.cached_property
+  def targets(self):
+    """Converts targets passed during init to regular and service targets."""
+    targets = self._targets
+    has_service_target = any(
+        [isinstance(target_, target.ServiceTarget) for target_ in targets])
+    if not has_service_target:
+      min_level = target.TargetLevel(
+          min([target_.level.value for target_ in targets]))
+      default_service_target = target.create_default_service_target(min_level)
+      targets.append(default_service_target)
+    return targets
+
+  @property
+  def regular_targets(self) -> dict[str, target.Target]:
+    """Mapping between name of non-service target to itself."""
+    return {
+        target_.name: target_
+        for target_ in self.targets
+        if not isinstance(target_, target.ServiceTarget)
+    }
 
   @property
   def queries(self) -> dict[str, dict[str, str]]:
+    """Mapping between regular target name to its text and suffix."""
     return {
-        target.name: {
-            'query': target.query,
-            'suffix': target.suffix
-        } for target in self.targets if not isinstance(target, ServiceTarget)
+        name: {
+            'query': target_.query,
+            'suffix': target_.suffix
+        } for name, target_ in self.regular_targets.items()
+    }
+
+  @property
+  def service_targets(self) -> dict[str, target.Target]:
+    """Mapping between name of service target to itself."""
+    return {
+        target_.name: target_
+        for target_ in self.targets
+        if isinstance(target_, target.ServiceTarget)
     }
 
   @property
   def service_queries(self) -> dict[str, dict[str, str]]:
+    """Mapping between service target name to its text."""
     return {
-        target.name: {
-            'query': target.query
-        } for target in self.targets if isinstance(target, ServiceTarget)
-    }
-
-  @property
-  def service_targets(self) -> dict[str, Target]:
-    return {
-        target.name: target
-        for target in self.targets
-        if isinstance(target, ServiceTarget)
+        name: {
+            'query': target_.query
+        } for name, target_ in self.service_targets.items()
     }
 
   @property
   def lowest_target_level(self):
-    return TargetLevel(min([target.level.value for target in self.targets]))
+    """Lowest level (AD_GROUP, CAMPAIGN, etc.) of all targets."""
+    return target.TargetLevel(
+        min([target_.level.value for target_ in self.targets]))
 
-  @classmethod
-  def from_targets(cls, targets: Sequence[Target]):
-    has_service_target = any(
-        [isinstance(target, ServiceTarget) for target in targets])
-    if not has_service_target:
-      min_level = TargetLevel(min([target.level.value for target in targets]))
-      default_service_target = create_default_service_target(min_level)
-      targets = list(targets)
-      targets.append(default_service_target)
-    return cls(targets)
+  def save(self, path: str) -> None:
+    """Saves target to yaml.
 
-  def save(self, path) -> None:
+    Args:
+      path: Local path to save config to.
+    """
     all_queries = dict(self.queries)
     all_queries.update(self.service_queries)
-    config_yaml = yaml.safe_dump({'queries': all_queries})
-    with open(path, 'w') as file_handle:
+    config_yaml = yaml.safe_dump({
+        'queries': all_queries,
+    })
+    with open(path, 'w', encoding='utf-8') as file_handle:
       file_handle.write(config_yaml)
