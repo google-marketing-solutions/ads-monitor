@@ -14,15 +14,15 @@
 from __future__ import annotations
 
 import copy
+import dataclasses
+import enum
 import itertools
-from collections import namedtuple
-from enum import Enum
 
 from gaarf_exporter import util
 from gaarf_exporter.query_elements import Field
 
 
-class TargetLevel(Enum):
+class TargetLevel(enum.IntEnum):
   UNKNOWN = 0
   AD_GROUP_AD_ASSET = 1
   AD_GROUP_AD = 2
@@ -32,24 +32,40 @@ class TargetLevel(Enum):
   MCC = 6
 
 
-Level = namedtuple('Level',
-                   ['table', 'id', 'id_alias', 'name', 'name_alias', 'filter'])
+@dataclasses.dataclass
+class LevelInfo:
+  resource_name: str
+  id: str
+  id_alias: str
+  name: str
+  name_alias: str
+  active_entities_filter: str
 
-LEVELS = (
-    None,
-    Level('ad_group_ad_asset_view', 'asset.id', 'asset_id', 'asset.name',
-          'asset', 'ad_group_ad_asset_view.enabled = TRUE'),
-    Level('ad_group_ad', 'ad_group_ad.ad.id', 'ad_id', 'ad_group_ad.ad.name',
-          'ad_name', "ad_group_ad.status = 'ENABLED'"),
-    Level('ad_group', 'ad_group.id', 'ad_group_id', 'ad_group.name',
-          'ad_group_name', "ad_group.status = 'ENABLED'"),
-    Level('campaign', 'campaign.id', 'campaign_id', 'campaign.name',
-          'campaign_name', "campaign.status = 'ENABLED'"),
-    Level('customer', 'customer.id', 'customer_id', 'customer.descriptive_name',
-          'account_name', "customer.status = 'ENABLED'"),
-    Level('customer', 'customer.id', 'customer_id', 'customer.descriptive_name',
-          'account_name', "customer.status = 'ENABLED'"),
-)
+
+_LEVELS = {
+    TargetLevel.AD_GROUP_AD_ASSET:
+        LevelInfo('ad_group_ad_asset_view', 'asset.id', 'asset_id',
+                  'asset.name', 'asset',
+                  'ad_group_ad_asset_view.enabled = TRUE'),
+    TargetLevel.AD_GROUP_AD:
+        LevelInfo('ad_group_ad', 'ad_group_ad.ad.id', 'ad_id',
+                  'ad_group_ad.ad.name', 'ad_name',
+                  "ad_group_ad.status = 'ENABLED'"),
+    TargetLevel.AD_GROUP:
+        LevelInfo('ad_group', 'ad_group.id', 'ad_group_id', 'ad_group.name',
+                  'ad_group_name', "ad_group.status = 'ENABLED'"),
+    TargetLevel.CAMPAIGN:
+        LevelInfo('campaign', 'campaign.id', 'campaign_id', 'campaign.name',
+                  'campaign_name', "campaign.status = 'ENABLED'"),
+    TargetLevel.CUSTOMER:
+        LevelInfo('customer', 'customer.id', 'customer_id',
+                  'customer.descriptive_name', 'account_name',
+                  "customer.status = 'ENABLED'"),
+    TargetLevel.MCC:
+        LevelInfo('customer', 'customer.id', 'customer_id',
+                  'customer.descriptive_name', 'account_name',
+                  "customer.status = 'ENABLED'"),
+}
 
 
 class Target:
@@ -115,18 +131,21 @@ class Target:
     return field_list
 
   def _get_level(self):
-    if self.level.value == 0:
-      return ''
-    level = LEVELS[self.level.value]
-    return (f'{level.id} AS '
-            f'{level.id_alias},\n')
+    if level_info := _LEVELS.get(self.level):
+      return (f'{level_info.id} AS '
+              f'{level_info.id_alias},\n')
+    return ''
 
-  def _get_table(self):
-    table = LEVELS[self.level.value].table if self.level.value != 0 else ''
-    return self.resource_name or table.lower()
+  @property
+  def _resource_name(self) -> str:
+    if self.resource_name:
+      return self.resource_name
+    if level_info := _LEVELS.get(self.level):
+      return level_info.resource_name.lower()
 
-  def _get_filters(self):
-    return self.filters if self.filters else 'segments.date DURING TODAY'
+  @property
+  def _filters(self) -> str:
+    return self.filters or 'segments.date DURING TODAY'
 
   @property
   def query(self):
@@ -145,8 +164,9 @@ class Target:
       if field not in dedup:
         # should not add a name-only field with the same name as what
         # the level defines.
-        if (not field.alias and not field.customizer and self.level != 0 and
-            field.name == LEVELS[self.level.value].id):
+        if (not field.alias and not field.customizer and
+            self.level != TargetLevel.UNKNOWN and
+            field.name == _LEVELS[self.level].id):
           continue
         select_fields.append(field)
         dedup.add(field)
@@ -158,8 +178,8 @@ class Target:
         dimensions = ',\n' + dimensions
 
     return (f'SELECT {self._get_level()}{metrics}{dimensions}\n'
-            f'FROM {self._get_table()}\n'
-            f'WHERE {self._get_filters()}')
+            f'FROM {self._resource_name}\n'
+            f'WHERE {self._filters}')
 
   @staticmethod
   def to_comparable_str(val: str | list[Field] | None) -> str:
@@ -223,26 +243,40 @@ class ServiceTarget(Target):
     return ''
 
 
-def create_default_service_target(level: TargetLevel):
+def create_default_service_target(level: TargetLevel) -> ServiceTarget:
+  """Generates correct ServiceTarget based on provided level.
+
+   Based on level (AD_GROUP, CAMPAIGN, ACCOUNT, etc.) corresponding
+   ServiceTarget is created that contains all necessary mapping information
+   downstream. I.e. if 'level=AD_GROUP' then information on ad_group, campaign
+   and customer will be included in to the mapping.
+
+   Returns:
+    ServiceTarget called 'mapping' for an appropriate level.
+
+  """
+  if level == TargetLevel.MCC:
+    level = TargetLevel.CUSTOMER
   dimensions = []
   filters = ''
 
-  current_level = level.value - 1 if level == TargetLevel.MCC else level.value
-  while 0 < current_level <= TargetLevel.CUSTOMER.value:
-    level_def = LEVELS[current_level]
-    dimensions.append(Field(name=level_def.id, alias=level_def.id_alias))
-    dimensions.append(Field(name=level_def.name, alias=level_def.name_alias))
-
-    if filters:
-      filters = filters + ' AND ' + level_def.filter
-    else:
-      filters = level_def.filter
-
-    current_level += 1
+  for target_level in TargetLevel:
+    if (target_level not in (TargetLevel.MCC, TargetLevel.AD_GROUP_AD_ASSET) and
+        level <= target_level and (level_info := _LEVELS.get(target_level))):
+      dimensions.extend([
+          Field(name=level_info.id, alias=level_info.id_alias),
+          Field(name=level_info.name, alias=level_info.name_alias),
+      ])
+      if filters:
+        filters = filters + ' AND ' + level_info.active_entities_filter
+      else:
+        filters = level_info.active_entities_filter
 
   return ServiceTarget(
       name='mapping',
-      metrics=[Field(name='1', alias='info')],
+      metrics=[
+          Field(name='1', alias='info'),
+      ],
       dimensions=dimensions,
       level=level,
       filters=filters)
