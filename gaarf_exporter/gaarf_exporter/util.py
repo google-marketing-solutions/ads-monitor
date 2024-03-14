@@ -11,46 +11,24 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Module for defining various helpers."""
 from __future__ import annotations
 
 import re
 
-TOKEN_PATTERNS = (r'(?i)(?P<INDEX>~\d+)'
-                  r'|(?P<NESTED_RESOURCE>:(\w+\.)+\w+)'
-                  r'|(?P<STRING>".*?")'
-                  r'|(?P<SEPARATOR>,)'
-                  r'|(?P<KEYWORD_AS>AS)'
-                  r'|(?P<KEYWORD_FROM>FROM)'
-                  r'|(?P<KEYWORD>SELECT|WHERE|DURING|TODAY|AND|OR|NOT)'
-                  r'|(?P<NUMBER>\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)'
-                  r'|(?P<PREFIXED_IDENTIFIER>(\w+\.)+\w+)'
-                  r'|(?P<IDENTIFIER>\w+)'
-                  r'|(?P<MATH_OPERATOR>((\>\=)|(\<\=))|([\+\-\*/\(\)\=\>\<]))')
+_TOKEN_PATTERNS = (r'(?i)(?P<INDEX>~\d+)'
+                   r'|(?P<NESTED_RESOURCE>:(\w+\.)+\w+)'
+                   r'|(?P<STRING>".*?")'
+                   r'|(?P<SEPARATOR>,)'
+                   r'|(?P<KEYWORD_AS>AS)'
+                   r'|(?P<KEYWORD_FROM>FROM)'
+                   r'|(?P<KEYWORD>SELECT|WHERE|DURING|TODAY|AND|OR|NOT)'
+                   r'|(?P<NUMBER>\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)'
+                   r'|(?P<PREFIXED_IDENTIFIER>(\w+\.)+\w+)'
+                   r'|(?P<IDENTIFIER>\w+)'
+                   r'|(?P<MATH_OPERATOR>((\>\=)|(\<\=))|([\+\-\*/\(\)\=\>\<]))')
 
-RELATIVE_METRIC_PATTERNS = r'(?i)average_|_cpm|ctr|_percentage|_rate|_share'
-
-
-def parse_other_args(other_args: list[str]) -> dict[str, set]:
-  result: dict[str, set] = {}
-
-  for i in range(len(other_args)):
-    if other_args[i].startswith('--'):
-      if '=' in other_args[i]:
-        parts = other_args[i][2:].split('=')
-        if len(parts) != 2:
-          continue
-        name, raw_val = parts
-        result.setdefault(name,
-                          set()).update(list(filter(None, raw_val.split(','))))
-      else:
-        arg_name = other_args[i][2:]
-        result.setdefault(arg_name, set())
-        while (i + 1 < len(other_args) and
-               not other_args[i + 1].startswith('--')):
-          i += 1
-          result.setdefault(arg_name, set()).update(
-              list(filter(None, other_args[i].split(','))))
-  return result
+_RELATIVE_METRIC_PATTERNS = r'(?i)average_|_cpm|ctr|_percentage|_rate|_share'
 
 
 def remove_spaces(s) -> str:
@@ -60,7 +38,7 @@ def remove_spaces(s) -> str:
 def tokenize(expression) -> list[tuple[str, str | None]]:
   tokens = []
   prev_token_type = None
-  for match in re.finditer(TOKEN_PATTERNS, expression):
+  for match in re.finditer(_TOKEN_PATTERNS, expression):
     token_type = match.lastgroup
     token_value = match.group()
     tokens.append((token_value,
@@ -78,6 +56,6 @@ def find_relative_metrics(query) -> list[str]:
 
     if token_type in ('IDENTIFIER', 'PREFIXED_IDENTIFIER'):
       metric_name = token_value.split('.')[-1]
-      if re.search(RELATIVE_METRIC_PATTERNS, metric_name):
+      if re.search(_RELATIVE_METRIC_PATTERNS, metric_name):
         result.add(metric_name)
   return list(result)
