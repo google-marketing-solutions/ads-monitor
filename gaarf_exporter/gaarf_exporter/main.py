@@ -37,7 +37,6 @@ from gaarf_exporter.exporter import GaarfExporter
 from gaarf_exporter.target import targets_similarity_check
 from gaarf_exporter.target_util import get_targets
 from gaarf_exporter.util import find_relative_metrics
-from gaarf_exporter.util import parse_other_args
 
 
 def main():
@@ -64,9 +63,9 @@ def main():
       dest='zero_value_metrics',
       action='store_true')
   parser.add_argument('--namespace', dest='namespace', default='googleads')
+  parser.add_argument('--collectors', dest='collectors', default='default')
   args_bag = parser.parse_known_args()
   args = args_bag[0]
-  other_arg_dict = parse_other_args(args_bag[1])
 
   logger = init_logging(loglevel=args.loglevel.upper(), logger_type=args.logger)
 
@@ -78,7 +77,7 @@ def main():
       queries = config.get('queries')
   else:
     if not (selected_collectors := get_targets(
-        collectors.registry, other_arg_dict.get('collectors'), macros)):
+        collectors.registry, args.collectors, macros)):
       selected_collectors = collectors.default_collectors(macros)
     checked_targets = targets_similarity_check(selected_collectors)
     config = Config(checked_targets)
