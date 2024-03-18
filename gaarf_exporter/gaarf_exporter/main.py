@@ -34,12 +34,10 @@ from gaarf_exporter import collectors
 from gaarf_exporter.bootstrap import inject_dependencies
 from gaarf_exporter.config import Config
 from gaarf_exporter.exporter import GaarfExporter
-from gaarf_exporter.target import targets_similarity_check
-from gaarf_exporter.target_util import get_targets
 from gaarf_exporter.util import find_relative_metrics
 
 
-def main():
+def main() -> None:
   parser = argparse.ArgumentParser()
   parser.add_argument('--account', dest='account', default=None)
   parser.add_argument('-c', dest='config', default=None)
@@ -70,17 +68,21 @@ def main():
   logger = init_logging(loglevel=args.loglevel.upper(), logger_type=args.logger)
 
   params = ParamsParser(['macro', 'sql', 'template']).parse(args_bag[1])
+  collectors_registry = collectors.Registry()
   macros = params.get('macro', {})
   if config_file := args.config:
     with open(config_file, encoding='utf-8') as f:
       config = yaml.safe_load(f)
       queries = config.get('queries')
   else:
-    if not (selected_collectors := get_targets(
-        collectors.registry, args.collectors, macros)):
-      selected_collectors = collectors.default_collectors(macros)
-    checked_targets = targets_similarity_check(selected_collectors)
-    config = Config(checked_targets)
+    if not (active_collectors := collectors_registry.find_collectors(
+        args.collectors)):
+      logger.warning('Failed to get "%s" collectors, using default ones',
+                     args.collectors)
+      active_collectors = collectors_registry.default_collectors
+    if macros:
+      active_collectors.customize(macros)
+    config = Config(active_collectors.targets)
     queries = config.queries
   for query_name, query in queries.items():
     if relative_metrics := find_relative_metrics(query['query']):
@@ -113,9 +115,8 @@ def main():
     gaarf_exporter = GaarfExporter(
         http_server_url=f'{args.address}:{args.port}', **gaarf_exporter_options)
   else:
-    raise ValueError(
-        'Specify option for exposing data to Prometheus - either http_server or pushgateway'
-    )
+    raise ValueError('Specify option for exposing data to Prometheus '
+                     '- either http_server or pushgateway')
 
   if gaarf_exporter.http_server_url and not gaarf_exporter.pushgateway_url:
     start_http_server(
@@ -124,9 +125,13 @@ def main():
                 gaarf_exporter.http_server_url)
   while True:
     start_export_time = time()
+    if macros:
+      active_collectors.customize(macros)
+    config = Config(active_collectors.targets)
+    queries = config.queries
     for name, content in queries.items():
       if not (query_text := content.get('query')):
-        raise ValueError('Missing query text for query %s', name)
+        raise ValueError(f'Missing query text for query "{name}"')
       if include_queries := runtime_options.get('include_queries'):
         if name not in include_queries:
           continue
@@ -150,14 +155,14 @@ def main():
             end = time()
             gaarf_exporter.report_fetcher_gauge.labels(
                 collector=name, account=account).set(end - start)
-            # report = report_fetcher.fetch(query_text, accounts)
             if dependencies.get('convert_fake_report'):
               report.is_fake = False
-            logging.info(
-                f'Started export for query {name} for account {account}')
+            logging.info('Started export for query "[%s]" for account "[%s]"',
+                         name, account)
             gaarf_exporter.export(
                 report=report, suffix=suffix, collector=name, account=account)
-            logging.info(f'Ended export for query {name} for account {account}')
+            logging.info('Ended export for query "[%s]" for account "[%s]"',
+                         name, account)
     logger.info('Export completed')
     end_export_time = time()
     gaarf_exporter.total_export_time_gauge.set(end_export_time -
