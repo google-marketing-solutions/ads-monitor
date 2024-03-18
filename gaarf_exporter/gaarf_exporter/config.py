@@ -41,7 +41,7 @@ class Config:
   @functools.cached_property
   def targets(self):
     """Converts targets passed during init to regular and service targets."""
-    targets = self._targets
+    targets = target.targets_similarity_check(self._targets)
     has_service_target = any(
         [isinstance(target_, target.ServiceTarget) for target_ in targets])
     if not has_service_target:
