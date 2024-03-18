@@ -13,10 +13,76 @@
 # limitations under the License.
 from __future__ import annotations
 
-import gaarf_exporter.collectors as collectors
-from gaarf_exporter.target import Target
+import pytest
+
+from gaarf_exporter import collectors
+from gaarf_exporter import target
 
 
-def test_default_collectors():
-  default_collectors = collectors.default_collectors({})
-  assert isinstance(default_collectors[0], Target)
+class TestRegistry:
+
+  @pytest.fixture(scope='class')
+  def registry(self):
+    return collectors.Registry()
+
+  def test_default_collectors_returns_correct_target_names(self, registry):
+    default_collectors = registry.default_collectors
+    expected = {
+        'conversion_action',
+        'ad_disapprovals',
+        'mapping',
+        'performance',
+    }
+
+    assert {target.name for target in default_collectors.targets} == expected
+
+  def test_extract_collector_targets_returns_correct_collectors_from_registry(
+      self, registry):
+    actual = registry.find_collectors('performance,mapping')
+    expected = {
+        'mapping',
+        'performance',
+    }
+
+    assert {target.name for target in actual.targets} == expected
+
+  def test_extract_collector_targets_returns_all_collectors_from_subregistry(
+      self, registry):
+    actual = registry.find_collectors('default')
+    expected = {
+        'conversion_action',
+        'ad_disapprovals',
+        'mapping',
+        'performance',
+    }
+
+    assert {target.name for target in actual.targets} == expected
+
+  def test_extract_collector_targets_returns_unique_collectors_from_registry_and_sub_registry(
+      self, registry):
+    actual = registry.find_collectors('default,performance,mapping')
+    expected = {
+        'conversion_action',
+        'ad_disapprovals',
+        'mapping',
+        'performance',
+    }
+
+    assert {target.name for target in actual.targets} == expected
+
+  def test_extract_collector_targets_returns_empty_set_when_collectors_are_not_found(
+      self, registry):
+    actual = registry.find_collectors('non-existing-collector')
+
+    assert actual == collectors.CollectorSet()
+
+  def test_add_collectors(self, registry):
+
+    class SampleCollector:
+      name = 'sample'
+      target = target.Target(name='sample')
+
+    registry.add_collectors([SampleCollector])
+    found_collector_set = registry.find_collectors('sample')
+
+    assert SampleCollector in found_collector_set
