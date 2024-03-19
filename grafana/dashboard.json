@@ -51,7 +51,7 @@
       "targetBlank": true,
       "title": "Repository",
       "type": "link",
-      "url": "https://professional-services.googlesource.com/solutions/ads_monitor/"
+      "url": "https://github.com/google-marketing-solutions/ads-monitor"
     }
   ],
   "liveNow": false,
@@ -3064,10 +3064,10 @@
         "current": {
           "selected": true,
           "text": [
-            "[DaD]amarkin"
+            "All"
           ],
           "value": [
-            "[DaD]amarkin"
+            "All"
           ]
         },
         "datasource": {
@@ -3096,10 +3096,10 @@
         "current": {
           "selected": true,
           "text": [
-            "amarkin_video"
+            "All"
           ],
           "value": [
-            "amarkin_video"
+            "All"
           ]
         },
         "datasource": {
