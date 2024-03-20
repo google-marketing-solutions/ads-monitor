@@ -302,6 +302,43 @@ class AppCampaignMappingCollector:
       filters="campaign.status = 'ENABLED'")
 
 
+@register('app')
+class AppAssetMappingCollector:
+  """Maps campaign_id to app campaign meta information for active campaigns."""
+  name = 'app_asset_mapping'
+  target = Target(
+      name=name,
+      metrics=[Field('1', 'info')],
+      level=TargetLevel.UNKNOWN,
+      dimensions=[
+          Field('asset.id', 'asset_id'),
+          Field('asset.type', 'asset_type'),
+          Field('asset.source', 'source'),
+          Field('asset.name', 'asset_name'),
+          Field('asset.text_asset.text', 'text'),
+          Field('asset.youtube_video_asset.youtube_video_id', 'video_id'),
+      ],
+      resource_name='asset',
+      filters='asset.type IN (IMAGE, TEXT, YOUTUBE_VIDEO, MEDIA_BUNDLE)')
+
+
+@register('pmax')
+@register_conversion_split_collector
+class PmaxPerformanceCollector:
+  """Gets performance metrics for pMax asset groups."""
+  name = 'pmax_performance'
+  target = Target(
+      name=name,
+      metrics=_DEFAULT_METRICS,
+      level=TargetLevel.UNKNOWN,
+      dimensions=[
+          Field('asset_group.id', 'asset_group_id'),
+      ],
+      resource_name='asset_group',
+      filters=('campaign.advertising_channel_type = PERFORMANCE_MAX'
+               ' AND metrics.impressions > 0'))
+
+
 @register('pmax')
 class PmaxMappingCollector:
   """Maps asset group id to pMax ad_group/campaign meta information."""
@@ -325,9 +362,37 @@ class PmaxMappingCollector:
           Field('asset_group.name', 'ad_group_name'),
       ],
       resource_name='asset_group',
-      filters=("campaign.status = 'ENABLED'"
-               " AND campaign.advertising_channel_type = 'PERFORMANCE_MAX'"
-               " AND asset_group.status = 'ENABLED'"))
+      filters=('campaign.status = ENABLED'
+               ' AND campaign.advertising_channel_type = PERFORMANCE_MAX'
+               ' AND asset_group.status = ENABLED'))
+
+
+@register('pmax', 'disapprovals')
+class PmaxDisapprovalsCollector:
+  """Gets asset_id approval and review status info for pMax campaigns."""
+  name = 'pmax_disapprovals'
+  target = Target(
+      name=name,
+      level=TargetLevel.UNKNOWN,
+      dimensions=[
+          Field('asset_group_asset.asset', 'asset_id',
+                Customizer(CustomizerTypeEnum.INDEX, '0')),
+          Field('asset_group_asset.asset_group', 'asset_group_id',
+                Customizer(CustomizerTypeEnum.INDEX, '0')),
+          Field('asset_group_asset.policy_summary.approval_status',
+                'approval_status'),
+          Field('asset_group_asset.policy_summary.review_status',
+                'review_status'),
+          Field('asset_group_asset.policy_summary.policy_topic_entries:type',
+                'topic_type'),
+          Field('asset_group_asset.policy_summary.policy_topic_entries:topic',
+                'topic'),
+          Field('1', 'asset_count'),
+      ],
+      resource_name='asset_group_asset',
+      filters=('campaign.status = ENABLED'
+               ' AND campaign.advertising_channel_type = PERFORMANCE_MAX'
+               ' AND asset_group_asset.status = ENABLED'))
 
 
 @register('default')
@@ -409,6 +474,35 @@ class BidBudgetCollector:
       level=TargetLevel.CAMPAIGN,
       metrics=[
           Field('campaign_budget.amount_micros/1e6', 'budget'),
+          Field('campaign.target_cpa.target_cpa_micros/1e6', 'target_cpa'),
+          Field('campaign.maximize_conversions.target_cpa_micros/1e6',
+                'max_conv_target_cpa'),
+          Field('campaign.target_roas.target_roas', 'target_roas'),
+      ],
+      filters="campaign.status = 'ENABLED'")
+
+
+@register()
+class BudgetCollector:
+  """Gets budget states for active campaigns."""
+  name = 'budgets'
+  target = Target(
+      name=name,
+      level=TargetLevel.CAMPAIGN,
+      metrics=[
+          Field('campaign_budget.amount_micros/1e6', 'budget'),
+      ],
+      filters="campaign.status = 'ENABLED'")
+
+
+@register()
+class BidCollector:
+  """Gets bid states for active campaigns."""
+  name = 'bids'
+  target = Target(
+      name=name,
+      level=TargetLevel.CAMPAIGN,
+      metrics=[
           Field('campaign.target_cpa.target_cpa_micros/1e6', 'target_cpa'),
           Field('campaign.maximize_conversions.target_cpa_micros/1e6',
                 'max_conv_target_cpa'),
@@ -606,8 +700,7 @@ class OfflineConversionsImportCollector:
               'total_events'),
           Field(
               'customer.offline_conversion_client_summaries:'
-              'successful_event_count',
-              'successful_event_count'),
+              'successful_event_count', 'successful_event_count'),
       ],
       level=TargetLevel.CUSTOMER)
 
@@ -629,6 +722,21 @@ class RemarketinglistCollector:
           Field('user_list.name', 'name'),
       ],
       level=TargetLevel.CUSTOMER)
+
+
+@register()
+class LandingPagePerformanceCollector:
+  """Gets serving status for each campaign."""
+  name = 'landing_page'
+  target = Target(
+      name=name,
+      metrics=_DEFAULT_METRICS,
+      dimensions=[
+          Field('landing_page_view.unexpanded_final_url', 'landing_page'),
+      ],
+      level=TargetLevel.CUSTOMER,
+      resource_name='landing_page_view',
+      filters=('metrics.impressions > 0'))
 
 
 @register()
