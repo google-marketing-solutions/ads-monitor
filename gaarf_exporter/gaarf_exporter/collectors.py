@@ -659,9 +659,12 @@ class Registry:
     collectors: Mapping between collector names and corresponding class.
   """
 
-  def __init__(self, collectors: dict = _REGISTRY) -> None:
+  def __init__(self, collectors: dict | None = None) -> None:
     """Creates Registry based on module level variable _REGISTRY."""
-    self.collectors = dict(collectors)
+    if collectors:
+      self.collectors = dict(collectors)
+    else:
+      self.collectors = dict(_REGISTRY)
 
   @property
   def default_collectors(self) -> CollectorSet:
