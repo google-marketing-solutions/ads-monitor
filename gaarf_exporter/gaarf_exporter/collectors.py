@@ -294,12 +294,13 @@ class AppCampaignMappingCollector:
       metrics=[Field('1', 'info')],
       level=TargetLevel.CAMPAIGN,
       dimensions=[
-          Field('app_campaign_setting.app_id', 'app_id'),
-          Field('app_campaign_setting.app_store', 'app_store'),
-          Field('app_campaign_setting.bidding_strategy_goal_type',
+          Field('campaign.app_campaign_setting.app_id', 'app_id'),
+          Field('campaign.app_campaign_setting.app_store', 'app_store'),
+          Field('campaign.app_campaign_setting.bidding_strategy_goal_type',
                 'bidding_strategy'),
       ],
-      filters="campaign.status = 'ENABLED'")
+      filters=('campaign.status = ENABLED'
+               ' AND campaign.advertising_channel_type = MULTI_CHANNEL'))
 
 
 @register('app')
