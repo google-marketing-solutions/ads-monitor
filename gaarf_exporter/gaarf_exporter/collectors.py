@@ -780,6 +780,12 @@ class Registry:
     """Helper for getting only default collectors from the registry."""
     return CollectorSet(collectors=set(self.collectors.get('default').values()))
 
+  @property
+  def all_collectors(self) -> CollectorSet:
+    """Helper for getting all collectors from the registry."""
+    all_collector_names = ','.join(self.collectors.keys())
+    return self.find_collectors(collector_names=all_collector_names)
+
   def find_collectors(self, collector_names: str | None = None) -> CollectorSet:
     """Extracts collectors from registry and returns their initialized targets.
 
@@ -792,6 +798,8 @@ class Registry:
     """
     if not collector_names:
       return CollectorSet()
+    if collector_names == 'all':
+      return self.all_collectors
     collectors_subset = [
         collector for name, collector in self.collectors.items()
         if name in collector_names.strip().split(',')
