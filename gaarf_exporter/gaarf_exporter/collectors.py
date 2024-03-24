@@ -105,6 +105,7 @@ def _create_conversion_split_collector(
       name=cls.name,
       metrics=_DEFAULT_CONVERSION_SPLIT_METRICS,
       level=seed_collector.target.level,
+      resource_name=seed_collector.target.resource_name,
       dimensions=_DEFAULT_CONVERSION_SPLIT_DIMENSIONS,
       filters=('segments.date DURING TODAY '
                'AND metrics.all_conversions > 0'))
@@ -324,7 +325,6 @@ class AppAssetMappingCollector:
 
 
 @register('pmax')
-@register_conversion_split_collector
 class PmaxPerformanceCollector:
   """Gets performance metrics for pMax asset groups."""
   name = 'pmax_performance'
@@ -513,7 +513,6 @@ class BidCollector:
 
 
 @register('app')
-@register_conversion_split_collector
 class AssetPerformanceCollector(CollectorCustomizerMixin):
   """Gets performance and approval/review status for app campaigns."""
   name = 'asset_performance'
@@ -546,7 +545,6 @@ class AssetPerformanceCollector(CollectorCustomizerMixin):
 
 
 @register('app')
-@register_conversion_split_collector
 class AssetPerformanceGroupppingCollector(CollectorCustomizerMixin):
   """Gets performance and approval/review status for app campaigns."""
   name = 'asset_perf_label'
