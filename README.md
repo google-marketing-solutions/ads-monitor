@@ -18,7 +18,7 @@ a solid monitoring environment for your crucial Ads metrics and dimensions.
 
 Ads Monitor provides you with a Grafana dashboard and a set of default [alerts](prometheus/alerts.yml).
 Data that powers the dashboard and alerts are extracted from Google Ads API and
-stored in a Prometheus.
+stored in a Prometheus. --collectors app,disapprovals --collectors app,disapprovals
 
 ## Deployment
 
@@ -33,7 +33,7 @@ stored in a Prometheus.
 
 ### Installation
 
-An easiest way to try the solution is to run it via [Docker Compose](https://docs.docker.com/compose/install/).
+The easiest way to try the solution is to run it via [Docker Compose](https://docs.docker.com/compose/install/).
 
 1. expose environmental variables `GOOGLE_ADS_YAML` and `GAARF_EXPORTER_ACCOUNT_ID`:
 
@@ -76,17 +76,46 @@ docker run --network=host \
 
 * `google-ads.yaml` - file that contains authentication details to connect to Google Ads API.
 
-> Change `--network=host` to the network that where your Prometheus instance is running.
+> Change `--network=host` to the network where your Prometheus instance is running.
 
 `gaarf_exporter` will push expose metrics on `localhost:8000` so they can later be scraped by Prometheus.
 
 ##### Skipping or including particular queries
 
-When running `gaarf_exporter` there are two CLI flags that can help fine-tuning
-which queries from config file should be run:
+When running `gaarf_exporter` you can specify which data to get from Google Ads.
+The exporter some with a lot of built-in [collectors](gaarf_exporter/README.md#collectors)
+you can specify by adding with `--collectors <collector_name>` CLI argument.
+
+```
+docker run --network=host \
+  -v /path/to/google-ads.yaml:/root/google-ads.yaml \
+  gaarf_exporter --collectors app,disapprovals
+```
+
+Alternatively you can pass an `--config` argument `gaarf_exporter`
+> `--config` always has priority over `--collectors` flag.
+
+```
+docker run --network=host \
+  -v /path/to/google-ads.yaml:/root/google-ads.yaml \
+  -v /path/to/gaarf_exporter.yaml:/app/gaarf_exporter.yaml \
+  gaarf_exporter --config /app/gaarf-exporter.yaml
+```
+
+There are two CLI flags that can help fine-tuning which queries from config
+file should be run:
 
 * `--queries.include` - comma-separated query names (i.e. `performance,search_terms`) that will be taken from `gaarf_exporter.yaml` for fetching.
 * `--queries.exclude` - comma-separated query names (i.e. `performance,search_terms`) that will be will be excluded from fetching despite being in the `gaarf_exporter.yaml` config.
+
+```
+docker run --network=host \
+  -v /path/to/google-ads.yaml:/root/google-ads.yaml \
+  -v /path/to/gaarf_exporter.yaml:/app/gaarf_exporter.yaml \
+  gaarf_exporter \
+  --config /app/gaarf-exporter.yaml \
+  --queries.include=performance,disapprovals
+```
 
 ### Usage
 

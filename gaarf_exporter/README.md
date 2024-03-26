@@ -37,7 +37,10 @@ By default it will start http_server on `localhost:8000` and will push some basi
 ### Customization
 
 * `--ads-config` - path to `google-ads.yaml`
+  >  `ads-config` can be taken from local storage or remote storage (gs, s3, azure, ssh, stfp, scrp, hdfs, webhdfs).
 * `--config` - path to `gaarf_exporter.yaml`
+  >  `config` can be taken from local storage or remote storage (same as `--ads-config`).
+* `--collectors` - names of one or more [collectors](#collectors) (separated by comma).
 * `--http_server.address` - address of your http server (`localhost` by default)
 * `--http_server.port` - port of your http server (`8000` by default)
 * `--pushgateway.address` - address of your pushgateway service (`None` by default)
@@ -58,7 +61,8 @@ It will add an additional metric to be exposed to Prometheus `*_n_days` (i.e.
 
 ### Collectors
 
-You can specify collectors with `--collectors <collector_name>` CLI argument. Some collectors available by default, other you need to specify explicitly.
+You can specify collectors with `--collectors <collector_name>` CLI argument. Some collectors available by default, other you need to specify explicitly.\
+There are two types of collectors - *registry* (contains other collectors grouped logically) and *collectors* themselves.
 
 #### `default` registry.
 
@@ -72,16 +76,20 @@ You can specify collectors with `--collectors <collector_name>` CLI argument. So
 * `ad_disapprovals` - extracts *approval_status*, *review_status*, *topic*, *topic_type* by *ad_group_id* and *ad_id* only for not approved ads
 * `ad_group_ad_asset_disapprovals` - extracts *approval_status*, *review_status*, *topic*, *topic_type* by *ad_group_id* and *asset_id* only for enabled assets.
 * `sitelink_disapprovals` - extracts *approval_status*, *review_status*, *topic*, *topic_type* by *asset_id*,   *sitelink_title* and both sitelink descriptions only for not approved sitelinks.
+* `pmax_disapprovals` - extracts *approval_status*, *review_status*, *topic*, *topic_type* by *asset_id*,   *asset_group_id* for active asset group assets.
 
 #### *app* registry.
 
 * `app_campaign_mapping` - performs mapping between *campaign_id*, *app_id*, *app_store*, *and bidding_strategy* only for active campaigns.
+* `app_asset_mapping` - performs mapping between *asset_id* and its type, source, and content (*name*, *text*, *video_id*) only for app assets (HTML5, TEXT, IMAGE, VIDEO).
 * `asset_performance` - extracts *clicks*, *impressions*, *cost*, *installs*, *inapps*, and *conversions_value* by *ad_group_id*, *ad_network* and *asset_id*
 * `asset_perf_label` - extracts *performance_label* by *ad_group_id* and *asset_id*
 
 #### *pmax* registry.
 
 * `pmax_mapping` - performs mapping between *asset_group_id*, *asset_group_name*, and meta information on campaign and account only for active campaigns and enabled asset groups.
+* `pmax_performance` - extracts *clicks*, *impressions*, *cost*, *installs*, *inapps*, and *conversions_value* by *asset_group_id*.
+* `pmax_disapprovals` - extracts *approval_status*, *review_status*, *topic*, *topic_type* by *asset_id*,   *asset_group_id* for active asset group assets.
 
 #### *search* registry.
 
@@ -109,6 +117,8 @@ You can specify collectors with `--collectors <collector_name>` CLI argument. So
 
 #### collectors without registry.
 
-* `bid_budgets` - extracts current values of bid (target_cpa, target_roas) and budget
+* `bid_budgets` - extracts current values of bid (target_cpa, target_roas) and campaign budgets.
+* `bids` - extracts current values of bid (target_cpa, target_roas).
+* `budgets` - extracts current values of campaign budgets.
 * `account_status` - extracts *customer_status* for each account.
 * `campaign_service_status` - extracts *primary_status* for each campaign.
