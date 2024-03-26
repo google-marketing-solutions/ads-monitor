@@ -55,6 +55,11 @@ def main() -> None:
       '--pushgateway.port', dest='pushgateway_port', default=None)
   parser.add_argument('--logger', dest='logger', default='local')
   parser.add_argument('--iterations', dest='iterations', default=None, type=int)
+  parser.add_argument(
+      '--update-accounts-every-n-iterations',
+      dest='iterations_left',
+      default=4 * 24,
+      type=int)
   parser.add_argument('--delay-minutes', dest='delay', type=int, default=15)
   parser.add_argument(
       '--expose-metrics-with-zero-values',
@@ -124,6 +129,11 @@ def main() -> None:
     logger.info('Started http_server at http://%s',
                 gaarf_exporter.http_server_url)
   while True:
+    if iterations_left := args.iterations_left:
+      iterations_left -= 1
+    if accounts and iterations_left == 0:
+      accounts = report_fetcher.expand_mcc(args.account)
+      iterations_left = args.iterations_left
     start_export_time = time()
     if macros:
       active_collectors.customize(macros)
