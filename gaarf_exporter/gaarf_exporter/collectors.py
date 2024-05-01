@@ -613,11 +613,32 @@ class GenderCollector(CollectorCustomizerMixin):
 @register('search')
 @register_conversion_split_collector
 class KeywordsCollector(CollectorCustomizerMixin):
-  """Gets basic performance metrics + quality score for keywords."""
+  """Gets basic performance metrics for keywords."""
   name = 'keywords'
   target = Target(
       name=name,
-      metrics=_DEFAULT_METRICS + [
+      metrics=_DEFAULT_METRICS,
+      level=TargetLevel.AD_GROUP,
+      resource_name='keyword_view',
+      dimensions=[
+          Field('ad_group_criterion.keyword.text', 'keyword'),
+          Field('ad_group_criterion.keyword.match_type', 'match_type'),
+      ],
+      filters=('segments.date DURING TODAY '
+               'AND campaign.status = ENABLED '
+               'AND metrics.clicks > 0'))
+
+  def __init__(self, **kwargs):
+    self.target = CollectorCustomizerMixin.customize_target(
+        self.target, **kwargs)
+
+
+class KeywordQualityScoreCollector(CollectorCustomizerMixin):
+  """Gets quality score for keywords."""
+  name = 'keyword_quality_score'
+  target = Target(
+      name=name,
+      metrics=[
           Field('historical_quality_score'),
       ],
       level=TargetLevel.AD_GROUP,
@@ -626,13 +647,9 @@ class KeywordsCollector(CollectorCustomizerMixin):
           Field('ad_group_criterion.keyword.text', 'keyword'),
           Field('ad_group_criterion.keyword.match_type', 'match_type'),
       ],
-      filters=('segments.date DURING TODAY '
-               "AND campaign.status = 'ENABLED' "
+      filters=('segments.date DURING YESTERDAY '
+               'AND campaign.status = ENABLED '
                'AND metrics.clicks > 0'))
-
-  def __init__(self, **kwargs):
-    self.target = CollectorCustomizerMixin.customize_target(
-        self.target, **kwargs)
 
 
 @register('search')
