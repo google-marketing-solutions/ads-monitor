@@ -635,6 +635,23 @@ class KeywordsCollector(CollectorCustomizerMixin):
         self.target, **kwargs)
 
 
+@register('search')
+class CampaignSearchClickShareCollector(CollectorCustomizerMixin):
+  """Gets search click share for each campaign."""
+  name = 'campaign_click_share'
+  target = Target(
+      name=name,
+      metrics=[
+          Field('search_click_share', 'click_share'),
+      ],
+      level=TargetLevel.CAMPAIGN,
+      filters='segments.date DURING TODAY')
+
+  def __init__(self, **kwargs):
+    self.target = CollectorCustomizerMixin.customize_target(
+        self.target, **kwargs)
+
+
 @register('geo')
 @register_conversion_split_collector
 class UserLocationCollector(CollectorCustomizerMixin):
