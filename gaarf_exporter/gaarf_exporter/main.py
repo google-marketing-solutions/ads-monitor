@@ -9,13 +9,13 @@
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and limitations under the License.
-'''Entrypoint for running GaarfExporter.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Entrypoint for running GaarfExporter.
 
 Defines GaarfExporter collectors, fetches data from Google Ads API
 and expose them to Prometheus.
-
-'''
+"""
 from __future__ import annotations
 
 import argparse
@@ -24,17 +24,16 @@ from concurrent import futures
 from time import sleep
 from time import time
 
+import prometheus_client
+import smart_open
 import yaml
-from gaarf.cli.utils import init_logging
-from gaarf.cli.utils import ParamsParser
-from prometheus_client import start_http_server
-from smart_open import open
+from gaarf.cli import utils as gaarf_utils
 
+from gaarf_exporter import bootstrap
 from gaarf_exporter import collectors
-from gaarf_exporter.bootstrap import inject_dependencies
-from gaarf_exporter.config import Config
-from gaarf_exporter.exporter import GaarfExporter
-from gaarf_exporter.util import find_relative_metrics
+from gaarf_exporter import config as exporter_config
+from gaarf_exporter import exporter
+from gaarf_exporter import util
 
 
 def main() -> None:
@@ -42,7 +41,7 @@ def main() -> None:
   parser.add_argument('--account', dest='account', default=None)
   parser.add_argument('-c', dest='config', default=None)
   parser.add_argument('--ads-config', dest='ads_config', default=None)
-  parser.add_argument('--api-version', dest='api_version', default=14)
+  parser.add_argument('--api-version', dest='api_version', default=None)
   parser.add_argument('--queries.exclude', dest='exclude_queries', default=None)
   parser.add_argument('--queries.include', dest='include_queries', default=None)
   parser.add_argument('--log', '--loglevel', dest='loglevel', default='info')
@@ -70,13 +69,18 @@ def main() -> None:
   args_bag = parser.parse_known_args()
   args = args_bag[0]
 
-  logger = init_logging(loglevel=args.loglevel.upper(), logger_type=args.logger)
+  logger = gaarf_utils.init_logging(
+      loglevel=args.loglevel.upper(), logger_type=args.logger)
 
-  params = ParamsParser(['macro', 'sql', 'template']).parse(args_bag[1])
+  params = gaarf_utils.ParamsParser([
+      'macro',
+      'sql',
+      'template',
+  ]).parse(args_bag[1])
   collectors_registry = collectors.Registry()
   macros = params.get('macro', {})
   if config_file := args.config:
-    with open(config_file, encoding='utf-8') as f:
+    with smart_open.open(config_file, encoding='utf-8') as f:
       config = yaml.safe_load(f)
       queries = config.get('queries')
   else:
@@ -87,10 +91,10 @@ def main() -> None:
       active_collectors = collectors_registry.default_collectors
     if macros:
       active_collectors.customize(macros)
-    config = Config(active_collectors.targets)
+    config = exporter_config.Config(active_collectors.targets)
     queries = config.queries
   for query_name, query in queries.items():
-    if relative_metrics := find_relative_metrics(query['query']):
+    if relative_metrics := util.find_relative_metrics(query['query']):
       logger.warning(
           'In query %s, relative metrics: [%s] are found, which might '
           'not be useful.', query_name, ', '.join(relative_metrics))
@@ -101,7 +105,7 @@ def main() -> None:
           args.include_queries.split(',') if args.include_queries else None,
   }
 
-  dependencies = inject_dependencies(
+  dependencies = bootstrap.inject_dependencies(
       ads_config_path=args.ads_config,
       api_version=args.api_version,
       account=args.account)
@@ -113,18 +117,18 @@ def main() -> None:
   }
 
   if args.pushgateway_address and args.pushgateway_port:
-    gaarf_exporter = GaarfExporter(
+    gaarf_exporter = exporter.GaarfExporter(
         pushgateway_url=f'{args.pushgateway_address}:{args.pushgateway_port}',
         **gaarf_exporter_options)
   elif (args.address and args.port):
-    gaarf_exporter = GaarfExporter(
+    gaarf_exporter = exporter.GaarfExporter(
         http_server_url=f'{args.address}:{args.port}', **gaarf_exporter_options)
   else:
     raise ValueError('Specify option for exposing data to Prometheus '
                      '- either http_server or pushgateway')
 
   if gaarf_exporter.http_server_url and not gaarf_exporter.pushgateway_url:
-    start_http_server(
+    prometheus_client.start_http_server(
         port=args.port, addr=args.address, registry=gaarf_exporter.registry)
     logger.info('Started http_server at http://%s',
                 gaarf_exporter.http_server_url)
@@ -137,7 +141,7 @@ def main() -> None:
     start_export_time = time()
     if macros:
       active_collectors.customize(macros)
-    config = Config(active_collectors.targets)
+    config = exporter_config.Config(active_collectors.targets)
     queries = config.queries
     for name, content in queries.items():
       if not (query_text := content.get('query')):
