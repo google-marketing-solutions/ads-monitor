@@ -876,9 +876,10 @@ class CollectorSet:
         Mapping between name and values of elements in collector to be
         customized.
     """
+    self._customized_collectors.clear()
     customized_collectors = set()
     for collector in self.collectors:
-      if isinstance(collector, CollectorCustomizerMixin):
+      if issubclass(collector, CollectorCustomizerMixin):
         customized_collectors.add(collector(**kwargs))
       else:
         customized_collectors.add(collector)
