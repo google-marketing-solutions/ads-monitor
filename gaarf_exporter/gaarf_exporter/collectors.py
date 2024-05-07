@@ -136,14 +136,24 @@ class CollectorCustomizerMixin:
 
     Args:
       target: An instance of Target that needs to be customized.
+      kwargs: Arguments for target customization.
+
+    Returns:
+      Modified target.
     """
-    return CollectorCustomizerMixin._format_date_range(target, **kwargs)
+    target = CollectorCustomizerMixin._format_date_range(target, **kwargs)
+    target = CollectorCustomizerMixin._format_level(target, **kwargs)
+    return target
 
   def _format_date_range(target: Target, **kwargs: str) -> Target:
     """Changes default period in report to custom one.
 
     Args:
       target: An instance of Target that needs to be customized.
+      kwargs: Arguments for target customization.
+
+    Returns:
+      Modified target.
     """
     if kwargs and (start_date :=
                    kwargs.get('start_date')) and (end_date :=
@@ -162,6 +172,20 @@ class CollectorCustomizerMixin:
         target.dimensions = [
             Field(str(n_days), 'n_days'),
         ]
+    return target
+
+  def _format_level(target: Target, **kwargs: str) -> Target:
+    """Changes default level in report to custom one.
+
+    Args:
+      target: An instance of Target that needs to be customized.
+      kwargs: Arguments for target customization.
+
+    Returns:
+      Modified target.
+    """
+    if kwargs and (level := kwargs.get('level')):
+      target.level = TargetLevel[level.upper()]
     return target
 
 
