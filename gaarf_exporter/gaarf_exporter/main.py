@@ -139,10 +139,11 @@ def main() -> None:
       accounts = report_fetcher.expand_mcc(args.account)
       iterations_left = args.iterations_left
     start_export_time = time()
-    if macros:
-      active_collectors.customize(macros)
-    config = exporter_config.Config(active_collectors.targets)
-    queries = config.queries
+    if not args.config:
+      if macros:
+        active_collectors.customize(macros)
+      config = exporter_config.Config(active_collectors.targets)
+      queries = config.queries
     for name, content in queries.items():
       if not (query_text := content.get('query')):
         raise ValueError(f'Missing query text for query "{name}"')
