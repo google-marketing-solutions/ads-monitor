@@ -59,7 +59,7 @@ class Field:
                alias: str | None = None,
                customizer: Customizer | None = None) -> None:
     self.name = name
-    self.alias = alias
+    self.alias = alias or name.replace('.', '_')
     self.customizer = customizer
 
   def to_query_field(self) -> str:
