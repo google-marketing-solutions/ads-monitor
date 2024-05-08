@@ -13,12 +13,49 @@
 # limitations under the License.
 from __future__ import annotations
 
+import pytest
 import yaml
 
 from gaarf_exporter import config
+from gaarf_exporter import query_elements
+from gaarf_exporter import target as query_target
 
 
 class TestConfig:
+
+  @pytest.fixture
+  def simple_target(self):
+    return query_target.Target(
+        name='simple',
+        metrics='impressions',
+        level=query_target.TargetLevel.AD_GROUP)
+
+  @pytest.fixture
+  def simple_target_at_customer_level(self):
+    return query_target.Target(
+        name='simple_customer_level',
+        metrics='impressions',
+        level=query_target.TargetLevel.CUSTOMER)
+
+  @pytest.fixture
+  def no_metric_target(self):
+    return query_target.ServiceTarget(
+        name='mapping',
+        metrics=[
+            query_elements.Field(name='1', alias='info'),
+        ],
+        dimensions=[
+            query_elements.Field(name='ad_group.id', alias='ad_group_id'),
+            query_elements.Field(name='ad_group.name', alias='ad_group_name'),
+            query_elements.Field(name='campaign.id', alias='campaign_id'),
+            query_elements.Field(name='campaign.name', alias='campaign_name'),
+            query_elements.Field(name='customer.id', alias='customer_id'),
+            query_elements.Field(
+                name='customer.descriptive_name', alias='account_name'),
+        ],
+        filters=('ad_group.status = ENABLED'
+                 ' AND campaign.status = ENABLED'
+                 ' AND customer.status = ENABLED'))
 
   def test_config_contains_correct_regular_target_mapping(self, simple_target):
     test_config = config.Config([simple_target])
@@ -37,7 +74,7 @@ class TestConfig:
     }
 
   def test_config_creates_service_target_at_the_lowest_regular_target_level(
-      self, simple_target, simple_target_at_customer_level, no_metric_target):
+      self, simple_target, simple_target_at_customer_level):
     test_config = config.Config(
         [simple_target, simple_target_at_customer_level])
 
@@ -55,11 +92,12 @@ class TestConfig:
     }
 
   def test_save_config_returns_correct_queries(self, no_metric_target,
-                                               simple_target):
+                                               simple_target, tmp_path):
     simple_config = config.Config([no_metric_target, simple_target])
 
-    simple_config.save('/tmp/config.yaml')
-    with open('/tmp/config.yaml', encoding='utf-8') as f:
+    output = tmp_path / 'config.yaml'
+    simple_config.save(output)
+    with open(output, encoding='utf-8') as f:
       loaded_config = yaml.safe_load(f)
 
     assert 'queries' in loaded_config.keys()
