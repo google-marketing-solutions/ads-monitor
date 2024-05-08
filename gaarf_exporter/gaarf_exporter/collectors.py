@@ -165,13 +165,9 @@ class CollectorCustomizerMixin:
       n_days = (datetime.strptime(end_date, '%Y-%m-%d') -
                 datetime.strptime(start_date, '%Y-%m-%d')).days + 1
       if target.dimensions:
-        target.dimensions += [
-            Field(str(n_days), 'n_days'),
-        ]
+        target.dimensions.add(Field(str(n_days), 'n_days'))
       else:
-        target.dimensions = [
-            Field(str(n_days), 'n_days'),
-        ]
+        target.dimensions = [Field(str(n_days), 'n_days')]
     return target
 
   def _format_level(target: Target, **kwargs: str) -> Target:
