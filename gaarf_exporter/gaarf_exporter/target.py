@@ -322,9 +322,20 @@ class Target:
     return hash(self.query)
 
 
-# TODO: b/339338418 - Validate that ServiceTarget does not contain metrics.
 class ServiceTarget(Target):
   """Helper class for targets without metrics."""
+
+  @property
+  def metrics(self) -> set[query_elements.Field]:
+    """Returns default info metric."""
+    return {
+        query_elements.Field(name='1', alias='info'),
+    }
+
+  @metrics.setter
+  def metrics(self, value: query_elements.Field) -> None:
+    """Ensures that metrics cannot be overwritten."""
+    raise ValueError('Cannot change value of "metrics"!')
 
 
 def create_default_service_target(level: TargetLevel) -> ServiceTarget:
@@ -359,9 +370,6 @@ def create_default_service_target(level: TargetLevel) -> ServiceTarget:
 
   return ServiceTarget(
       name='mapping',
-      metrics=[
-          query_elements.Field(name='1', alias='info'),
-      ],
       dimensions=dimensions,
       level=level,
       filters=filters)

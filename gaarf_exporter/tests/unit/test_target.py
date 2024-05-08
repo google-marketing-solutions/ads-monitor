@@ -122,9 +122,6 @@ class TestTarget:
     def test_service_target_creates_correct_query(self):
       target = query_target.ServiceTarget(
           name='mapping',
-          metrics=[
-              query_elements.Field(name='1', alias='info'),
-          ],
           dimensions=[
               query_elements.Field(name='ad_group.id', alias='ad_group_id'),
               query_elements.Field(name='ad_group.name', alias='ad_group_name'),
@@ -134,7 +131,6 @@ class TestTarget:
               query_elements.Field(
                   name='customer.descriptive_name', alias='account_name'),
           ],
-          # level = config.lowest_target_level,
           filters=('ad_group.status = ENABLED'
                    ' AND campaign.status = ENABLED'
                    ' AND customer.status = ENABLED'))
@@ -154,6 +150,15 @@ class TestTarget:
             AND customer.status = ENABLED
         """
       assert_sql_functionally_equivalent(target.query, expected_sql)
+
+    def test_service_target_cannot_change_metrics_value(self):
+      target = query_target.ServiceTarget(
+          name='mapping',
+          dimensions=[
+              query_elements.Field(name='ad_group.id', alias='ad_group_id'),
+          ])
+      with pytest.raises(ValueError):
+        target.metrics = query_elements.Field('ad_group.id')
 
     def test_mcc_level_target_creates_correct_customer_level_query(self):
       target = query_target.Target(
