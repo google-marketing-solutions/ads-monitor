@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-'''Module for defining gaarf GaarfExporter config to hold queries.'''
+"""Module for defining gaarf GaarfExporter config to hold queries."""
 from __future__ import annotations
 
 import functools
@@ -45,11 +45,26 @@ class Config:
     has_service_target = any(
         [isinstance(target_, target.ServiceTarget) for target_ in targets])
     if not has_service_target:
-      min_level = target.TargetLevel(
-          min([target_.level.value for target_ in targets]))
-      default_service_target = target.create_default_service_target(min_level)
-      targets.append(default_service_target)
+      valid_target_levels = [
+          target_.level
+          for target_ in targets
+          if target_.level != target.TargetLevel.UNKNOWN
+      ]
+      if valid_target_levels:
+        default_service_target = target.create_default_service_target(
+            min(valid_target_levels))
+        targets.append(default_service_target)
     return targets
+
+  @property
+  def queries(self) -> dict[str, dict[str, str]]:
+    """Mapping between all target name to its text and suffix."""
+    return {
+        target_.name: {
+            'query': target_.query,
+            'suffix': target_.suffix
+        } for target_ in self.targets
+    }
 
   @property
   def regular_targets(self) -> dict[str, target.Target]:
@@ -61,7 +76,7 @@ class Config:
     }
 
   @property
-  def queries(self) -> dict[str, dict[str, str]]:
+  def regular_queries(self) -> dict[str, dict[str, str]]:
     """Mapping between regular target name to its text and suffix."""
     return {
         name: {
