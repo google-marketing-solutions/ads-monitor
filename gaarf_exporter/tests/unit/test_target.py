@@ -483,6 +483,23 @@ class TestTarget:
           level=query_target.TargetLevel.AD_GROUP)
       assert not target1.is_similar(target2)
 
+    def test_targets_with_different_resource_names_are_not_similar(self):
+      target1 = query_target.Target(
+          name='target1',
+          metrics='clicks,conversions',
+          dimensions='segments.date',
+          filters='segments.date DURING TODAY',
+          resource_name='age_view',
+          level=query_target.TargetLevel.AD_GROUP)
+      target2 = query_target.Target(
+          name='target2',
+          metrics='clicks,conversions',
+          dimensions='segments.date',
+          resource_name='gender_view',
+          filters='segments.date DURING TODAY',
+          level=query_target.TargetLevel.AD_GROUP_AD)
+      assert not target1.is_similar(target2)
+
 
 @pytest.mark.parametrize('targets,expected', [
     ([

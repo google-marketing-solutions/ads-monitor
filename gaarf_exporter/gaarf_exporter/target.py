@@ -38,7 +38,12 @@ from gaarf_exporter import util
 
 
 class TargetLevel(enum.IntEnum):
-  """Represent minimal ."""
+  """Represents minimal level of entity.
+
+  TargetLevel regulates which entity id (ad_id, ad_group_id, campaign_id, etc.)
+  is associated with metrics and dimensions for a given target.
+  Target levels are ordered hierarchically to support comparison operations.
+  """
   UNKNOWN = 0
   AD_GROUP_AD_ASSET = 1
   AD_GROUP_AD = 2
@@ -46,6 +51,11 @@ class TargetLevel(enum.IntEnum):
   CAMPAIGN = 4
   CUSTOMER = 5
   MCC = 6
+
+  @classmethod
+  def contains(cls, *keys: str) -> bool:
+    """Checks whether supplied keys are valid enum names."""
+    return all(key.upper() in cls.__members__ for key in keys)
 
 
 @dataclasses.dataclass
@@ -285,7 +295,10 @@ class Target:
   def is_similar(self, other: Target) -> bool:
     """Compares similarity between two targets.
 
-    Similarity takes into account all metrics, dimensions and filters.
+    Similarity first checks whether two targets are coming from different
+    non TargetLevel specific resouce_names, if they are different then
+    targets are not similar.
+    Then is compares all  metrics, dimensions and filters between two targets.
 
     Returns:
       Whether two targets are similar.
@@ -293,6 +306,9 @@ class Target:
     if not other or not isinstance(other, Target):
       return False
 
+    if (self.resource_name != other.resource_name and
+        not (TargetLevel.contains(self.resource_name, other.resource_name))):
+      return False
     if (self.metrics, self.dimensions,
         self.filters) == (other.metrics, other.dimensions, other.filters):
       return True
@@ -302,7 +318,7 @@ class Target:
     """Compares two targets based on similarity, resource_name and level."""
     if not self.is_similar(other):
       return False
-    if (self.resource_name, self.level) != (other.resource_name, other.level):
+    if self.level != other.level:
       return False
     return True
 
@@ -369,10 +385,7 @@ def create_default_service_target(level: TargetLevel) -> ServiceTarget:
         filters = level_info.active_entities_filter
 
   return ServiceTarget(
-      name='mapping',
-      dimensions=dimensions,
-      level=level,
-      filters=filters)
+      name='mapping', dimensions=dimensions, level=level, filters=filters)
 
 
 def targets_similarity_check(targets: list[Target]) -> list[Target]:
