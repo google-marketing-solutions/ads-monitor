@@ -14,9 +14,9 @@ azure-core==1.30.1 \
     # via
     #   azure-storage-blob
     #   smart-open
-azure-storage-blob==12.19.1 \
-    --hash=sha256:13e16ba42fc54ac2c7e8f976062173a5c82b9ec0594728e134aac372965a11b0 \
-    --hash=sha256:c5530dc51c21c9564e4eb706cd499befca8819b10dd89716d3fc90d747556243
+azure-storage-blob==12.20.0 \
+    --hash=sha256:de6b3bf3a90e9341a6bcb96a2ebe981dffff993e9045818f6549afea827a52a9 \
+    --hash=sha256:eeb91256e41d4b5b9bad6a87fd0a8ade07dd58aa52344e2c8d2746e27a017d3b
     # via smart-open
 bcrypt==4.1.3 \
     --hash=sha256:01746eb2c4299dd0ae1670234bf77704f581dd72cc180f444bfe74eb80495b64 \
@@ -47,13 +47,13 @@ bcrypt==4.1.3 \
     --hash=sha256:f44a97780677e7ac0ca393bd7982b19dbbd8d7228c1afe10b128fd9550eef5f1 \
     --hash=sha256:f5698ce5292a4e4b9e5861f7e53b1d89242ad39d54c3da451a93cac17b61921a
     # via paramiko
-boto3==1.34.99 \
-    --hash=sha256:6f600b3fe0bda53476395c902d9af5a47294c93ec52a9cdc2b926a9dc705ce79 \
-    --hash=sha256:b54084d000483b578757df03ce39a819fbba47071c9aa98611beb8806bcecd45
+boto3==1.34.103 \
+    --hash=sha256:58d097241f3895c4a4c80c9e606689c6e06d77f55f9f53a4cc02dee7e03938b9 \
+    --hash=sha256:59b6499f1bb423dd99de6566a20d0a7cf1a5476824be3a792290fd86600e8365
     # via smart-open
-botocore==1.34.99 \
-    --hash=sha256:18c68bdeb0ffb73290912b0c96204fc36d3128f00a00b5cdc35ac34d66225f1c \
-    --hash=sha256:cafe569e2136cb33cb0e5dd32fb1c0e1503ddc1413d3be215df8ddf05e69137a
+botocore==1.34.103 \
+    --hash=sha256:0330d139f18f78d38127e65361859e24ebd6a8bcba184f903c01bb999a3fa431 \
+    --hash=sha256:5f07e2c7302c0a9f469dcd08b4ddac152e9f5888b12220242c20056255010939
     # via
     #   boto3
     #   s3transfer
@@ -249,17 +249,17 @@ cryptography==42.0.7 \
     # via
     #   azure-storage-blob
     #   paramiko
-gaarf-exporter==0.7.0 \
-    --hash=sha256:2ea22463624ec550bfcbbc7677edbfdc45e216d9c579b4e0b3f788aa84adc3a6 \
-    --hash=sha256:a39dc0c85d0b81e58e459a425ef2a487c9d359f457b72589702816b1d3a67ff5
+gaarf-exporter==0.7.1 \
+    --hash=sha256:baf6ee64035dbcd1dc204c546abd844e402938216b8934d6fcca3e6db907fed9 \
+    --hash=sha256:e453c547184ee396ace504b6cff6cbe7134e4542788915c80027b2769abdf6cb
     # via -r requirements.in
 google-ads==24.0.0 \
     --hash=sha256:53892ded2a8ede15c1f6af014774a8fdfd7c249ee0800eeab666240ef81c03bd \
     --hash=sha256:c4db87e6011519d52eb49b7261a7eb8dd29202274efc26cb998d54273d0afc14
     # via google-ads-api-report-fetcher
-google-ads-api-report-fetcher==1.13.2 \
-    --hash=sha256:c0a5c5ca2251509cea19be03a934397062b7e21cc162194149609d3e85aced42 \
-    --hash=sha256:ee8469ae577f9fdadf66195f6a90cb8db8d4260b5a2bfaf0c0687a746f047852
+google-ads-api-report-fetcher==1.13.4 \
+    --hash=sha256:8f197532779d807cea7467fcc95d4dc95b85079ec7b6e0539f333967f859856f \
+    --hash=sha256:a734df0b8bd31a5056b7cf94200021e9679a7473450f43e85ab467a1afe47c9b
     # via gaarf-exporter
 google-api-core==2.19.0 \
     --hash=sha256:8661eec4078c35428fd3f69a2c7ee29e342896b70f01d1a1cbcb334372dd6251 \
@@ -748,9 +748,9 @@ smart-open[all]==7.0.4 \
     --hash=sha256:4e98489932b3372595cddc075e6033194775165702887216b65eba760dfd8d47 \
     --hash=sha256:62b65852bdd1d1d516839fcb1f6bc50cd0f16e05b4ec44b52f43d38bcb838524
     # via google-ads-api-report-fetcher
-tenacity==8.2.3 \
-    --hash=sha256:5398ef0d78e63f40007c1fb4c0bff96e1911394d2fa8d194f77619c05ff6cc8a \
-    --hash=sha256:ce510e327a630c9e1beaf17d42e6ffacc88185044ad85cf74c0a8887c6a0f88c
+tenacity==8.3.0 \
+    --hash=sha256:3649f6443dbc0d9b01b9d8020a9c4ec7a1ff5f6f3c6c8a036ef371f573fe9185 \
+    --hash=sha256:953d4e6ad24357bceffbc9707bc74349aca9d245f68eb65419cf0c249a1949a2
     # via google-ads-api-report-fetcher
 typing-extensions==4.11.0 \
     --hash=sha256:83f085bd5ca59c80295fc2a82ab5dac679cbe02b9f33f7d83af68e241bea51b0 \
