@@ -34,7 +34,7 @@ repos:
   hooks:
   - id: pytest-check
     name: pytest-check
-    entry: pytest
+    entry: pytest -m 'not slow'
     language: system
     pass_filenames: false
     always_run: true
