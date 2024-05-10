@@ -23,7 +23,7 @@ README = (HERE / 'README.md').read_text()
 
 setup(
   name='gaarf-exporter',
-  version='0.7.0',
+  version='0.7.1',
   long_description=README,
   long_description_content_type='text/markdown',
   author='Google Inc. (gTech gPS CSE team)',
@@ -38,7 +38,7 @@ setup(
   ],
   packages=find_packages(),
   install_requires=[
-    'prometheus-client', 'google-ads-api-report-fetcher==1.13.2'
+    'prometheus-client', 'google-ads-api-report-fetcher==1.13.4'
   ],
   setup_requires=['pytest-runner'],
   tests_requires=['pytest'],
