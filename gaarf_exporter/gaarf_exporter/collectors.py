@@ -885,6 +885,16 @@ class Registry:
     return CollectorSet(collectors=set(self.collectors.get('default').values()))
 
   @property
+  def all_subregistries(self) -> CollectorSet:
+    """Helper for getting only sub-registries. """
+    collector_names = set()
+    for name, collector in self.collectors.items():
+      if isinstance(collector, dict):
+        collector_names.add(name)
+    subregistries_collector_names = ','.join(collector_names)
+    return self.find_collectors(collector_names=subregistries_collector_names)
+
+  @property
   def all_collectors(self) -> CollectorSet:
     """Helper for getting all collectors from the registry."""
     all_collector_names = ','.join(self.collectors.keys())
