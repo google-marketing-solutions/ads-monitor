@@ -190,6 +190,28 @@ class Target:
         resource_name=query_spec.get('resource_name'),
         level=level)
 
+  def create_conversion_split_target(self) -> Target:
+    """Builds new Target with conversions metric and dimensions.
+
+    Returns:
+        New Target on the same level as the seed one.
+    """
+    return Target(
+        name=f'{self.name}_conversion_split',
+        suffix=self.suffix,
+        level=self.level,
+        metrics='all_conversions,all_conversions_value',
+        dimensions=[
+            query_elements.Field('segments.conversion_action_category',
+                                 'conversion_category'),
+            query_elements.Field('segments.conversion_action_name',
+                                 'conversion_name'),
+            query_elements.Field('segments.conversion_action~0',
+                                 'conversion_id')
+        ],
+        resource_name=self.resource_name,
+        filters='metrics.all_conversions > 0')
+
   @property
   def level(self) -> TargetLevel | None:
     """Represents entity level of a target."""

@@ -55,6 +55,26 @@ class TestTarget:
         name='test', metrics='clicks', level=query_target.TargetLevel.AD_GROUP)
     assert target == expected_target
 
+  def test_create_conversion_split_target_returns_correct_target(self):
+    target = query_target.Target(
+        name='test', metrics='clicks', level=query_target.TargetLevel.AD_GROUP)
+    conv_split_target = target.create_conversion_split_target()
+    expected_target = query_target.Target(
+        name='test_conversion_split',
+        metrics='all_conversions,all_conversions_value',
+        level=target.level,
+        dimensions=[
+            query_elements.Field('segments.conversion_action_category',
+                                 'conversion_category'),
+            query_elements.Field('segments.conversion_action_name',
+                                 'conversion_name'),
+            query_elements.Field('segments.conversion_action~0',
+                                 'conversion_id')
+        ],
+        resource_name=target.resource_name,
+        filters='metrics.all_conversions > 0')
+    assert conv_split_target == expected_target
+
   class TestTargetQuery:
 
     def test_simple_target_creates_correct_query(self):
@@ -77,8 +97,7 @@ class TestTarget:
           level=query_target.TargetLevel.AD_GROUP,
           dimensions=[
               query_elements.Field(
-                  name='segments.conversion_action~0',
-                  alias='conversion_id'),
+                  name='segments.conversion_action~0', alias='conversion_id'),
               query_elements.Field(
                   name='search_terms_view.search_term', alias='search_term')
           ])
@@ -107,8 +126,7 @@ class TestTarget:
           level=query_target.TargetLevel.AD_GROUP,
           dimensions=[
               query_elements.Field(
-                  name='segments.conversion_action~0',
-                  alias='conversion_id'),
+                  name='segments.conversion_action~0', alias='conversion_id'),
               query_elements.Field(
                   name='search_terms_view.search_term', alias='search_term')
           ])
