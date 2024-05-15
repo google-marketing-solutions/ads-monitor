@@ -264,9 +264,8 @@ class TestCollector:
           metrics=[
               query_collector.Field('impressions'),
               query_collector.Field('campaign_budget.amount_micros', 'budget'),
-              query_collector.Field(
-                  'campaign.collector_cpa.collector_cpa_micros',
-                  'collector_cpa'),
+              query_collector.Field('campaign.target_cpa.target_cpa_micros',
+                                    'target_cpa'),
           ],
           level=query_collector.CollectorLevel.CAMPAIGN)
       expected_sql = """
@@ -274,7 +273,7 @@ class TestCollector:
             campaign.id AS campaign_id,
             metrics.impressions AS impressions,
             campaign_budget.amount_micros AS budget,
-            campaign.collector_cpa.collector_cpa_micros AS collector_cpa,
+            campaign.target_cpa.target_cpa_micros AS target_cpa,
         FROM campaign
         WHERE segments.date DURING TODAY
         """
@@ -392,13 +391,14 @@ class TestCollector:
       }
 
     @pytest.mark.parametrize('filters,expected_filter', [
-        ('segments.date DURING YESTERDAY', 'segments.date DURING YESTERDAY'),
-        (None, 'segments.date DURING TODAY'),
+        ('segments.date DURING YESTERDAY',
+         'WHERE segments.date DURING YESTERDAY'),
+        (None, 'WHERE segments.date DURING TODAY'),
     ])
     def test_filters_returns_correct_expression(self, filters, expected_filter):
-      collector = query_collector.Collector(filters=filters)
+      collector = query_collector.Collector(metrics='clicks', filters=filters)
 
-      assert collector.filters == expected_filter
+      assert collector.formatted_filters == expected_filter
 
     def test_resource_name_returns_correct_expression_for_explicit_resource_name(
         self):

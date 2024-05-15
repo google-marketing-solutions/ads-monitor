@@ -222,7 +222,7 @@ class Collector:
     self.name = name
     self._level = level
     self._resource_name = resource_name
-    self._filters = filters
+    self._filters = filters or set()
     self._metrics = self._init_fields(metrics, 'metrics')
     self._dimensions = self._init_fields(dimensions)
     self.suffix = suffix if suffix else name
@@ -315,8 +315,22 @@ class Collector:
 
   @property
   def filters(self) -> str:
-    """Returns filters or default placeholder."""
-    return self._filters or 'segments.date DURING TODAY'
+    """Returns filters or default placeholder.
+
+    If collector has any metric inject a placeholder filter to fetch data
+    only for today.
+    """
+    if isinstance(self._filters, str):
+      self._filters = set(self._filters.split(' AND '))
+    else:
+      self._filters = set(self._filters)
+    if isinstance(self, ServiceCollector) or not self._metrics:
+      return self._filters
+    if not self._filters:
+      self._filters.add('segments.date DURING TODAY')
+    elif not any('segments.date' in _filter for _filter in self._filters):
+      self._filters.add('segments.date DURING TODAY')
+    return self._filters
 
   @filters.setter
   def filters(self, values: str) -> None:
@@ -413,6 +427,14 @@ class Collector:
     return f'{dimensions_info},\n'
 
   @property
+  def formatted_filters(self) -> str:
+    """Returns formatted filters with WHERE statement."""
+    if not self.filters:
+      return ''
+    filters = ' AND '.join(self.filters)
+    return f'WHERE {filters}'
+
+  @property
   def resource_name(self) -> str:
     """Gets resource_name or infers it from collector level."""
     if self._resource_name:
@@ -429,7 +451,7 @@ class Collector:
     return (f'SELECT {self.formatted_level}{self.formatted_metrics}'
             f'{self.formatted_dimensions}'
             f'FROM {self.resource_name}\n'
-            f'WHERE {self.filters}')
+            f'{self.formatted_filters}')
 
   def is_similar(self, other: Collector) -> bool:
     """Compares similarity between two collectors.
