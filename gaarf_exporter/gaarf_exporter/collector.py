@@ -413,7 +413,7 @@ class ServiceCollector(Collector):
   @property
   def metrics(self) -> set[query_elements.Field]:
     """Returns default info metric."""
-    return {
+    return set(self._metrics) or {
         query_elements.Field(name='1', alias='info'),
     }
 
