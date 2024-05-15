@@ -31,6 +31,8 @@ import copy
 import dataclasses
 import enum
 import itertools
+from collections.abc import Mapping
+from collections.abc import MutableSequence
 from collections.abc import Sequence
 
 from gaarf_exporter import query_elements
@@ -155,6 +157,39 @@ class Target:
     self._dimensions = self._init_fields(dimensions)
     self.suffix = suffix if suffix else name
 
+  @classmethod
+  def from_definition(cls, definition: dict[str, dict[str]]) -> Target:
+    """Creates Target from a dictionary.
+
+    Args:
+      definition: Dictionary with necessary data to create Target.
+
+    Returns:
+      Initialized Target.
+    """
+    query_spec = definition.get('query_spec', {})
+    if definition.get('type') == 'service':
+      metrics = [query_elements.Field(name='1', alias='info')]
+    elif service_alias := definition.get('type', {}).get('service'):
+      metrics = [
+          query_elements.Field(name='1', alias=service_alias.get('alias'))
+      ]
+    else:
+      metrics = query_spec.get('metrics')
+
+    if level_string := query_spec.get('level'):
+      level = TargetLevel[level_string.upper()]
+    else:
+      level = TargetLevel.AD_GROUP
+    return cls(
+        name=definition.get('name'),
+        suffix=definition.get('suffix'),
+        metrics=metrics,
+        dimensions=query_spec.get('dimensions'),
+        filters=query_spec.get('filters'),
+        resource_name=query_spec.get('resource_name'),
+        level=level)
+
   @property
   def level(self) -> TargetLevel | None:
     """Represents entity level of a target."""
@@ -213,10 +248,22 @@ class Target:
     if not fields:
       return []
 
-    if fields and isinstance(fields, str):
+    if isinstance(fields, str):
       field_list = [
           query_elements.Field(name=field) for field in fields.split(',')
       ]
+    elif isinstance(fields, MutableSequence):
+      field_list = []
+      for field in fields:
+        if isinstance(field, query_elements.Field):
+          element = field
+        elif isinstance(field, Mapping):
+          for alias, values in field.items():
+            element = query_elements.Field(
+                name=values.get('field'), alias=alias)
+        else:
+          element = query_elements.Field(name=field)
+        field_list.append(element)
     else:
       field_list = fields
 

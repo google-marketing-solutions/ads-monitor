@@ -42,6 +42,19 @@ def assert_sql_functionally_equivalent(actual_sql, expected_sql):
 
 class TestTarget:
 
+  def test_from_definition_creates_correct_target(self):
+    collector_definition = {
+        'name': 'test',
+        'query_spec': {
+            'level': 'ad_group',
+            'metrics': ['clicks']
+        }
+    }
+    target = query_target.Target.from_definition(collector_definition)
+    expected_target = query_target.Target(
+        name='test', metrics='clicks', level=query_target.TargetLevel.AD_GROUP)
+    assert target == expected_target
+
   class TestTargetQuery:
 
     def test_simple_target_creates_correct_query(self):
