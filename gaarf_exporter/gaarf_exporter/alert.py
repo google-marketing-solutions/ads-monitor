@@ -17,7 +17,6 @@ from __future__ import annotations
 import yaml
 
 from gaarf_exporter.alert_elements import AlertRule
-from gaarf_exporter.target import Target
 
 
 class Alert:
@@ -26,13 +25,11 @@ class Alert:
                name: str,
                alert_rule: AlertRule,
                labels: str | None = None,
-               duration: str = '1h',
-               target: Target | None = None) -> None:
+               duration: str = '1h') -> None:
     self.name = name
     self.alert_rule = str(alert_rule)
     self.labels = labels
     self.duration = duration
-    self.target = target
 
   @property
   def text(self) -> dict[str, str]:

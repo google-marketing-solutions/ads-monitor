@@ -28,8 +28,8 @@ from typing import TypeVar
 import yaml
 from gaarf.cli import utils as gaarf_utils
 
+from gaarf_exporter import collector as query_collector
 from gaarf_exporter import query_elements
-from gaarf_exporter import target as query_target
 
 _REGISTRY: dict[str, dict[str, type[BaseCollector]]] = {}
 
@@ -60,10 +60,10 @@ class BaseCollector(Protocol):
 
   Attributes:
     name: Unique name that identifies the collector.
-    target: query_target.Target definition of the collector.
+    target: query_collector.Collector definition of the collector.
   """
   name: str
-  target: query_target.Target
+  target: query_collector.Collector
 
 
 def register(*registries: str) -> Callable:
@@ -102,7 +102,7 @@ def _create_conversion_split_collector(
   name = f'{name}ConversionSplitCollector'
   cls = type(name, (seed_collector,),
              {'name': seed_collector.name + '_conversion_split'})
-  cls.target = query_target.Target(
+  cls.target = query_collector.Collector(
       name=cls.name,
       metrics=_DEFAULT_CONVERSION_SPLIT_METRICS,
       level=seed_collector.target.level,
@@ -132,12 +132,12 @@ def register_conversion_split_collector(cls: type[_T]) -> type[_T]:
 class CollectorCustomizerMixin:
   """Mixin for dynamically changing targets in collectors."""
 
-  def customize_target(target: query_target.Target,
-                       **kwargs: str) -> query_target.Target:
+  def customize_target(target: query_collector.Collector,
+                       **kwargs: str) -> query_collector.Collector:
     """Executes a series of customizations on a target based on provided kwargs.
 
     Args:
-      target: An instance of query_target.Target that needs to be customized.
+      target: An instance of query_collector.Collector that needs to be customized.
       kwargs: Arguments for target customization.
 
     Returns:
@@ -147,12 +147,12 @@ class CollectorCustomizerMixin:
     target = CollectorCustomizerMixin._format_level(target, **kwargs)
     return target
 
-  def _format_date_range(target: query_target.Target,
-                         **kwargs: str) -> query_target.Target:
+  def _format_date_range(target: query_collector.Collector,
+                         **kwargs: str) -> query_collector.Collector:
     """Changes default period in report to custom one.
 
     Args:
-      target: An instance of query_target.Target that needs to be customized.
+      target: An instance of query_collector.Collector that needs to be customized.
       kwargs: Arguments for target customization.
 
     Returns:
@@ -173,19 +173,19 @@ class CollectorCustomizerMixin:
         target.dimensions = [query_elements.Field(str(n_days), 'n_days')]
     return target
 
-  def _format_level(target: query_target.Target,
-                    **kwargs: str) -> query_target.Target:
+  def _format_level(target: query_collector.Collector,
+                    **kwargs: str) -> query_collector.Collector:
     """Changes default level in report to custom one.
 
     Args:
-      target: An instance of query_target.Target that needs to be customized.
+      target: An instance of query_collector.Collector that needs to be customized.
       kwargs: Arguments for target customization.
 
     Returns:
       Modified target.
     """
     if kwargs and (level := kwargs.get('level')):
-      target.level = query_target.TargetLevel[level.upper()]
+      target.level = query_collector.CollectorLevel[level.upper()]
     return target
 
 
@@ -195,10 +195,10 @@ class CollectorCustomizerMixin:
 class PerformanceCollector(CollectorCustomizerMixin):
   """Gets performance metrics (clicks, impressions, cost) for ad groups."""
   name = 'performance'
-  target = query_target.Target(
+  target = query_collector.Collector(
       name=name,
       metrics=_DEFAULT_METRICS,
-      level=query_target.TargetLevel.AD_GROUP,
+      level=query_collector.CollectorLevel.AD_GROUP,
       dimensions=[
           query_elements.Field('segments.ad_network_type', 'network'),
       ],
@@ -214,9 +214,9 @@ class PerformanceCollector(CollectorCustomizerMixin):
 class DisapprovalCollector:
   """Gets ad_group_ad approval and review status info."""
   name = 'ad_disapprovals'
-  target = query_target.Target(
+  target = query_collector.Collector(
       name=name,
-      level=query_target.TargetLevel.AD_GROUP_AD,
+      level=query_collector.CollectorLevel.AD_GROUP_AD,
       dimensions=[
           query_elements.Field('ad_group.id', 'ad_group_id'),
           query_elements.Field('ad_group_ad.policy_summary.approval_status',
@@ -241,9 +241,9 @@ class DisapprovalCollector:
 class AdGroupAdAssetDisapprovalCollector:
   """Gets ad_group_ad_asset approval and review status info."""
   name = 'ad_group_ad_asset_disapprovals'
-  target = query_target.Target(
+  target = query_collector.Collector(
       name=name,
-      level=query_target.TargetLevel.AD_GROUP,
+      level=query_collector.CollectorLevel.AD_GROUP,
       dimensions=[
           query_elements.Field('asset.id', 'asset_id'),
           query_elements.Field('ad_group_ad_asset_view.field_type',
@@ -272,9 +272,9 @@ class AdGroupAdAssetDisapprovalCollector:
 class SitelinkDisapprovalCollector:
   """Gets sitelink approval and review status info."""
   name = 'sitelink_disapprovals'
-  target = query_target.Target(
+  target = query_collector.Collector(
       name=name,
-      level=query_target.TargetLevel.UNKNOWN,
+      level=query_collector.CollectorLevel.UNKNOWN,
       dimensions=[
           query_elements.Field('asset.id', 'asset_id'),
           query_elements.Field('asset.sitelink_asset.link_text',
@@ -302,12 +302,12 @@ class SitelinkDisapprovalCollector:
 class ConversionActionCollector:
   """Gets information on number of conversion by conversion_name."""
   name = 'conversion_action'
-  target = query_target.Target(
+  target = query_collector.Collector(
       name=name,
       metrics=[
           query_elements.Field('all_conversions'),
       ],
-      level=query_target.TargetLevel.CUSTOMER,
+      level=query_collector.CollectorLevel.CUSTOMER,
       dimensions=[
           query_elements.Field('customer.id', 'account_id'),
           query_elements.Field('segments.conversion_action_name',
@@ -326,9 +326,9 @@ class ConversionActionCollector:
 class AppCampaignMappingCollector:
   """Maps campaign_id to app campaign meta information for active campaigns."""
   name = 'app_campaign_mapping'
-  target = query_target.ServiceTarget(
+  target = query_collector.ServiceCollector(
       name=name,
-      level=query_target.TargetLevel.CAMPAIGN,
+      level=query_collector.CollectorLevel.CAMPAIGN,
       dimensions=[
           query_elements.Field('campaign.app_campaign_setting.app_id',
                                'app_id'),
@@ -346,9 +346,9 @@ class AppCampaignMappingCollector:
 class AppAssetMappingCollector:
   """Maps campaign_id to app campaign meta information for active campaigns."""
   name = 'app_asset_mapping'
-  target = query_target.ServiceTarget(
+  target = query_collector.ServiceCollector(
       name=name,
-      level=query_target.TargetLevel.UNKNOWN,
+      level=query_collector.CollectorLevel.UNKNOWN,
       dimensions=[
           query_elements.Field('asset.id', 'asset_id'),
           query_elements.Field('asset.type', 'asset_type'),
@@ -366,10 +366,10 @@ class AppAssetMappingCollector:
 class PmaxPerformanceCollector:
   """Gets performance metrics for pMax asset groups."""
   name = 'pmax_performance'
-  target = query_target.Target(
+  target = query_collector.Collector(
       name=name,
       metrics=_DEFAULT_METRICS,
-      level=query_target.TargetLevel.UNKNOWN,
+      level=query_collector.CollectorLevel.UNKNOWN,
       dimensions=[
           query_elements.Field('asset_group.id', 'asset_group_id'),
       ],
@@ -382,9 +382,9 @@ class PmaxPerformanceCollector:
 class PmaxMappingCollector:
   """Maps asset group id to pMax ad_group/campaign meta information."""
   name = 'pmax_mapping'
-  target = query_target.ServiceTarget(
+  target = query_collector.ServiceCollector(
       name=name,
-      level=query_target.TargetLevel.UNKNOWN,
+      level=query_collector.CollectorLevel.UNKNOWN,
       dimensions=[
           query_elements.Field('customer.descriptive_name', 'account_name'),
           query_elements.Field('customer.id', 'account_id'),
@@ -410,9 +410,9 @@ class PmaxMappingCollector:
 class PmaxDisapprovalsCollector:
   """Gets asset_id approval and review status info for pMax campaigns."""
   name = 'pmax_disapprovals'
-  target = query_target.Target(
+  target = query_collector.Collector(
       name=name,
-      level=query_target.TargetLevel.UNKNOWN,
+      level=query_collector.CollectorLevel.UNKNOWN,
       dimensions=[
           query_elements.Field('asset_group_asset.asset~0', 'asset_id'),
           query_elements.Field('asset_group_asset.asset_group~0',
@@ -440,9 +440,9 @@ class PmaxDisapprovalsCollector:
 class MappingCollector:
   """Maps ad_group_ad to ad_group/campaign meta information."""
   name = 'mapping'
-  target = query_target.ServiceTarget(
+  target = query_collector.ServiceCollector(
       name=name,
-      level=query_target.TargetLevel.AD_GROUP_AD,
+      level=query_collector.CollectorLevel.AD_GROUP_AD,
       dimensions=[
           query_elements.Field('customer.descriptive_name', 'account_name'),
           query_elements.Field('customer.id', 'account_id'),
@@ -467,9 +467,9 @@ class MappingCollector:
 class AdGroupMappingCollector:
   """Maps ad_group to basic campaign/account meta information."""
   name = 'ad_group_mapping'
-  target = query_target.ServiceTarget(
+  target = query_collector.ServiceCollector(
       name=name,
-      level=query_target.TargetLevel.AD_GROUP,
+      level=query_collector.CollectorLevel.AD_GROUP,
       dimensions=[
           query_elements.Field('customer.descriptive_name', 'account_name'),
           query_elements.Field('customer.id', 'account_id'),
@@ -486,10 +486,10 @@ class AdGroupMappingCollector:
 class SearchTermsCollector(CollectorCustomizerMixin):
   """Gets basic performance metrics for search terms on ad_group level."""
   name = 'search_terms'
-  target = query_target.Target(
+  target = query_collector.Collector(
       name=name,
       metrics=_DEFAULT_METRICS,
-      level=query_target.TargetLevel.AD_GROUP,
+      level=query_collector.CollectorLevel.AD_GROUP,
       resource_name='search_term_view',
       dimensions=[
           query_elements.Field('search_term_view.search_term', 'search_term')
@@ -508,10 +508,10 @@ class SearchTermsCollector(CollectorCustomizerMixin):
 class PlacementsCollector(CollectorCustomizerMixin):
   """Gets basic performance metrics for placements on ad_group level."""
   name = 'placements'
-  target = query_target.Target(
+  target = query_collector.Collector(
       name=name,
       metrics=_DEFAULT_METRICS,
-      level=query_target.TargetLevel.CUSTOMER,
+      level=query_collector.CollectorLevel.CUSTOMER,
       resource_name='group_placement_view',
       dimensions=[
           query_elements.Field('group_placement_view.display_name', 'name'),
@@ -530,9 +530,9 @@ class PlacementsCollector(CollectorCustomizerMixin):
 class BidBudgetCollector:
   """Gets bid and budget states for active campaigns."""
   name = 'bid_budgets'
-  target = query_target.Target(
+  target = query_collector.Collector(
       name=name,
-      level=query_target.TargetLevel.CAMPAIGN,
+      level=query_collector.CollectorLevel.CAMPAIGN,
       metrics=[
           query_elements.Field('campaign_budget.amount_micros/1e6', 'budget'),
           query_elements.Field('campaign.target_cpa.target_cpa_micros/1e6',
@@ -550,9 +550,9 @@ class BidBudgetCollector:
 class BudgetCollector:
   """Gets budget states for active campaigns."""
   name = 'budgets'
-  target = query_target.Target(
+  target = query_collector.Collector(
       name=name,
-      level=query_target.TargetLevel.CAMPAIGN,
+      level=query_collector.CollectorLevel.CAMPAIGN,
       metrics=[
           query_elements.Field('campaign_budget.amount_micros/1e6', 'budget'),
       ],
@@ -563,9 +563,9 @@ class BudgetCollector:
 class BidCollector:
   """Gets bid states for active campaigns."""
   name = 'bids'
-  target = query_target.Target(
+  target = query_collector.Collector(
       name=name,
-      level=query_target.TargetLevel.CAMPAIGN,
+      level=query_collector.CollectorLevel.CAMPAIGN,
       metrics=[
           query_elements.Field('campaign.target_cpa.target_cpa_micros/1e6',
                                'target_cpa'),
@@ -582,9 +582,9 @@ class BidCollector:
 class AssetPerformanceCollector(CollectorCustomizerMixin):
   """Gets performance and approval/review status for app campaigns."""
   name = 'asset_performance'
-  target = query_target.Target(
+  target = query_collector.Collector(
       name=name,
-      level=query_target.TargetLevel.AD_GROUP_AD_ASSET,
+      level=query_collector.CollectorLevel.AD_GROUP_AD_ASSET,
       metrics=[
           query_elements.Field('clicks'),
           query_elements.Field('impressions'),
@@ -615,9 +615,9 @@ class AssetPerformanceCollector(CollectorCustomizerMixin):
 class AssetPerformanceGroupppingCollector(CollectorCustomizerMixin):
   """Gets performance and approval/review status for app campaigns."""
   name = 'asset_perf_label'
-  target = query_target.ServiceTarget(
+  target = query_collector.ServiceCollector(
       name=name,
-      level=query_target.TargetLevel.AD_GROUP_AD_ASSET,
+      level=query_collector.CollectorLevel.AD_GROUP_AD_ASSET,
       dimensions=[
           query_elements.Field('ad_group.id', 'ad_group_id'),
           query_elements.Field('ad_group_ad_asset_view.performance_label',
@@ -635,10 +635,10 @@ class AssetPerformanceGroupppingCollector(CollectorCustomizerMixin):
 class AgeRangeCollector(CollectorCustomizerMixin):
   """Gets performance information for age range."""
   name = 'age'
-  target = query_target.Target(
+  target = query_collector.Collector(
       name=name,
       metrics=_DEFAULT_METRICS,
-      level=query_target.TargetLevel.CAMPAIGN,
+      level=query_collector.CollectorLevel.CAMPAIGN,
       resource_name='age_range_view',
       dimensions=[
           query_elements.Field('ad_group_criterion.age_range.type',
@@ -658,10 +658,10 @@ class AgeRangeCollector(CollectorCustomizerMixin):
 class GenderCollector(CollectorCustomizerMixin):
   """Gets performance information for gender."""
   name = 'gender'
-  target = query_target.Target(
+  target = query_collector.Collector(
       name=name,
       metrics=_DEFAULT_METRICS,
-      level=query_target.TargetLevel.CAMPAIGN,
+      level=query_collector.CollectorLevel.CAMPAIGN,
       resource_name='gender_view',
       dimensions=[
           query_elements.Field('ad_group_criterion.gender.type', 'gender'),
@@ -680,10 +680,10 @@ class GenderCollector(CollectorCustomizerMixin):
 class KeywordsCollector(CollectorCustomizerMixin):
   """Gets basic performance metrics for keywords."""
   name = 'keywords'
-  target = query_target.Target(
+  target = query_collector.Collector(
       name=name,
       metrics=_DEFAULT_METRICS,
-      level=query_target.TargetLevel.AD_GROUP,
+      level=query_collector.CollectorLevel.AD_GROUP,
       resource_name='keyword_view',
       dimensions=[
           query_elements.Field('ad_group_criterion.keyword.text', 'keyword'),
@@ -702,12 +702,12 @@ class KeywordsCollector(CollectorCustomizerMixin):
 class KeywordQualityScoreCollector(CollectorCustomizerMixin):
   """Gets quality score for keywords."""
   name = 'keyword_quality_score'
-  target = query_target.Target(
+  target = query_collector.Collector(
       name=name,
       metrics=[
           query_elements.Field('historical_quality_score'),
       ],
-      level=query_target.TargetLevel.AD_GROUP,
+      level=query_collector.CollectorLevel.AD_GROUP,
       resource_name='keyword_view',
       dimensions=[
           query_elements.Field('ad_group_criterion.keyword.text', 'keyword'),
@@ -723,12 +723,12 @@ class KeywordQualityScoreCollector(CollectorCustomizerMixin):
 class CampaignSearchClickShareCollector(CollectorCustomizerMixin):
   """Gets search click share for each campaign."""
   name = 'campaign_click_share'
-  target = query_target.Target(
+  target = query_collector.Collector(
       name=name,
       metrics=[
           query_elements.Field('search_click_share', 'click_share'),
       ],
-      level=query_target.TargetLevel.CAMPAIGN,
+      level=query_collector.CollectorLevel.CAMPAIGN,
       filters='segments.date DURING TODAY')
 
   def __init__(self, **kwargs):
@@ -741,10 +741,10 @@ class CampaignSearchClickShareCollector(CollectorCustomizerMixin):
 class UserLocationCollector(CollectorCustomizerMixin):
   """Gets performance information for user_location (country_id)."""
   name = 'user_location'
-  target = query_target.Target(
+  target = query_collector.Collector(
       name=name,
       metrics=_DEFAULT_METRICS,
-      level=query_target.TargetLevel.CAMPAIGN,
+      level=query_collector.CollectorLevel.CAMPAIGN,
       resource_name='user_location_view',
       dimensions=[
           query_elements.Field('user_location_view.country_criterion_id',
@@ -762,13 +762,13 @@ class UserLocationCollector(CollectorCustomizerMixin):
 class CampaignOptimizationScoreCollector:
   """Gets optimization score by each campaign."""
   name = 'optimization_score'
-  target = query_target.Target(
+  target = query_collector.Collector(
       name=name,
       metrics=[
           query_elements.Field('campaign.optimization_score',
                                'campaign_optimization_score'),
       ],
-      level=query_target.TargetLevel.CAMPAIGN,
+      level=query_collector.CollectorLevel.CAMPAIGN,
       filters=("campaign.status = 'ENABLED'"),
       suffix='Remove')
 
@@ -777,9 +777,9 @@ class CampaignOptimizationScoreCollector:
 class AccountStatus:
   """Gets status each account."""
   name = 'account_status'
-  target = query_target.ServiceTarget(
+  target = query_collector.ServiceCollector(
       name=name,
-      level=query_target.TargetLevel.CUSTOMER,
+      level=query_collector.CollectorLevel.CUSTOMER,
       dimensions=[
           query_elements.Field('customer.status', 'status'),
       ])
@@ -789,7 +789,7 @@ class AccountStatus:
 class OfflineConversionsImportCollector:
   """Gets status of offline conversion import for each account."""
   name = 'offline_conversions_import'
-  target = query_target.Target(
+  target = query_collector.Collector(
       name=name,
       dimensions=[
           query_elements.Field(
@@ -801,14 +801,14 @@ class OfflineConversionsImportCollector:
               'customer.offline_conversion_client_summaries:'
               'successful_event_count', 'successful_event_count'),
       ],
-      level=query_target.TargetLevel.CUSTOMER)
+      level=query_collector.CollectorLevel.CUSTOMER)
 
 
 # TODO: WIP
 class RemarketinglistCollector:
   """Gets sizes of remarketing lists for each account."""
   name = 'remarketing_list'
-  target = query_target.Target(
+  target = query_collector.Collector(
       name=name,
       resource_name='user_list',
       metrics=[
@@ -821,21 +821,21 @@ class RemarketinglistCollector:
           query_elements.Field('user_list.type', 'type'),
           query_elements.Field('user_list.name', 'name'),
       ],
-      level=query_target.TargetLevel.CUSTOMER)
+      level=query_collector.CollectorLevel.CUSTOMER)
 
 
 @register()
 class LandingPagePerformanceCollector:
   """Gets serving status for each campaign."""
   name = 'landing_page'
-  target = query_target.Target(
+  target = query_collector.Collector(
       name=name,
       metrics=_DEFAULT_METRICS,
       dimensions=[
           query_elements.Field('landing_page_view.unexpanded_final_url',
                                'landing_page'),
       ],
-      level=query_target.TargetLevel.CUSTOMER,
+      level=query_collector.CollectorLevel.CUSTOMER,
       resource_name='landing_page_view',
       filters=('metrics.impressions > 0'))
 
@@ -844,7 +844,7 @@ class LandingPagePerformanceCollector:
 class CampaignServingStatusCollector:
   """Gets serving status for each campaign."""
   name = 'campaign_serving_status'
-  target = query_target.ServiceTarget(
+  target = query_collector.ServiceCollector(
       name=name,
       dimensions=[
           query_elements.Field('campaign.id'),
@@ -852,7 +852,7 @@ class CampaignServingStatusCollector:
           query_elements.Field('campaign.primary_status_reasons',
                                'primary_status_reasons'),
       ],
-      level=query_target.TargetLevel.CAMPAIGN,
+      level=query_collector.CollectorLevel.CAMPAIGN,
       filters=('campaign.primary_status NOT IN '
                "('ELIGIBLE', 'ENDED', 'PAUSED', 'REMOVED')"))
 
@@ -885,9 +885,9 @@ class Registry:
       for collector_data in data:
         if collector_data.get('type') == 'service' or collector_data.get(
             'type', {}).get('service'):
-          coll = query_target.ServiceTarget.from_definition(collector_data)
+          coll = query_collector.ServiceCollector.from_definition(collector_data)
         else:
-          coll = query_target.Target.from_definition(collector_data)
+          coll = query_collector.Collector.from_definition(collector_data)
         collectors[coll.name] = coll
         if subregistries := collector_data.get('registries'):
           for subregistry in subregistries:
@@ -986,7 +986,7 @@ class CollectorSet(MutableSet):
     self._customized_collectors = customized_collectors
 
   @property
-  def targets(self) -> set[query_target.Target]:
+  def targets(self) -> set[query_collector.Collector]:
     """Gets target from collectors in the set."""
     return {collector.target for collector in self.collectors}
 

@@ -11,19 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Defines Target class and corresponding helper methods.
+"""Defines Collector class and corresponding helper methods.
 
-Target serves an important roles of building Google Ads queries from set of
+Collector serves an important roles of building Google Ads queries from set of
 diverse elements: metrics, dimensions, filters, resource names, etc.
 
-Target can be:
+Collector can be:
   * similar (sharing the same metrics, dimensions and filters) which allows
-    to perform similar target deduplication with the lowest common level.
-  * equal (sharing the same attributes) - useful for checking target presence
+    to perform similar collector deduplication with the lowest common level.
+  * equal (sharing the same attributes) - useful for checking collector presence
     in the sets.
 
-Metrics, dimensions and filters of a Target can be dynamically changed thus
-allowing Target customization at the runtime.
+Metrics, dimensions and filters of a Collector can be dynamically changed thus
+allowing Collector customization at the runtime.
 """
 from __future__ import annotations
 
@@ -39,12 +39,12 @@ from gaarf_exporter import query_elements
 from gaarf_exporter import util
 
 
-class TargetLevel(enum.IntEnum):
+class CollectorLevel(enum.IntEnum):
   """Represents minimal level of entity.
 
-  TargetLevel regulates which entity id (ad_id, ad_group_id, campaign_id, etc.)
-  is associated with metrics and dimensions for a given target.
-  Target levels are ordered hierarchically to support comparison operations.
+  CollectorLevel regulates which entity id (ad_id, ad_group_id, campaign_id, etc.)
+  is associated with metrics and dimensions for a given collector.
+  Collector levels are ordered hierarchically to support comparison operations.
   """
   UNKNOWN = 0
   AD_GROUP_AD_ASSET = 1
@@ -62,9 +62,9 @@ class TargetLevel(enum.IntEnum):
 
 @dataclasses.dataclass
 class LevelInfo:
-  """Stores meta information for a particular TargetLevel.
+  """Stores meta information for a particular CollectorLevel.
 
-  This meta information is used to correctly build query in the Target.
+  This meta information is used to correctly build query in the Collector.
 
   Attributes:
     resource_name: Name of Google Ads reporting resource.
@@ -91,63 +91,63 @@ class LevelInfo:
 
 
 _LEVELS = {
-    TargetLevel.AD_GROUP_AD_ASSET:
+    CollectorLevel.AD_GROUP_AD_ASSET:
         LevelInfo('ad_group_ad_asset_view', 'asset.id', 'asset_id',
                   'asset.name', 'asset',
                   'ad_group_ad_asset_view.enabled = TRUE'),
-    TargetLevel.AD_GROUP_AD:
+    CollectorLevel.AD_GROUP_AD:
         LevelInfo('ad_group_ad', 'ad_group_ad.ad.id', 'ad_id',
                   'ad_group_ad.ad.name', 'ad_name',
                   'ad_group_ad.status = ENABLED'),
-    TargetLevel.AD_GROUP:
+    CollectorLevel.AD_GROUP:
         LevelInfo('ad_group', 'ad_group.id', 'ad_group_id', 'ad_group.name',
                   'ad_group_name', 'ad_group.status = ENABLED'),
-    TargetLevel.CAMPAIGN:
+    CollectorLevel.CAMPAIGN:
         LevelInfo('campaign', 'campaign.id', 'campaign_id', 'campaign.name',
                   'campaign_name', 'campaign.status = ENABLED'),
-    TargetLevel.CUSTOMER:
+    CollectorLevel.CUSTOMER:
         LevelInfo('customer', 'customer.id', 'customer_id',
                   'customer.descriptive_name', 'account_name',
                   'customer.status = ENABLED'),
-    TargetLevel.MCC:
+    CollectorLevel.MCC:
         LevelInfo('customer', 'customer.id', 'customer_id',
                   'customer.descriptive_name', 'account_name',
                   'customer.status = ENABLED'),
 }
 
 
-class Target:
+class Collector:
   """Represents collection of query elements needed to build a Google Ads query.
 
   Attributes:
-    name: Unique identifier of a target.
-    level: Minimal entity level in the target (ad_group, campaign, customer).
-    metrics: All metrics (started with `metrics.`) associated with the target.
-    dimensions: All segments and resources associated with the target.
+    name: Unique identifier of a collector.
+    level: Minimal entity level in the collector (ad_group, campaign, customer).
+    metrics: All metrics (started with `metrics.`) associated with the collector.
+    dimensions: All segments and resources associated with the collector.
     filters: Text conditions for limiting the query.
     resource_name: Name of resource to get data from (used in FROM statement).
     query: Full text of the query to be sent to Google Ads API.
-    suffix: Optional custom identifier to the target.
+    suffix: Optional custom identifier to the collector.
   """
 
   def __init__(self,
                name: str | None = None,
                metrics: str | list[query_elements.Field] | None = None,
-               level: TargetLevel | None = TargetLevel.AD_GROUP,
+               level: CollectorLevel | None = CollectorLevel.AD_GROUP,
                resource_name: str | None = None,
                dimensions: str | list[query_elements.Field] | None = None,
                filters: str | None = None,
                suffix: str | None = None) -> None:
-    """Initializes Target.
+    """Initializes Collector.
 
     Args:
-      name: Unique identifier of a target.
-      metrics: All metrics (started with `metrics.`) associated with the target.
-      level: Minimal entity level in the target (ad_group, campaign, customer).
+      name: Unique identifier of a collector.
+      metrics: All metrics (started with `metrics.`) associated with the collector.
+      level: Minimal entity level in the collector (ad_group, campaign, customer).
       resource_name: Name of resource to get data from (used in FROM statement).
-      dimensions: All segments and resources associated with the target.
+      dimensions: All segments and resources associated with the collector.
       filters: Text conditions for limiting the query.
-      suffix: Optional custom identifier to the target.
+      suffix: Optional custom identifier to the collector.
     """
     self.name = name
     self._level = level
@@ -158,14 +158,14 @@ class Target:
     self.suffix = suffix if suffix else name
 
   @classmethod
-  def from_definition(cls, definition: dict[str, dict[str]]) -> Target:
-    """Creates Target from a dictionary.
+  def from_definition(cls, definition: dict[str, dict[str]]) -> Collector:
+    """Creates Collector from a dictionary.
 
     Args:
-      definition: Dictionary with necessary data to create Target.
+      definition: Dictionary with necessary data to create Collector.
 
     Returns:
-      Initialized Target.
+      Initialized Collector.
     """
     query_spec = definition.get('query_spec', {})
     if definition.get('type') == 'service':
@@ -178,9 +178,9 @@ class Target:
       metrics = query_spec.get('metrics')
 
     if level_string := query_spec.get('level'):
-      level = TargetLevel[level_string.upper()]
+      level = CollectorLevel[level_string.upper()]
     else:
-      level = TargetLevel.AD_GROUP
+      level = CollectorLevel.AD_GROUP
     return cls(
         name=definition.get('name'),
         suffix=definition.get('suffix'),
@@ -190,13 +190,13 @@ class Target:
         resource_name=query_spec.get('resource_name'),
         level=level)
 
-  def create_conversion_split_target(self) -> Target:
-    """Builds new Target with conversions metric and dimensions.
+  def create_conversion_split_collector(self) -> Collector:
+    """Builds new Collector with conversions metric and dimensions.
 
     Returns:
-        New Target on the same level as the seed one.
+        New Collector on the same level as the seed one.
     """
-    return Target(
+    return Collector(
         name=f'{self.name}_conversion_split',
         suffix=self.suffix,
         level=self.level,
@@ -213,13 +213,13 @@ class Target:
         filters='metrics.all_conversions > 0')
 
   @property
-  def level(self) -> TargetLevel | None:
-    """Represents entity level of a target."""
+  def level(self) -> CollectorLevel | None:
+    """Represents entity level of a collector."""
     return self._level
 
   @level.setter
-  def level(self, value: TargetLevel) -> None:
-    """Changes saved level of a target."""
+  def level(self, value: CollectorLevel) -> None:
+    """Changes saved level of a collector."""
     self._level = value
 
   @property
@@ -229,7 +229,7 @@ class Target:
 
   @metrics.setter
   def metrics(self, values: Sequence[query_elements.Field]) -> None:
-    """Changes saved metrics of a target."""
+    """Changes saved metrics of a collector."""
     self._metrics = set(values)
 
   @property
@@ -239,7 +239,7 @@ class Target:
 
   @dimensions.setter
   def dimensions(self, values: Sequence[query_elements.Field]) -> None:
-    """Changes saved dimensions of a target."""
+    """Changes saved dimensions of a collector."""
     self._dimensions = values
 
   @property
@@ -249,7 +249,7 @@ class Target:
 
   @filters.setter
   def filters(self, values: str) -> None:
-    """Changes saved dimensions of a target."""
+    """Changes saved dimensions of a collector."""
     self._filters = values
 
   def _init_fields(self,
@@ -312,7 +312,7 @@ class Target:
 
   @property
   def level_info(self) -> LevelInfo | None:
-    """Returns meta information related to a target level."""
+    """Returns meta information related to a collector level."""
     return _LEVELS.get(self.level)
 
   @property
@@ -346,7 +346,7 @@ class Target:
 
   @property
   def resource_name(self) -> str:
-    """Gets resource_name or infers it from target level."""
+    """Gets resource_name or infers it from collector level."""
     if self._resource_name:
       return self._resource_name
     if level_info := self.level_info:
@@ -361,44 +361,44 @@ class Target:
             f'FROM {self.resource_name}\n'
             f'WHERE {self.filters}')
 
-  def is_similar(self, other: Target) -> bool:
-    """Compares similarity between two targets.
+  def is_similar(self, other: Collector) -> bool:
+    """Compares similarity between two collectors.
 
-    Similarity first checks whether two targets are coming from different
-    non TargetLevel specific resouce_names, if they are different then
-    targets are not similar.
-    Then is compares all  metrics, dimensions and filters between two targets.
+    Similarity first checks whether two collectors are coming from different
+    non CollectorLevel specific resouce_names, if they are different then
+    collectors are not similar.
+    Then is compares all  metrics, dimensions and filters between two collectors.
 
     Returns:
-      Whether two targets are similar.
+      Whether two collectors are similar.
     """
-    if not other or not isinstance(other, Target):
+    if not other or not isinstance(other, Collector):
       return False
 
     if (self.resource_name != other.resource_name and
-        not (TargetLevel.contains(self.resource_name, other.resource_name))):
+        not (CollectorLevel.contains(self.resource_name, other.resource_name))):
       return False
     if (self.metrics, self.dimensions,
         self.filters) == (other.metrics, other.dimensions, other.filters):
       return True
     return False
 
-  def __eq__(self, other: Target) -> bool:
-    """Compares two targets based on similarity, resource_name and level."""
+  def __eq__(self, other: Collector) -> bool:
+    """Compares two collectors based on similarity, resource_name and level."""
     if not self.is_similar(other):
       return False
     if self.level != other.level:
       return False
     return True
 
-  def __lt__(self, other: Target) -> bool:
-    """Compares targets by level values."""
+  def __lt__(self, other: Collector) -> bool:
+    """Compares collectors by level values."""
     if self.level.value < other.level.value:
       return True
     return False
 
-  def __gt__(self, other: Target) -> bool:
-    """Compares targets by level values."""
+  def __gt__(self, other: Collector) -> bool:
+    """Compares collectors by level values."""
     if self.level.value > other.level.value:
       return True
     return False
@@ -407,8 +407,8 @@ class Target:
     return hash(self.query)
 
 
-class ServiceTarget(Target):
-  """Helper class for targets without metrics."""
+class ServiceCollector(Collector):
+  """Helper class for collectors without metrics."""
 
   @property
   def metrics(self) -> set[query_elements.Field]:
@@ -423,26 +423,26 @@ class ServiceTarget(Target):
     raise ValueError('Cannot change value of "metrics"!')
 
 
-def create_default_service_target(level: TargetLevel) -> ServiceTarget:
-  """Generates correct ServiceTarget based on provided level.
+def create_default_service_collector(level: CollectorLevel) -> ServiceCollector:
+  """Generates correct ServiceCollector based on provided level.
 
    Based on level (AD_GROUP, CAMPAIGN, ACCOUNT, etc.) corresponding
-   ServiceTarget is created that contains all necessary mapping information
+   ServiceCollector is created that contains all necessary mapping information
    downstream. I.e. if 'level=AD_GROUP' then information on ad_group, campaign
    and customer will be included in to the mapping.
 
    Returns:
-    ServiceTarget called 'mapping' for an appropriate level.
+    ServiceCollector called 'mapping' for an appropriate level.
 
   """
-  if level == TargetLevel.MCC:
-    level = TargetLevel.CUSTOMER
+  if level == CollectorLevel.MCC:
+    level = CollectorLevel.CUSTOMER
   dimensions = []
   filters = ''
 
-  for target_level in TargetLevel:
-    if (target_level not in (TargetLevel.MCC, TargetLevel.AD_GROUP_AD_ASSET) and
-        level <= target_level and (level_info := _LEVELS.get(target_level))):
+  for collector_level in CollectorLevel:
+    if (collector_level not in (CollectorLevel.MCC, CollectorLevel.AD_GROUP_AD_ASSET) and
+        level <= collector_level and (level_info := _LEVELS.get(collector_level))):
       dimensions.extend([
           query_elements.Field(name=level_info.id, alias=level_info.id_alias),
           query_elements.Field(
@@ -453,27 +453,27 @@ def create_default_service_target(level: TargetLevel) -> ServiceTarget:
       else:
         filters = level_info.active_entities_filter
 
-  return ServiceTarget(
+  return ServiceCollector(
       name='mapping', dimensions=dimensions, level=level, filters=filters)
 
 
-def targets_similarity_check(targets: list[Target]) -> list[Target]:
-  """Dedupicates targets.
+def collectors_similarity_check(collectors: list[Collector]) -> list[Collector]:
+  """Dedupicates collectors.
 
-  If there are similar target in the list return only those with the lowest
+  If there are similar collector in the list return only those with the lowest
   level.
 
   Args:
-    targets: Possible target values.
+    collectors: Possible collector values.
 
   Returns:
-    Deduplicated targets.
+    Deduplicated collectors.
   """
-  cloned_targets = copy.deepcopy(targets)
-  combinations = itertools.combinations(targets, 2)
-  for target1, target2 in combinations:
-    if target1.is_similar(target2):
-      max_target = max(target1, target2)
-      if max_target in cloned_targets:
-        cloned_targets.remove(max_target)
-  return cloned_targets
+  cloned_collectors = copy.deepcopy(collectors)
+  combinations = itertools.combinations(collectors, 2)
+  for collector1, collector2 in combinations:
+    if collector1.is_similar(collector2):
+      max_collector = max(collector1, collector2)
+      if max_collector in cloned_collectors:
+        cloned_collectors.remove(max_collector)
+  return cloned_collectors

@@ -19,7 +19,7 @@ from collections.abc import Sequence
 
 import yaml
 
-from gaarf_exporter import target
+from gaarf_exporter import collector
 
 
 class Config:
@@ -34,24 +34,24 @@ class Config:
     lowest_target_level: Lowest level (AD_GROUP, CAMPAIGN, etc.) of all targets.
   """
 
-  def __init__(self, targets: Sequence[target.Target]) -> None:
+  def __init__(self, targets: Sequence[collector.Collector]) -> None:
     """Initializes Config from targets."""
     self._targets = list(targets)
 
   @functools.cached_property
   def targets(self):
     """Converts targets passed during init to regular and service targets."""
-    targets = target.targets_similarity_check(self._targets)
+    targets = collector.collectors_similarity_check(self._targets)
     has_service_target = any(
-        [isinstance(target_, target.ServiceTarget) for target_ in targets])
+        [isinstance(target_, collector.ServiceCollector) for target_ in targets])
     if not has_service_target:
       valid_target_levels = [
           target_.level
           for target_ in targets
-          if target_.level != target.TargetLevel.UNKNOWN
+          if target_.level != collector.CollectorLevel.UNKNOWN
       ]
       if valid_target_levels:
-        default_service_target = target.create_default_service_target(
+        default_service_target = collector.create_default_service_collector(
             min(valid_target_levels))
         targets.append(default_service_target)
     return targets
@@ -67,12 +67,12 @@ class Config:
     }
 
   @property
-  def regular_targets(self) -> dict[str, target.Target]:
+  def regular_targets(self) -> dict[str, target.Collector]:
     """Mapping between name of non-service target to itself."""
     return {
         target_.name: target_
         for target_ in self.targets
-        if not isinstance(target_, target.ServiceTarget)
+        if not isinstance(target_, target.ServiceCollector)
     }
 
   @property
@@ -86,12 +86,12 @@ class Config:
     }
 
   @property
-  def service_targets(self) -> dict[str, target.Target]:
+  def service_targets(self) -> dict[str, target.Collector]:
     """Mapping between name of service target to itself."""
     return {
         target_.name: target_
         for target_ in self.targets
-        if isinstance(target_, target.ServiceTarget)
+        if isinstance(target_, target.ServiceCollector)
     }
 
   @property
@@ -106,7 +106,7 @@ class Config:
   @property
   def lowest_target_level(self):
     """Lowest level (AD_GROUP, CAMPAIGN, etc.) of all targets."""
-    return target.TargetLevel(
+    return target.CollectorLevel(
         min([target_.level.value for target_ in self.targets]))
 
   def save(self, path: str) -> None:

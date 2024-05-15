@@ -15,8 +15,8 @@ from __future__ import annotations
 
 import pytest
 
+from gaarf_exporter import collector as query_collector
 from gaarf_exporter import registry
-from gaarf_exporter import target
 
 
 class TestRegistry:
@@ -85,7 +85,7 @@ class TestRegistry:
 
     class SampleCollector:
       name = 'sample'
-      target = target.Target(name='sample')
+      target = query_collector.Collector(name='sample')
 
     collector_registry.add_collectors([SampleCollector])
     found_collector_set = collector_registry.find_collectors('sample')
