@@ -16,6 +16,8 @@ Collectors are converted to gaarf queries that are sent to Ads API.
 """
 from __future__ import annotations
 
+import glob
+from collections import defaultdict
 from collections.abc import MutableSet
 from collections.abc import Sequence
 from datetime import datetime
@@ -23,6 +25,7 @@ from typing import Callable
 from typing import Protocol
 from typing import TypeVar
 
+import yaml
 from gaarf.cli import utils as gaarf_utils
 
 from gaarf_exporter import query_elements
@@ -869,6 +872,30 @@ class Registry:
       self.collectors = dict(collectors)
     else:
       self.collectors = dict(_REGISTRY)
+
+  @classmethod
+  def from_collector_definitions(cls, path_to_definitions: str) -> Registry:
+    """Builds Registry from one or multiple definitions."""
+    collectors: dict = defaultdict(dict)
+    results = []
+    for file in glob.glob(path_to_definitions):
+      with open(file, 'r', encoding='utf-8') as f:
+        results.append(yaml.safe_load(f))
+    for data in results:
+      for collector_data in data:
+        if collector_data.get('type') == 'service' or collector_data.get(
+            'type', {}).get('service'):
+          coll = query_target.ServiceTarget.from_definition(collector_data)
+        else:
+          coll = query_target.Target.from_definition(collector_data)
+        collectors[coll.name] = coll
+        if subregistries := collector_data.get('registries'):
+          for subregistry in subregistries:
+            collectors[subregistry].update({coll.name: coll})
+        if 'has_conversion_split' in collector_data:
+          conv_coll = coll.create_conversion_split_target()
+          collectors[conv_coll.name] = conv_coll
+    return cls(collectors)
 
   @property
   def default_collectors(self) -> CollectorSet:

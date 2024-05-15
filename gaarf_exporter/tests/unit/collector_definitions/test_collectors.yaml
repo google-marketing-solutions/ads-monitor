@@ -1,0 +1,22 @@
+- name: performance
+  query_spec:
+    customizable:
+      - all
+      - metrics
+      - dimensions
+      - filters
+      - level
+    level: ad_group
+    metrics:
+      - clicks
+      - impressions
+      - conversions
+      - cost:
+          field: cost_micros / 1e6
+    dimensions:
+      - network:
+          field: segments.ad_network_type
+  suffix: Remove
+  has_conversion_split:
+  registries:
+    - default

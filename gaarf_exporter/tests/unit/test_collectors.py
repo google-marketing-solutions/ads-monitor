@@ -25,6 +25,11 @@ class TestRegistry:
   def registry(self):
     return collectors.Registry()
 
+  def test_from_collector_definitions(self):
+    registry = collectors.Registry.from_collector_definitions(
+        'test_collector_definitions.yaml')
+    assert registry.collectors is not None
+
   def test_default_collectors_returns_correct_target_names(self, registry):
     default_collectors = registry.default_collectors
     expected = {
