@@ -205,7 +205,8 @@ class Collector:
                resource_name: str | None = None,
                dimensions: str | list[Field] | None = None,
                filters: str | None = None,
-               suffix: str | None = None) -> None:
+               suffix: str | None = None,
+               query: str | None = None) -> None:
     """Initializes Collector.
 
     Args:
@@ -216,6 +217,7 @@ class Collector:
       dimensions: All segments and resources associated with the collector.
       filters: Text conditions for limiting the query.
       suffix: Optional custom identifier to the collector.
+      query: Full query_text.
     """
     self.name = name
     self._level = level
@@ -224,6 +226,7 @@ class Collector:
     self._metrics = self._init_fields(metrics, 'metrics')
     self._dimensions = self._init_fields(dimensions)
     self.suffix = suffix if suffix else name
+    self._query = query
 
   @classmethod
   def from_definition(cls, definition: CollectorDefinition) -> Collector:
@@ -235,6 +238,11 @@ class Collector:
     Returns:
       Initialized Collector.
     """
+    if query := definition.get('query'):
+      return cls(
+          name=definition.get('name'),
+          query=query,
+          suffix=definition.get('suffix'))
     query_spec = definition.get('query_spec', {})
     if definition.get('type') == 'service':
       metrics = [Field(name='1', alias='info')]
@@ -416,6 +424,8 @@ class Collector:
   @property
   def query(self) -> str:
     """Formats query based on elements."""
+    if self._query:
+      return self._query
     return (f'SELECT {self.formatted_level}{self.formatted_metrics}'
             f'{self.formatted_dimensions}'
             f'FROM {self.resource_name}\n'

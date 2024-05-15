@@ -19,6 +19,7 @@ import pytest
 
 from gaarf_exporter import collector as query_collector
 
+
 def tokenize_sql(sql: str) -> list[str]:
   return list(filter(None, re.split(r'[\r\n\s]+', sql)))
 
@@ -40,7 +41,7 @@ def assert_sql_functionally_equivalent(actual_sql, expected_sql):
 
 class TestCollector:
 
-  def test_from_definition_creates_correct_collector(self):
+  def test_from_definition_with_query_spec_creates_correct_collector(self):
     collector_definition = {
         'name': 'test',
         'query_spec': {
@@ -50,12 +51,26 @@ class TestCollector:
     }
     collector = query_collector.Collector.from_definition(collector_definition)
     expected_collector = query_collector.Collector(
-        name='test', metrics='clicks', level=query_collector.CollectorLevel.AD_GROUP)
+        name='test',
+        metrics='clicks',
+        level=query_collector.CollectorLevel.AD_GROUP)
     assert collector == expected_collector
+
+  def test_from_definition_with_query_creates_correct_collector(self):
+    collector_definition = {
+        'name': 'test',
+        'query': 'SELECT campaign.id FROM campaign',
+    }
+    collector = query_collector.Collector.from_definition(collector_definition)
+    expected_collector = query_collector.Collector(
+        name='test', query='SELECT campaign.id FROM campaign')
+    assert collector.query == expected_collector.query
 
   def test_create_conversion_split_collector_returns_correct_collector(self):
     test_collector = query_collector.Collector(
-        name='test', metrics='clicks', level=query_collector.CollectorLevel.AD_GROUP)
+        name='test',
+        metrics='clicks',
+        level=query_collector.CollectorLevel.AD_GROUP)
     conv_split_collector = test_collector.create_conversion_split_collector()
     expected_collector = query_collector.Collector(
         name='test_conversion_split',
@@ -63,11 +78,11 @@ class TestCollector:
         level=test_collector.level,
         dimensions=[
             query_collector.Field('segments.conversion_action_category',
-                                 'conversion_category'),
+                                  'conversion_category'),
             query_collector.Field('segments.conversion_action_name',
-                                 'conversion_name'),
+                                  'conversion_name'),
             query_collector.Field('segments.conversion_action~0',
-                                 'conversion_id')
+                                  'conversion_id')
         ],
         resource_name=test_collector.resource_name,
         filters='metrics.all_conversions > 0')
@@ -149,9 +164,11 @@ class TestCollector:
           name='mapping',
           dimensions=[
               query_collector.Field(name='ad_group.id', alias='ad_group_id'),
-              query_collector.Field(name='ad_group.name', alias='ad_group_name'),
+              query_collector.Field(
+                  name='ad_group.name', alias='ad_group_name'),
               query_collector.Field(name='campaign.id', alias='campaign_id'),
-              query_collector.Field(name='campaign.name', alias='campaign_name'),
+              query_collector.Field(
+                  name='campaign.name', alias='campaign_name'),
               query_collector.Field(name='customer.id', alias='customer_id'),
               query_collector.Field(
                   name='customer.descriptive_name', alias='account_name'),
@@ -247,8 +264,9 @@ class TestCollector:
           metrics=[
               query_collector.Field('impressions'),
               query_collector.Field('campaign_budget.amount_micros', 'budget'),
-              query_collector.Field('campaign.collector_cpa.collector_cpa_micros',
-                                   'collector_cpa'),
+              query_collector.Field(
+                  'campaign.collector_cpa.collector_cpa_micros',
+                  'collector_cpa'),
           ],
           level=query_collector.CollectorLevel.CAMPAIGN)
       expected_sql = """
@@ -268,10 +286,11 @@ class TestCollector:
           level=query_collector.CollectorLevel.AD_GROUP_AD,
           dimensions=[
               query_collector.Field('campaign.id', 'campaign_id'),
-              query_collector.Field('ad_group_ad.policy_summary.approval_status',
-                                   'approval_status'),
+              query_collector.Field(
+                  'ad_group_ad.policy_summary.approval_status',
+                  'approval_status'),
               query_collector.Field('ad_group_ad.policy_summary.review_status',
-                                   'review_status')
+                                    'review_status')
           ],
           filters=(
               'campaign.status = ENABLED'
@@ -354,7 +373,8 @@ class TestCollector:
     ])
     def test_create_default_service_collector_returns_correct_service_collector_query_for_level(  # pylint: disable=line-too-long
         self, test_level, expected_sql):
-      actual_collector = query_collector.create_default_service_collector(test_level)
+      actual_collector = query_collector.create_default_service_collector(
+          test_level)
       assert_sql_functionally_equivalent(actual_collector.query, expected_sql)
 
   class TestCollectorProperties:
@@ -386,7 +406,8 @@ class TestCollector:
       level = query_collector.CollectorLevel.AD_GROUP
       expected_resource_name = 'search_term_view'
 
-      collector = query_collector.Collector(level=level, resource_name=resource_name)
+      collector = query_collector.Collector(
+          level=level, resource_name=resource_name)
 
       assert collector.resource_name == expected_resource_name
 
@@ -417,7 +438,8 @@ class TestCollector:
 
       assert collector1 == collector2
 
-    def test_collectors_with_different_metrics_and_dimensions_are_not_equal(self):
+    def test_collectors_with_different_metrics_and_dimensions_are_not_equal(
+        self):
       collector1 = query_collector.Collector(
           name='collector1', metrics='clicks,conversions')
       collector2 = query_collector.Collector(
