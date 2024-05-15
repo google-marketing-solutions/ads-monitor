@@ -30,13 +30,19 @@ setup(
   author_email='no-reply@google.com',
   license='Apache 2.0',
   classifiers=[
-    'Programming Language :: Python :: 3',
+    'Programming Language :: Python :: 3 :: Only',
+    'Programming Language :: Python :: 3.8',
+    'Programming Language :: Python :: 3.9',
+    'Programming Language :: Python :: 3.10',
+    'Programming Language :: Python :: 3.11',
+    'Programming Language :: Python :: 3.12',
     'Intended Audience :: Developers',
     'Topic :: Software Development :: Libraries :: Python Modules',
     'Operating System :: OS Independent',
     'License :: OSI Approved :: Apache Software License'
   ],
   packages=find_packages(),
+  package_data={'': ['collector_definitions/*.yaml']},
   install_requires=[
     'prometheus-client', 'google-ads-api-report-fetcher==1.13.4'
   ],
