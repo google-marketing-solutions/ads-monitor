@@ -16,6 +16,7 @@ Collectors are converted to gaarf queries that are sent to Ads API.
 """
 from __future__ import annotations
 
+from collections.abc import MutableSet
 from collections.abc import Sequence
 from datetime import datetime
 from typing import Callable
@@ -937,7 +938,7 @@ class Registry:
       self.collectors[collector.name] = collector
 
 
-class CollectorSet:
+class CollectorSet(MutableSet):
   """Represent a set of collectors returned from Registry."""
 
   def __init__(self, collectors: set[BaseCollector] | None = None) -> None:
@@ -980,3 +981,15 @@ class CollectorSet:
 
   def __contains__(self, key: BaseCollector) -> bool:
     return key in self.collectors
+
+  def __iter__(self):
+    return iter(self.collectors)
+
+  def __len__(self) -> int:
+    return len(self.collectors)
+
+  def add(self, collector) -> None:
+    self._collectors.add(collector)
+
+  def discard(self, collector) -> None:
+    self._collectors.discard(collector)
