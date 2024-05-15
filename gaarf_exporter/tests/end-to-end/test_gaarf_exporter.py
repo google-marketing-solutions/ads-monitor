@@ -18,11 +18,11 @@ import subprocess
 
 import pytest
 
-from gaarf_exporter import collectors
+from gaarf_exporter import registry
 
 _START_PORT = 30000
 _END_PORT = 60000
-collectors_registry = collectors.Registry()
+collectors_registry = registry.Registry()
 
 
 def _generate_collector_port_pairs(property_name: str,

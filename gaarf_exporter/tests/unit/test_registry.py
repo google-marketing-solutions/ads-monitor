@@ -15,23 +15,23 @@ from __future__ import annotations
 
 import pytest
 
-from gaarf_exporter import collectors
+from gaarf_exporter import registry
 from gaarf_exporter import target
 
 
 class TestRegistry:
 
   @pytest.fixture(scope='class')
-  def registry(self):
-    return collectors.Registry()
+  def collector_registry(self):
+    return registry.Registry()
 
   def test_from_collector_definitions(self):
-    registry = collectors.Registry.from_collector_definitions(
+    collector_registry = registry.Registry.from_collector_definitions(
         'test_collector_definitions.yaml')
-    assert registry.collectors is not None
+    assert collector_registry.collectors is not None
 
-  def test_default_collectors_returns_correct_target_names(self, registry):
-    default_collectors = registry.default_collectors
+  def test_default_collectors_returns_correct_target_names(self, collector_registry):
+    default_collectors = collector_registry.default_collectors
     expected = {
         'conversion_action',
         'ad_disapprovals',
@@ -42,8 +42,8 @@ class TestRegistry:
     assert {target.name for target in default_collectors.targets} == expected
 
   def test_extract_collector_targets_returns_correct_collectors_from_registry(
-      self, registry):
-    actual = registry.find_collectors('performance,mapping')
+      self, collector_registry):
+    actual = collector_registry.find_collectors('performance,mapping')
     expected = {
         'mapping',
         'performance',
@@ -52,8 +52,8 @@ class TestRegistry:
     assert {target.name for target in actual.targets} == expected
 
   def test_extract_collector_targets_returns_all_collectors_from_subregistry(
-      self, registry):
-    actual = registry.find_collectors('default')
+      self, collector_registry):
+    actual = collector_registry.find_collectors('default')
     expected = {
         'conversion_action',
         'ad_disapprovals',
@@ -64,8 +64,8 @@ class TestRegistry:
     assert {target.name for target in actual.targets} == expected
 
   def test_extract_collector_targets_returns_unique_collectors_from_registry_and_sub_registry(
-      self, registry):
-    actual = registry.find_collectors('default,performance,mapping')
+      self, collector_registry):
+    actual = collector_registry.find_collectors('default,performance,mapping')
     expected = {
         'conversion_action',
         'ad_disapprovals',
@@ -76,19 +76,19 @@ class TestRegistry:
     assert {target.name for target in actual.targets} == expected
 
   def test_extract_collector_targets_returns_empty_set_when_collectors_are_not_found(
-      self, registry):
-    actual = registry.find_collectors('non-existing-collector')
+      self, collector_registry):
+    actual = collector_registry.find_collectors('non-existing-collector')
 
-    assert actual == collectors.CollectorSet()
+    assert actual == registry.CollectorSet()
 
-  def test_add_collectors(self, registry):
+  def test_add_collectors(self, collector_registry):
 
     class SampleCollector:
       name = 'sample'
       target = target.Target(name='sample')
 
-    registry.add_collectors([SampleCollector])
-    found_collector_set = registry.find_collectors('sample')
+    collector_registry.add_collectors([SampleCollector])
+    found_collector_set = collector_registry.find_collectors('sample')
 
     assert SampleCollector in found_collector_set
 
@@ -97,8 +97,8 @@ class TestCollectorSet:
 
   @pytest.fixture
   def collector_set(self):
-    return collectors.CollectorSet({
-        collectors.PerformanceCollector,
+    return registry.CollectorSet({
+        registry.PerformanceCollector,
     })
 
   def test_customize_returns_modified_target_start_end_date(

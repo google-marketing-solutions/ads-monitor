@@ -30,9 +30,9 @@ import yaml
 from gaarf.cli import utils as gaarf_utils
 
 from gaarf_exporter import bootstrap
-from gaarf_exporter import collectors
 from gaarf_exporter import config as exporter_config
 from gaarf_exporter import exporter
+from gaarf_exporter import registry
 from gaarf_exporter import util
 
 
@@ -77,7 +77,7 @@ def main() -> None:
       'sql',
       'template',
   ]).parse(args_bag[1])
-  collectors_registry = collectors.Registry()
+  collectors_registry = registry.Registry()
   macros = params.get('macro', {})
   if config_file := args.config:
     with smart_open.open(config_file, encoding='utf-8') as f:
