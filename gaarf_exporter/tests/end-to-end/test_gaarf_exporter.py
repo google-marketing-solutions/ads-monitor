@@ -22,7 +22,7 @@ from gaarf_exporter import registry
 
 _START_PORT = 30000
 _END_PORT = 60000
-collectors_registry = registry.Registry()
+collectors_registry = registry.Registry.from_collector_definitions()
 
 
 def _generate_collector_port_pairs(property_name: str,
@@ -30,8 +30,8 @@ def _generate_collector_port_pairs(property_name: str,
                                   ) -> list[tuple[str, int]]:
   start_port = random.randint(start_port, _END_PORT)
   collector_names = [
-      target.name
-      for target in getattr(collectors_registry, property_name).targets
+      collector.name
+      for collector in getattr(collectors_registry, property_name)
   ]
   ports = list(range(start_port, start_port + len(collector_names)))
   return list(zip(collector_names, ports))

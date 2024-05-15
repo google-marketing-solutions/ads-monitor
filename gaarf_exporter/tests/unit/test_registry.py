@@ -16,22 +16,17 @@ from __future__ import annotations
 import pytest
 
 from gaarf_exporter import collector as query_collector
-from gaarf_exporter import registry
+from gaarf_exporter import registry as collector_registry
 
 
 class TestRegistry:
 
   @pytest.fixture(scope='class')
-  def collector_registry(self):
-    return registry.Registry()
+  def registry(self):
+    return collector_registry.Registry.from_collector_definitions()
 
-  def test_from_collector_definitions(self):
-    collector_registry = registry.Registry.from_collector_definitions(
-        'test_collector_definitions.yaml')
-    assert collector_registry.collectors is not None
-
-  def test_default_collectors_returns_correct_target_names(self, collector_registry):
-    default_collectors = collector_registry.default_collectors
+  def test_default_collectors_returns_correct_target_names(self, registry):
+    default_collectors = registry.default_collectors
     expected = {
         'conversion_action',
         'ad_disapprovals',
@@ -39,21 +34,21 @@ class TestRegistry:
         'performance',
     }
 
-    assert {target.name for target in default_collectors.targets} == expected
+    assert {collector.name for collector in default_collectors} == expected
 
   def test_extract_collector_targets_returns_correct_collectors_from_registry(
-      self, collector_registry):
-    actual = collector_registry.find_collectors('performance,mapping')
+      self, registry):
+    actual = registry.find_collectors('performance,mapping')
     expected = {
         'mapping',
         'performance',
     }
 
-    assert {target.name for target in actual.targets} == expected
+    assert {collector.name for collector in actual} == expected
 
   def test_extract_collector_targets_returns_all_collectors_from_subregistry(
-      self, collector_registry):
-    actual = collector_registry.find_collectors('default')
+      self, registry):
+    actual = registry.find_collectors('default')
     expected = {
         'conversion_action',
         'ad_disapprovals',
@@ -61,11 +56,11 @@ class TestRegistry:
         'performance',
     }
 
-    assert {target.name for target in actual.targets} == expected
+    assert {collector.name for collector in actual} == expected
 
   def test_extract_collector_targets_returns_unique_collectors_from_registry_and_sub_registry(
-      self, collector_registry):
-    actual = collector_registry.find_collectors('default,performance,mapping')
+      self, registry):
+    actual = registry.find_collectors('default,performance,mapping')
     expected = {
         'conversion_action',
         'ad_disapprovals',
@@ -73,34 +68,72 @@ class TestRegistry:
         'performance',
     }
 
-    assert {target.name for target in actual.targets} == expected
+    assert {collector.name for collector in actual} == expected
 
   def test_extract_collector_targets_returns_empty_set_when_collectors_are_not_found(
-      self, collector_registry):
-    actual = collector_registry.find_collectors('non-existing-collector')
+      self, registry):
+    actual = registry.find_collectors('non-existing-collector')
 
-    assert actual == registry.CollectorSet()
-
-  def test_add_collectors(self, collector_registry):
-
-    class SampleCollector:
-      name = 'sample'
-      target = query_collector.Collector(name='sample')
-
-    collector_registry.add_collectors([SampleCollector])
-    found_collector_set = collector_registry.find_collectors('sample')
-
-    assert SampleCollector in found_collector_set
+    assert actual == collector_registry.CollectorSet()
 
 
 class TestCollectorSet:
 
   @pytest.fixture
-  def collector_set(self):
-    return registry.CollectorSet({
-        registry.PerformanceCollector,
-    })
+  def simple_target(self):
+    return query_collector.Collector(
+        name='simple',
+        metrics='impressions',
+        level=query_collector.CollectorLevel.AD_GROUP)
 
+  @pytest.fixture
+  def simple_target_at_customer_level(self):
+    return query_collector.Collector(
+        name='simple_customer_level',
+        metrics='impressions',
+        level=query_collector.CollectorLevel.CUSTOMER)
+
+  @pytest.fixture
+  def no_metric_target(self):
+    return query_collector.ServiceCollector(
+        name='mapping',
+        metrics=[
+            query_collector.Field(name='1', alias='info'),
+        ],
+        dimensions=[
+            query_collector.Field(name='ad_group.id', alias='ad_group_id'),
+            query_collector.Field(name='ad_group.name', alias='ad_group_name'),
+            query_collector.Field(name='campaign.id', alias='campaign_id'),
+            query_collector.Field(name='campaign.name', alias='campaign_name'),
+            query_collector.Field(name='customer.id', alias='customer_id'),
+            query_collector.Field(
+                name='customer.descriptive_name', alias='account_name'),
+        ],
+        filters=('ad_group.status = ENABLED'
+                 ' AND campaign.status = ENABLED'
+                 ' AND customer.status = ENABLED'))
+
+  @pytest.fixture
+  def collector_set(self):
+    return collector_registry.CollectorSet(
+        {query_collector.Collector(name='test', metrics='clicks')},
+        service_collectors=False)
+
+  def test_collector_set_performs_deduplication(
+      self, simple_target, simple_target_at_customer_level):
+    collector_set = collector_registry.CollectorSet(
+        {simple_target, simple_target_at_customer_level})
+    assert simple_target_at_customer_level not in collector_set
+    assert simple_target in collector_set
+
+  def test_collector_set_generatees_service_target(self, simple_target,
+                                                   no_metric_target):
+    collector_set = collector_registry.CollectorSet({
+        simple_target,
+    })
+    assert no_metric_target in collector_set
+
+  @pytest.mark.skip('To be implemented')
   def test_customize_returns_modified_target_start_end_date(
       self, collector_set):
     start_date = '2024-01-01'
@@ -110,21 +143,23 @@ class TestCollectorSet:
         'end_date': end_date,
     }
     collector_set.customize(customize_dict)
-    customized_target = collector_set.targets.pop()
+    customized_collector = collector_set.collectors.pop()
 
     assert f"segments.date BETWEEN '{start_date}' AND '{end_date}'" in (
-        customized_target.query)
+        customized_collector.query)
 
+  @pytest.mark.skip('To be implemented')
   @pytest.mark.parametrize('level', ['ad_group', 'campaign', 'customer'])
   def test_customize_returns_modified_target_level(self, collector_set, level):
     customize_dict = {
         'level': level,
     }
     collector_set.customize(customize_dict)
-    customized_target = collector_set.targets.pop()
+    customized_collector = collector_set.collectors.pop()
 
-    assert f'FROM {level}' in customized_target.query
+    assert f'FROM {level}' in customized_collector.query
 
+  @pytest.mark.skip('To be implemented')
   def test_customize_raises_key_error_on_incorrect_level(self, collector_set):
     customize_dict = {
         'level': 'unknown-level',

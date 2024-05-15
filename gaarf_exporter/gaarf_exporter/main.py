@@ -77,7 +77,7 @@ def main() -> None:
       'sql',
       'template',
   ]).parse(args_bag[1])
-  collectors_registry = registry.Registry()
+  collectors_registry = registry.Registry.from_collector_definitions()
   macros = params.get('macro', {})
   if config_file := args.config:
     with smart_open.open(config_file, encoding='utf-8') as f:
