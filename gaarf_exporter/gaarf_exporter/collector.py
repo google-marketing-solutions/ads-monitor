@@ -35,9 +35,53 @@ from collections.abc import Mapping
 from collections.abc import MutableSequence
 from collections.abc import Sequence
 
-from gaarf_exporter import query_elements
 from gaarf_exporter import util
 
+
+class Field:
+  """Helper class for defining Google Ads API field.
+
+  Field can be a metric, dimension or segment.
+
+  Attributes:
+      name: Name of the field, i.e. metric.clicks.
+      alias: Optional alias for the field, i.e. clicks.
+  """
+
+  def __init__(self, name: str, alias: str | None = None) -> None:
+    """Initializes Field.
+
+    Args:
+      name: Name of the field, i.e. metric.clicks.
+      alias: Optional alias for the field, i.e. clicks.
+    """
+    self.name = name
+    self.alias = alias or name.replace('.', '_')
+
+  def to_query_field(self) -> str:
+    """Converts Field to format 'name AS alias'."""
+    return f'{self.name} AS {self.alias}' if self.alias else self.name
+
+  def __str__(self) -> str:
+    return self.to_query_field()
+
+  def __repr__(self) -> str:
+    return f'Field(name={self.name}, alias={self.alias})'
+
+  def __eq__(self, other: Field) -> bool:
+    if not other or not isinstance(other, Field):
+      return False
+    return util.remove_spaces(str(self)) == util.remove_spaces(str(other))
+
+  def __lt__(self, other: Field) -> bool:
+    return util.remove_spaces(str(self)) < util.remove_spaces(str(other))
+
+  def __gt__(self, other: Field) -> bool:
+    return util.remove_spaces(str(self)) > util.remove_spaces(str(other))
+
+  def __hash__(self):
+    return hash((util.remove_spaces(self.name),
+                 util.remove_spaces(self.alias if self.alias else '')))
 
 class CollectorLevel(enum.IntEnum):
   """Represents minimal level of entity.
@@ -85,9 +129,9 @@ class LevelInfo:
     """Returns field name with alias."""
     return f'{self.id} AS {self.id_alias}'
 
-  def to_field(self) -> query_elements.Field:
+  def to_field(self) -> Field:
     """Builds Field from level meta information."""
-    return query_elements.Field(name=self.id, alias=self.id_alias)
+    return Field(name=self.id, alias=self.id_alias)
 
 
 _LEVELS = {
@@ -132,10 +176,10 @@ class Collector:
 
   def __init__(self,
                name: str | None = None,
-               metrics: str | list[query_elements.Field] | None = None,
+               metrics: str | list[Field] | None = None,
                level: CollectorLevel | None = CollectorLevel.AD_GROUP,
                resource_name: str | None = None,
-               dimensions: str | list[query_elements.Field] | None = None,
+               dimensions: str | list[Field] | None = None,
                filters: str | None = None,
                suffix: str | None = None) -> None:
     """Initializes Collector.
@@ -169,10 +213,10 @@ class Collector:
     """
     query_spec = definition.get('query_spec', {})
     if definition.get('type') == 'service':
-      metrics = [query_elements.Field(name='1', alias='info')]
+      metrics = [Field(name='1', alias='info')]
     elif service_alias := definition.get('type', {}).get('service'):
       metrics = [
-          query_elements.Field(name='1', alias=service_alias.get('alias'))
+          Field(name='1', alias=service_alias.get('alias'))
       ]
     else:
       metrics = query_spec.get('metrics')
@@ -202,11 +246,11 @@ class Collector:
         level=self.level,
         metrics='all_conversions,all_conversions_value',
         dimensions=[
-            query_elements.Field('segments.conversion_action_category',
+            Field('segments.conversion_action_category',
                                  'conversion_category'),
-            query_elements.Field('segments.conversion_action_name',
+            Field('segments.conversion_action_name',
                                  'conversion_name'),
-            query_elements.Field('segments.conversion_action~0',
+            Field('segments.conversion_action~0',
                                  'conversion_id')
         ],
         resource_name=self.resource_name,
@@ -223,22 +267,22 @@ class Collector:
     self._level = value
 
   @property
-  def metrics(self) -> set[query_elements.Field]:
+  def metrics(self) -> set[Field]:
     """Returns unique metrics."""
     return set(self._metrics)
 
   @metrics.setter
-  def metrics(self, values: Sequence[query_elements.Field]) -> None:
+  def metrics(self, values: Sequence[Field]) -> None:
     """Changes saved metrics of a collector."""
     self._metrics = set(values)
 
   @property
-  def dimensions(self) -> set[query_elements.Field]:
+  def dimensions(self) -> set[Field]:
     """Returns unique metrics."""
     return set(self._dimensions)
 
   @dimensions.setter
-  def dimensions(self, values: Sequence[query_elements.Field]) -> None:
+  def dimensions(self, values: Sequence[Field]) -> None:
     """Changes saved dimensions of a collector."""
     self._dimensions = values
 
@@ -253,8 +297,8 @@ class Collector:
     self._filters = values
 
   def _init_fields(self,
-                   fields: str | list[query_elements.Field],
-                   prefix: str = '') -> list[query_elements.Field]:
+                   fields: str | list[Field],
+                   prefix: str = '') -> list[Field]:
     """Transforms fields to proper Field format based on optional prefix.
 
     Args:
@@ -272,19 +316,19 @@ class Collector:
 
     if isinstance(fields, str):
       field_list = [
-          query_elements.Field(name=field) for field in fields.split(',')
+          Field(name=field) for field in fields.split(',')
       ]
     elif isinstance(fields, MutableSequence):
       field_list = []
       for field in fields:
-        if isinstance(field, query_elements.Field):
+        if isinstance(field, Field):
           element = field
         elif isinstance(field, Mapping):
           for alias, values in field.items():
-            element = query_elements.Field(
+            element = Field(
                 name=values.get('field'), alias=alias)
         else:
-          element = query_elements.Field(name=field)
+          element = Field(name=field)
         field_list.append(element)
     else:
       field_list = fields
@@ -411,14 +455,14 @@ class ServiceCollector(Collector):
   """Helper class for collectors without metrics."""
 
   @property
-  def metrics(self) -> set[query_elements.Field]:
+  def metrics(self) -> set[Field]:
     """Returns default info metric."""
     return set(self._metrics) or {
-        query_elements.Field(name='1', alias='info'),
+        Field(name='1', alias='info'),
     }
 
   @metrics.setter
-  def metrics(self, value: query_elements.Field) -> None:
+  def metrics(self, value: Field) -> None:
     """Ensures that metrics cannot be overwritten."""
     raise ValueError('Cannot change value of "metrics"!')
 
@@ -444,8 +488,8 @@ def create_default_service_collector(level: CollectorLevel) -> ServiceCollector:
     if (collector_level not in (CollectorLevel.MCC, CollectorLevel.AD_GROUP_AD_ASSET) and
         level <= collector_level and (level_info := _LEVELS.get(collector_level))):
       dimensions.extend([
-          query_elements.Field(name=level_info.id, alias=level_info.id_alias),
-          query_elements.Field(
+          Field(name=level_info.id, alias=level_info.id_alias),
+          Field(
               name=level_info.name, alias=level_info.name_alias),
       ])
       if filters:

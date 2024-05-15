@@ -29,27 +29,26 @@ import yaml
 from gaarf.cli import utils as gaarf_utils
 
 from gaarf_exporter import collector as query_collector
-from gaarf_exporter import query_elements
 
 _REGISTRY: dict[str, dict[str, type[BaseCollector]]] = {}
 
 _DEFAULT_METRICS = [
-    query_elements.Field('clicks'),
-    query_elements.Field('impressions'),
-    query_elements.Field('conversions'),
-    query_elements.Field('cost_micros / 1e6', 'cost')
+    query_collector.Field('clicks'),
+    query_collector.Field('impressions'),
+    query_collector.Field('conversions'),
+    query_collector.Field('cost_micros / 1e6', 'cost')
 ]
 
 _DEFAULT_CONVERSION_SPLIT_METRICS = [
-    query_elements.Field('all_conversions'),
-    query_elements.Field('all_conversions_value'),
+    query_collector.Field('all_conversions'),
+    query_collector.Field('all_conversions_value'),
 ]
 
 _DEFAULT_CONVERSION_SPLIT_DIMENSIONS = [
-    query_elements.Field('segments.conversion_action_category',
-                         'conversion_category'),
-    query_elements.Field('segments.conversion_action_name', 'conversion_name'),
-    query_elements.Field('segments.conversion_action~0', 'conversion_id'),
+    query_collector.Field('segments.conversion_action_category',
+                          'conversion_category'),
+    query_collector.Field('segments.conversion_action_name', 'conversion_name'),
+    query_collector.Field('segments.conversion_action~0', 'conversion_id'),
 ]
 
 _T = TypeVar('_T', bound='BaseCollector')
@@ -168,9 +167,9 @@ class CollectorCustomizerMixin:
       n_days = (datetime.strptime(end_date, '%Y-%m-%d') -
                 datetime.strptime(start_date, '%Y-%m-%d')).days + 1
       if target.dimensions:
-        target.dimensions.add(query_elements.Field(str(n_days), 'n_days'))
+        target.dimensions.add(query_collector.Field(str(n_days), 'n_days'))
       else:
-        target.dimensions = [query_elements.Field(str(n_days), 'n_days')]
+        target.dimensions = [query_collector.Field(str(n_days), 'n_days')]
     return target
 
   def _format_level(target: query_collector.Collector,
@@ -200,7 +199,7 @@ class PerformanceCollector(CollectorCustomizerMixin):
       metrics=_DEFAULT_METRICS,
       level=query_collector.CollectorLevel.AD_GROUP,
       dimensions=[
-          query_elements.Field('segments.ad_network_type', 'network'),
+          query_collector.Field('segments.ad_network_type', 'network'),
       ],
       filters='segments.date DURING TODAY',
       suffix='Remove')
@@ -218,17 +217,17 @@ class DisapprovalCollector:
       name=name,
       level=query_collector.CollectorLevel.AD_GROUP_AD,
       dimensions=[
-          query_elements.Field('ad_group.id', 'ad_group_id'),
-          query_elements.Field('ad_group_ad.policy_summary.approval_status',
-                               'approval_status'),
-          query_elements.Field('ad_group_ad.policy_summary.review_status',
-                               'review_status'),
-          query_elements.Field(
+          query_collector.Field('ad_group.id', 'ad_group_id'),
+          query_collector.Field('ad_group_ad.policy_summary.approval_status',
+                                'approval_status'),
+          query_collector.Field('ad_group_ad.policy_summary.review_status',
+                                'review_status'),
+          query_collector.Field(
               'ad_group_ad.policy_summary.policy_topic_entries:type',
               'topic_type'),
-          query_elements.Field(
+          query_collector.Field(
               'ad_group_ad.policy_summary.policy_topic_entries:topic', 'topic'),
-          query_elements.Field('1', 'ad_count'),
+          query_collector.Field('1', 'ad_count'),
       ],
       filters=("campaign.status = 'ENABLED'"
                " AND ad_group.status = 'ENABLED'"
@@ -245,22 +244,22 @@ class AdGroupAdAssetDisapprovalCollector:
       name=name,
       level=query_collector.CollectorLevel.AD_GROUP,
       dimensions=[
-          query_elements.Field('asset.id', 'asset_id'),
-          query_elements.Field('ad_group_ad_asset_view.field_type',
-                               'field_type'),
-          query_elements.Field(
+          query_collector.Field('asset.id', 'asset_id'),
+          query_collector.Field('ad_group_ad_asset_view.field_type',
+                                'field_type'),
+          query_collector.Field(
               'ad_group_ad_asset_view.policy_summary:approval_status',
               'approval_status'),
-          query_elements.Field(
+          query_collector.Field(
               'ad_group_ad_asset_view.policy_summary:review_status',
               'review_status'),
-          query_elements.Field(
+          query_collector.Field(
               'ad_group_ad_asset_view.policy_summary:policy_topic_entries.type',
               'topic_type'),
-          query_elements.Field(
+          query_collector.Field(
               'ad_group_ad_asset_view.policy_summary:'
               'policy_topic_entries.topic', 'topic'),
-          query_elements.Field('1', 'asset_count'),
+          query_collector.Field('1', 'asset_count'),
       ],
       resource_name='ad_group_ad_asset_view',
       filters=("campaign.status = 'ENABLED'"
@@ -276,22 +275,22 @@ class SitelinkDisapprovalCollector:
       name=name,
       level=query_collector.CollectorLevel.UNKNOWN,
       dimensions=[
-          query_elements.Field('asset.id', 'asset_id'),
-          query_elements.Field('asset.sitelink_asset.link_text',
-                               'sitelink_title'),
-          query_elements.Field('asset.sitelink_asset.description1',
-                               'sitelink_description1'),
-          query_elements.Field('asset.sitelink_asset.description2',
-                               'sitelink_description2'),
-          query_elements.Field('asset.policy_summary.approval_status',
-                               'approval_status'),
-          query_elements.Field('asset.policy_summary.review_status',
-                               'review_status'),
-          query_elements.Field('asset.policy_summary.policy_topic_entries:type',
-                               'topic_type'),
-          query_elements.Field(
+          query_collector.Field('asset.id', 'asset_id'),
+          query_collector.Field('asset.sitelink_asset.link_text',
+                                'sitelink_title'),
+          query_collector.Field('asset.sitelink_asset.description1',
+                                'sitelink_description1'),
+          query_collector.Field('asset.sitelink_asset.description2',
+                                'sitelink_description2'),
+          query_collector.Field('asset.policy_summary.approval_status',
+                                'approval_status'),
+          query_collector.Field('asset.policy_summary.review_status',
+                                'review_status'),
+          query_collector.Field(
+              'asset.policy_summary.policy_topic_entries:type', 'topic_type'),
+          query_collector.Field(
               'asset.policy_summary.policy_topic_entries:topic', 'topic'),
-          query_elements.Field('1', 'sitelink_count'),
+          query_collector.Field('1', 'sitelink_count'),
       ],
       resource_name='asset',
       filters=("asset.type = 'SITELINK' "
@@ -305,14 +304,15 @@ class ConversionActionCollector:
   target = query_collector.Collector(
       name=name,
       metrics=[
-          query_elements.Field('all_conversions'),
+          query_collector.Field('all_conversions'),
       ],
       level=query_collector.CollectorLevel.CUSTOMER,
       dimensions=[
-          query_elements.Field('customer.id', 'account_id'),
-          query_elements.Field('segments.conversion_action_name',
-                               'conversion_name'),
-          query_elements.Field('segments.conversion_action~0', 'conversion_id'),
+          query_collector.Field('customer.id', 'account_id'),
+          query_collector.Field('segments.conversion_action_name',
+                                'conversion_name'),
+          query_collector.Field('segments.conversion_action~0',
+                                'conversion_id'),
       ],
       filters=('segments.date DURING TODAY'
                ' AND metrics.all_conversions > 0'))
@@ -330,11 +330,11 @@ class AppCampaignMappingCollector:
       name=name,
       level=query_collector.CollectorLevel.CAMPAIGN,
       dimensions=[
-          query_elements.Field('campaign.app_campaign_setting.app_id',
-                               'app_id'),
-          query_elements.Field('campaign.app_campaign_setting.app_store',
-                               'app_store'),
-          query_elements.Field(
+          query_collector.Field('campaign.app_campaign_setting.app_id',
+                                'app_id'),
+          query_collector.Field('campaign.app_campaign_setting.app_store',
+                                'app_store'),
+          query_collector.Field(
               'campaign.app_campaign_setting.bidding_strategy_goal_type',
               'bidding_strategy'),
       ],
@@ -350,13 +350,13 @@ class AppAssetMappingCollector:
       name=name,
       level=query_collector.CollectorLevel.UNKNOWN,
       dimensions=[
-          query_elements.Field('asset.id', 'asset_id'),
-          query_elements.Field('asset.type', 'asset_type'),
-          query_elements.Field('asset.source', 'source'),
-          query_elements.Field('asset.name', 'asset_name'),
-          query_elements.Field('asset.text_asset.text', 'text'),
-          query_elements.Field('asset.youtube_video_asset.youtube_video_id',
-                               'video_id'),
+          query_collector.Field('asset.id', 'asset_id'),
+          query_collector.Field('asset.type', 'asset_type'),
+          query_collector.Field('asset.source', 'source'),
+          query_collector.Field('asset.name', 'asset_name'),
+          query_collector.Field('asset.text_asset.text', 'text'),
+          query_collector.Field('asset.youtube_video_asset.youtube_video_id',
+                                'video_id'),
       ],
       resource_name='asset',
       filters='asset.type IN (IMAGE, TEXT, YOUTUBE_VIDEO, MEDIA_BUNDLE)')
@@ -371,7 +371,7 @@ class PmaxPerformanceCollector:
       metrics=_DEFAULT_METRICS,
       level=query_collector.CollectorLevel.UNKNOWN,
       dimensions=[
-          query_elements.Field('asset_group.id', 'asset_group_id'),
+          query_collector.Field('asset_group.id', 'asset_group_id'),
       ],
       resource_name='asset_group',
       filters=('campaign.advertising_channel_type = PERFORMANCE_MAX'
@@ -386,19 +386,19 @@ class PmaxMappingCollector:
       name=name,
       level=query_collector.CollectorLevel.UNKNOWN,
       dimensions=[
-          query_elements.Field('customer.descriptive_name', 'account_name'),
-          query_elements.Field('customer.id', 'account_id'),
-          query_elements.Field('campaign.name', 'campaign_name'),
-          query_elements.Field('campaign.id', 'campaign_id'),
-          query_elements.Field('campaign.bidding_strategy_type',
-                               'bidding_strategy_type'),
-          query_elements.Field('campaign.advertising_channel_type',
-                               'campaign_type'),
-          query_elements.Field('campaign.advertising_channel_sub_type',
-                               'campaign_sub_type'),
-          query_elements.Field('campaign.start_date', 'start_date'),
-          query_elements.Field('asset_group.id', 'ad_group_id'),
-          query_elements.Field('asset_group.name', 'ad_group_name'),
+          query_collector.Field('customer.descriptive_name', 'account_name'),
+          query_collector.Field('customer.id', 'account_id'),
+          query_collector.Field('campaign.name', 'campaign_name'),
+          query_collector.Field('campaign.id', 'campaign_id'),
+          query_collector.Field('campaign.bidding_strategy_type',
+                                'bidding_strategy_type'),
+          query_collector.Field('campaign.advertising_channel_type',
+                                'campaign_type'),
+          query_collector.Field('campaign.advertising_channel_sub_type',
+                                'campaign_sub_type'),
+          query_collector.Field('campaign.start_date', 'start_date'),
+          query_collector.Field('asset_group.id', 'ad_group_id'),
+          query_collector.Field('asset_group.name', 'ad_group_name'),
       ],
       resource_name='asset_group',
       filters=('campaign.status = ENABLED'
@@ -414,21 +414,22 @@ class PmaxDisapprovalsCollector:
       name=name,
       level=query_collector.CollectorLevel.UNKNOWN,
       dimensions=[
-          query_elements.Field('asset_group_asset.asset~0', 'asset_id'),
-          query_elements.Field('asset_group_asset.asset_group~0',
-                               'asset_group_id'),
-          query_elements.Field(
+          query_collector.Field('asset_group_asset.asset~0', 'asset_id'),
+          query_collector.Field('asset_group_asset.asset_group~0',
+                                'asset_group_id'),
+          query_collector.Field(
               'asset_group_asset.policy_summary.approval_status',
               'approval_status'),
-          query_elements.Field('asset_group_asset.policy_summary.review_status',
-                               'review_status'),
-          query_elements.Field(
+          query_collector.Field(
+              'asset_group_asset.policy_summary.review_status',
+              'review_status'),
+          query_collector.Field(
               'asset_group_asset.policy_summary.policy_topic_entries:type',
               'topic_type'),
-          query_elements.Field(
+          query_collector.Field(
               'asset_group_asset.policy_summary.policy_topic_entries:topic',
               'topic'),
-          query_elements.Field('1', 'asset_count'),
+          query_collector.Field('1', 'asset_count'),
       ],
       resource_name='asset_group_asset',
       filters=('campaign.status = ENABLED'
@@ -444,19 +445,19 @@ class MappingCollector:
       name=name,
       level=query_collector.CollectorLevel.AD_GROUP_AD,
       dimensions=[
-          query_elements.Field('customer.descriptive_name', 'account_name'),
-          query_elements.Field('customer.id', 'account_id'),
-          query_elements.Field('campaign.name', 'campaign_name'),
-          query_elements.Field('campaign.id', 'campaign_id'),
-          query_elements.Field('campaign.bidding_strategy_type',
-                               'bidding_strategy_type'),
-          query_elements.Field('campaign.advertising_channel_type',
-                               'campaign_type'),
-          query_elements.Field('campaign.advertising_channel_sub_type',
-                               'campaign_sub_type'),
-          query_elements.Field('campaign.start_date', 'start_date'),
-          query_elements.Field('ad_group.id', 'ad_group_id'),
-          query_elements.Field('ad_group.name', 'ad_group_name'),
+          query_collector.Field('customer.descriptive_name', 'account_name'),
+          query_collector.Field('customer.id', 'account_id'),
+          query_collector.Field('campaign.name', 'campaign_name'),
+          query_collector.Field('campaign.id', 'campaign_id'),
+          query_collector.Field('campaign.bidding_strategy_type',
+                                'bidding_strategy_type'),
+          query_collector.Field('campaign.advertising_channel_type',
+                                'campaign_type'),
+          query_collector.Field('campaign.advertising_channel_sub_type',
+                                'campaign_sub_type'),
+          query_collector.Field('campaign.start_date', 'start_date'),
+          query_collector.Field('ad_group.id', 'ad_group_id'),
+          query_collector.Field('ad_group.name', 'ad_group_name'),
       ],
       filters=("campaign.status = 'ENABLED'"
                " AND ad_group.status = 'ENABLED'"
@@ -471,12 +472,12 @@ class AdGroupMappingCollector:
       name=name,
       level=query_collector.CollectorLevel.AD_GROUP,
       dimensions=[
-          query_elements.Field('customer.descriptive_name', 'account_name'),
-          query_elements.Field('customer.id', 'account_id'),
-          query_elements.Field('campaign.name', 'campaign_name'),
-          query_elements.Field('campaign.id', 'campaign_id'),
-          query_elements.Field('ad_group.id', 'ad_group_id'),
-          query_elements.Field('ad_group.name', 'ad_group_name'),
+          query_collector.Field('customer.descriptive_name', 'account_name'),
+          query_collector.Field('customer.id', 'account_id'),
+          query_collector.Field('campaign.name', 'campaign_name'),
+          query_collector.Field('campaign.id', 'campaign_id'),
+          query_collector.Field('ad_group.id', 'ad_group_id'),
+          query_collector.Field('ad_group.name', 'ad_group_name'),
       ],
       filters='campaign.status = ENABLED AND ad_group.status = ENABLED')
 
@@ -492,7 +493,7 @@ class SearchTermsCollector(CollectorCustomizerMixin):
       level=query_collector.CollectorLevel.AD_GROUP,
       resource_name='search_term_view',
       dimensions=[
-          query_elements.Field('search_term_view.search_term', 'search_term')
+          query_collector.Field('search_term_view.search_term', 'search_term')
       ],
       filters=('segments.date DURING TODAY '
                "AND campaign.status = 'ENABLED' "
@@ -514,8 +515,8 @@ class PlacementsCollector(CollectorCustomizerMixin):
       level=query_collector.CollectorLevel.CUSTOMER,
       resource_name='group_placement_view',
       dimensions=[
-          query_elements.Field('group_placement_view.display_name', 'name'),
-          query_elements.Field('group_placement_view.placement_type', 'type'),
+          query_collector.Field('group_placement_view.display_name', 'name'),
+          query_collector.Field('group_placement_view.placement_type', 'type'),
       ],
       filters=('segments.date DURING TODAY '
                "AND campaign.status = 'ENABLED' "
@@ -534,14 +535,14 @@ class BidBudgetCollector:
       name=name,
       level=query_collector.CollectorLevel.CAMPAIGN,
       metrics=[
-          query_elements.Field('campaign_budget.amount_micros/1e6', 'budget'),
-          query_elements.Field('campaign.target_cpa.target_cpa_micros/1e6',
-                               'target_cpa'),
-          query_elements.Field(
+          query_collector.Field('campaign_budget.amount_micros/1e6', 'budget'),
+          query_collector.Field('campaign.target_cpa.target_cpa_micros/1e6',
+                                'target_cpa'),
+          query_collector.Field(
               'campaign.maximize_conversions.target_cpa_micros/1e6',
               'max_conv_target_cpa'),
-          query_elements.Field('campaign.target_roas.target_roas',
-                               'target_roas'),
+          query_collector.Field('campaign.target_roas.target_roas',
+                                'target_roas'),
       ],
       filters="campaign.status = 'ENABLED'")
 
@@ -554,7 +555,7 @@ class BudgetCollector:
       name=name,
       level=query_collector.CollectorLevel.CAMPAIGN,
       metrics=[
-          query_elements.Field('campaign_budget.amount_micros/1e6', 'budget'),
+          query_collector.Field('campaign_budget.amount_micros/1e6', 'budget'),
       ],
       filters="campaign.status = 'ENABLED'")
 
@@ -567,13 +568,13 @@ class BidCollector:
       name=name,
       level=query_collector.CollectorLevel.CAMPAIGN,
       metrics=[
-          query_elements.Field('campaign.target_cpa.target_cpa_micros/1e6',
-                               'target_cpa'),
-          query_elements.Field(
+          query_collector.Field('campaign.target_cpa.target_cpa_micros/1e6',
+                                'target_cpa'),
+          query_collector.Field(
               'campaign.maximize_conversions.target_cpa_micros/1e6',
               'max_conv_target_cpa'),
-          query_elements.Field('campaign.target_roas.target_roas',
-                               'target_roas'),
+          query_collector.Field('campaign.target_roas.target_roas',
+                                'target_roas'),
       ],
       filters="campaign.status = 'ENABLED'")
 
@@ -586,20 +587,20 @@ class AssetPerformanceCollector(CollectorCustomizerMixin):
       name=name,
       level=query_collector.CollectorLevel.AD_GROUP_AD_ASSET,
       metrics=[
-          query_elements.Field('clicks'),
-          query_elements.Field('impressions'),
-          query_elements.Field('biddable_app_install_conversions', 'installs'),
-          query_elements.Field('biddable_app_post_install_conversions',
-                               'inapps'),
-          query_elements.Field('cost_micros / 1e6', 'cost'),
-          query_elements.Field('conversions_value'),
+          query_collector.Field('clicks'),
+          query_collector.Field('impressions'),
+          query_collector.Field('biddable_app_install_conversions', 'installs'),
+          query_collector.Field('biddable_app_post_install_conversions',
+                                'inapps'),
+          query_collector.Field('cost_micros / 1e6', 'cost'),
+          query_collector.Field('conversions_value'),
       ],
       dimensions=[
-          query_elements.Field('ad_group.id', 'ad_group_id'),
-          query_elements.Field('segments.ad_network_type', 'network'),
-          query_elements.Field('ad_group_ad_asset_view.performance_label',
-                               'performance_label'),
-          query_elements.Field('ad_group_ad_asset_view.field_type', 'type'),
+          query_collector.Field('ad_group.id', 'ad_group_id'),
+          query_collector.Field('segments.ad_network_type', 'network'),
+          query_collector.Field('ad_group_ad_asset_view.performance_label',
+                                'performance_label'),
+          query_collector.Field('ad_group_ad_asset_view.field_type', 'type'),
       ],
       filters=('segments.date DURING TODAY '
                "AND campaign.status = 'ENABLED' "
@@ -619,10 +620,10 @@ class AssetPerformanceGroupppingCollector(CollectorCustomizerMixin):
       name=name,
       level=query_collector.CollectorLevel.AD_GROUP_AD_ASSET,
       dimensions=[
-          query_elements.Field('ad_group.id', 'ad_group_id'),
-          query_elements.Field('ad_group_ad_asset_view.performance_label',
-                               'performance_label'),
-          query_elements.Field('ad_group_ad_asset_view.field_type', 'type'),
+          query_collector.Field('ad_group.id', 'ad_group_id'),
+          query_collector.Field('ad_group_ad_asset_view.performance_label',
+                                'performance_label'),
+          query_collector.Field('ad_group_ad_asset_view.field_type', 'type'),
       ],
       filters=('segments.date DURING TODAY '
                "AND campaign.status = 'ENABLED' "
@@ -641,8 +642,8 @@ class AgeRangeCollector(CollectorCustomizerMixin):
       level=query_collector.CollectorLevel.CAMPAIGN,
       resource_name='age_range_view',
       dimensions=[
-          query_elements.Field('ad_group_criterion.age_range.type',
-                               'age_range'),
+          query_collector.Field('ad_group_criterion.age_range.type',
+                                'age_range'),
       ],
       filters=('segments.date DURING TODAY '
                "AND campaign.status = 'ENABLED' "
@@ -664,7 +665,7 @@ class GenderCollector(CollectorCustomizerMixin):
       level=query_collector.CollectorLevel.CAMPAIGN,
       resource_name='gender_view',
       dimensions=[
-          query_elements.Field('ad_group_criterion.gender.type', 'gender'),
+          query_collector.Field('ad_group_criterion.gender.type', 'gender'),
       ],
       filters=('segments.date DURING TODAY '
                "AND campaign.status = 'ENABLED' "
@@ -686,9 +687,9 @@ class KeywordsCollector(CollectorCustomizerMixin):
       level=query_collector.CollectorLevel.AD_GROUP,
       resource_name='keyword_view',
       dimensions=[
-          query_elements.Field('ad_group_criterion.keyword.text', 'keyword'),
-          query_elements.Field('ad_group_criterion.keyword.match_type',
-                               'match_type'),
+          query_collector.Field('ad_group_criterion.keyword.text', 'keyword'),
+          query_collector.Field('ad_group_criterion.keyword.match_type',
+                                'match_type'),
       ],
       filters=('segments.date DURING TODAY '
                'AND campaign.status = ENABLED '
@@ -705,14 +706,14 @@ class KeywordQualityScoreCollector(CollectorCustomizerMixin):
   target = query_collector.Collector(
       name=name,
       metrics=[
-          query_elements.Field('historical_quality_score'),
+          query_collector.Field('historical_quality_score'),
       ],
       level=query_collector.CollectorLevel.AD_GROUP,
       resource_name='keyword_view',
       dimensions=[
-          query_elements.Field('ad_group_criterion.keyword.text', 'keyword'),
-          query_elements.Field('ad_group_criterion.keyword.match_type',
-                               'match_type'),
+          query_collector.Field('ad_group_criterion.keyword.text', 'keyword'),
+          query_collector.Field('ad_group_criterion.keyword.match_type',
+                                'match_type'),
       ],
       filters=('segments.date DURING YESTERDAY '
                'AND campaign.status = ENABLED '
@@ -726,7 +727,7 @@ class CampaignSearchClickShareCollector(CollectorCustomizerMixin):
   target = query_collector.Collector(
       name=name,
       metrics=[
-          query_elements.Field('search_click_share', 'click_share'),
+          query_collector.Field('search_click_share', 'click_share'),
       ],
       level=query_collector.CollectorLevel.CAMPAIGN,
       filters='segments.date DURING TODAY')
@@ -747,8 +748,8 @@ class UserLocationCollector(CollectorCustomizerMixin):
       level=query_collector.CollectorLevel.CAMPAIGN,
       resource_name='user_location_view',
       dimensions=[
-          query_elements.Field('user_location_view.country_criterion_id',
-                               'country_id'),
+          query_collector.Field('user_location_view.country_criterion_id',
+                                'country_id'),
       ],
       filters=('segments.date DURING TODAY '
                'AND metrics.clicks > 0'))
@@ -765,8 +766,8 @@ class CampaignOptimizationScoreCollector:
   target = query_collector.Collector(
       name=name,
       metrics=[
-          query_elements.Field('campaign.optimization_score',
-                               'campaign_optimization_score'),
+          query_collector.Field('campaign.optimization_score',
+                                'campaign_optimization_score'),
       ],
       level=query_collector.CollectorLevel.CAMPAIGN,
       filters=("campaign.status = 'ENABLED'"),
@@ -781,7 +782,7 @@ class AccountStatus:
       name=name,
       level=query_collector.CollectorLevel.CUSTOMER,
       dimensions=[
-          query_elements.Field('customer.status', 'status'),
+          query_collector.Field('customer.status', 'status'),
       ])
 
 
@@ -792,12 +793,12 @@ class OfflineConversionsImportCollector:
   target = query_collector.Collector(
       name=name,
       dimensions=[
-          query_elements.Field(
+          query_collector.Field(
               'customer.offline_conversion_client_summaries:status', 'status'),
-          query_elements.Field(
+          query_collector.Field(
               'customer.offline_conversion_client_summaries:total_event_count',
               'total_events'),
-          query_elements.Field(
+          query_collector.Field(
               'customer.offline_conversion_client_summaries:'
               'successful_event_count', 'successful_event_count'),
       ],
@@ -812,14 +813,14 @@ class RemarketinglistCollector:
       name=name,
       resource_name='user_list',
       metrics=[
-          query_elements.Field('user_list.size_for_display',
-                               'size_for_display'),
-          query_elements.Field('user_list.size_for_search', 'size_for_search'),
+          query_collector.Field('user_list.size_for_display',
+                                'size_for_display'),
+          query_collector.Field('user_list.size_for_search', 'size_for_search'),
       ],
       dimensions=[
-          query_elements.Field('user_list.id', 'id'),
-          query_elements.Field('user_list.type', 'type'),
-          query_elements.Field('user_list.name', 'name'),
+          query_collector.Field('user_list.id', 'id'),
+          query_collector.Field('user_list.type', 'type'),
+          query_collector.Field('user_list.name', 'name'),
       ],
       level=query_collector.CollectorLevel.CUSTOMER)
 
@@ -832,8 +833,8 @@ class LandingPagePerformanceCollector:
       name=name,
       metrics=_DEFAULT_METRICS,
       dimensions=[
-          query_elements.Field('landing_page_view.unexpanded_final_url',
-                               'landing_page'),
+          query_collector.Field('landing_page_view.unexpanded_final_url',
+                                'landing_page'),
       ],
       level=query_collector.CollectorLevel.CUSTOMER,
       resource_name='landing_page_view',
@@ -847,10 +848,10 @@ class CampaignServingStatusCollector:
   target = query_collector.ServiceCollector(
       name=name,
       dimensions=[
-          query_elements.Field('campaign.id'),
-          query_elements.Field('campaign.primary_status', 'primary_status'),
-          query_elements.Field('campaign.primary_status_reasons',
-                               'primary_status_reasons'),
+          query_collector.Field('campaign.id'),
+          query_collector.Field('campaign.primary_status', 'primary_status'),
+          query_collector.Field('campaign.primary_status_reasons',
+                                'primary_status_reasons'),
       ],
       level=query_collector.CollectorLevel.CAMPAIGN,
       filters=('campaign.primary_status NOT IN '
@@ -885,7 +886,8 @@ class Registry:
       for collector_data in data:
         if collector_data.get('type') == 'service' or collector_data.get(
             'type', {}).get('service'):
-          coll = query_collector.ServiceCollector.from_definition(collector_data)
+          coll = query_collector.ServiceCollector.from_definition(
+              collector_data)
         else:
           coll = query_collector.Collector.from_definition(collector_data)
         collectors[coll.name] = coll

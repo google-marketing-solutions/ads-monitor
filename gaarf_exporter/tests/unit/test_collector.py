@@ -18,8 +18,6 @@ import re
 import pytest
 
 from gaarf_exporter import collector as query_collector
-from gaarf_exporter import query_elements
-
 
 def tokenize_sql(sql: str) -> list[str]:
   return list(filter(None, re.split(r'[\r\n\s]+', sql)))
@@ -64,11 +62,11 @@ class TestCollector:
         metrics='all_conversions,all_conversions_value',
         level=test_collector.level,
         dimensions=[
-            query_elements.Field('segments.conversion_action_category',
+            query_collector.Field('segments.conversion_action_category',
                                  'conversion_category'),
-            query_elements.Field('segments.conversion_action_name',
+            query_collector.Field('segments.conversion_action_name',
                                  'conversion_name'),
-            query_elements.Field('segments.conversion_action~0',
+            query_collector.Field('segments.conversion_action~0',
                                  'conversion_id')
         ],
         resource_name=test_collector.resource_name,
@@ -96,9 +94,9 @@ class TestCollector:
           metrics='impressions,clicks',
           level=query_collector.CollectorLevel.AD_GROUP,
           dimensions=[
-              query_elements.Field(
+              query_collector.Field(
                   name='segments.conversion_action~0', alias='conversion_id'),
-              query_elements.Field(
+              query_collector.Field(
                   name='search_terms_view.search_term', alias='search_term')
           ])
       expected_sql = """
@@ -116,18 +114,18 @@ class TestCollector:
     def test_complex_collector_with_virtual_column_creates_correct_query(self):
       collector = query_collector.Collector(
           metrics=[
-              query_elements.Field(name='impressions'),
-              query_elements.Field(name='clicks'),
-              query_elements.Field(name='cost_micros * 1e6', alias='cost'),
-              query_elements.Field(name='clicks / impressions', alias='ctr'),
-              query_elements.Field(
+              query_collector.Field(name='impressions'),
+              query_collector.Field(name='clicks'),
+              query_collector.Field(name='cost_micros * 1e6', alias='cost'),
+              query_collector.Field(name='clicks / impressions', alias='ctr'),
+              query_collector.Field(
                   name='var1-var2/(1.05e3+var3)*100.5', alias='vc')
           ],
           level=query_collector.CollectorLevel.AD_GROUP,
           dimensions=[
-              query_elements.Field(
+              query_collector.Field(
                   name='segments.conversion_action~0', alias='conversion_id'),
-              query_elements.Field(
+              query_collector.Field(
                   name='search_terms_view.search_term', alias='search_term')
           ])
       expected_sql = """
@@ -150,12 +148,12 @@ class TestCollector:
       collector = query_collector.ServiceCollector(
           name='mapping',
           dimensions=[
-              query_elements.Field(name='ad_group.id', alias='ad_group_id'),
-              query_elements.Field(name='ad_group.name', alias='ad_group_name'),
-              query_elements.Field(name='campaign.id', alias='campaign_id'),
-              query_elements.Field(name='campaign.name', alias='campaign_name'),
-              query_elements.Field(name='customer.id', alias='customer_id'),
-              query_elements.Field(
+              query_collector.Field(name='ad_group.id', alias='ad_group_id'),
+              query_collector.Field(name='ad_group.name', alias='ad_group_name'),
+              query_collector.Field(name='campaign.id', alias='campaign_id'),
+              query_collector.Field(name='campaign.name', alias='campaign_name'),
+              query_collector.Field(name='customer.id', alias='customer_id'),
+              query_collector.Field(
                   name='customer.descriptive_name', alias='account_name'),
           ],
           filters=('ad_group.status = ENABLED'
@@ -182,10 +180,10 @@ class TestCollector:
       collector = query_collector.ServiceCollector(
           name='mapping',
           dimensions=[
-              query_elements.Field(name='ad_group.id', alias='ad_group_id'),
+              query_collector.Field(name='ad_group.id', alias='ad_group_id'),
           ])
       with pytest.raises(ValueError):
-        collector.metrics = query_elements.Field('ad_group.id')
+        collector.metrics = query_collector.Field('ad_group.id')
 
     def test_mcc_level_collector_creates_correct_customer_level_query(self):
       collector = query_collector.Collector(
@@ -231,7 +229,7 @@ class TestCollector:
           name='simple',
           metrics='impressions',
           dimensions=[
-              query_elements.Field('ad_group.id'),
+              query_collector.Field('ad_group.id'),
           ],
           level=query_collector.CollectorLevel.AD_GROUP)
       expected_sql = """
@@ -247,9 +245,9 @@ class TestCollector:
       collector = query_collector.Collector(
           name='bid_budget',
           metrics=[
-              query_elements.Field('impressions'),
-              query_elements.Field('campaign_budget.amount_micros', 'budget'),
-              query_elements.Field('campaign.collector_cpa.collector_cpa_micros',
+              query_collector.Field('impressions'),
+              query_collector.Field('campaign_budget.amount_micros', 'budget'),
+              query_collector.Field('campaign.collector_cpa.collector_cpa_micros',
                                    'collector_cpa'),
           ],
           level=query_collector.CollectorLevel.CAMPAIGN)
@@ -269,10 +267,10 @@ class TestCollector:
           name='disapproval',
           level=query_collector.CollectorLevel.AD_GROUP_AD,
           dimensions=[
-              query_elements.Field('campaign.id', 'campaign_id'),
-              query_elements.Field('ad_group_ad.policy_summary.approval_status',
+              query_collector.Field('campaign.id', 'campaign_id'),
+              query_collector.Field('ad_group_ad.policy_summary.approval_status',
                                    'approval_status'),
-              query_elements.Field('ad_group_ad.policy_summary.review_status',
+              query_collector.Field('ad_group_ad.policy_summary.review_status',
                                    'review_status')
           ],
           filters=(
@@ -364,13 +362,13 @@ class TestCollector:
     def test_metrics_returns_correct_fields(self):
       collector = query_collector.Collector(metrics='clicks')
       assert collector.metrics == {
-          query_elements.Field(name='metrics.clicks', alias='clicks'),
+          query_collector.Field(name='metrics.clicks', alias='clicks'),
       }
 
     def test_dimensions_returns_correct_fields(self):
       collector = query_collector.Collector(dimensions='segments.date')
       assert collector.dimensions == {
-          query_elements.Field(name='segments.date', alias=None),
+          query_collector.Field(name='segments.date', alias=None),
       }
 
     @pytest.mark.parametrize('filters,expected_filter', [
@@ -431,21 +429,21 @@ class TestCollector:
         self):
       collector1 = query_collector.Collector(metrics='clicks,conversions')
       collector2 = query_collector.Collector(metrics=[
-          query_elements.Field(name='clicks'),
-          query_elements.Field(name='conversions'),
+          query_collector.Field(name='clicks'),
+          query_collector.Field(name='conversions'),
       ])
 
       assert collector1 == collector2
 
     def test_collectors_with_different_order_of_metrics_are_equal(self):
       collector1 = query_collector.Collector(metrics=[
-          query_elements.Field(name='conversions'),
-          query_elements.Field(name='impressions', alias='imp'),
+          query_collector.Field(name='conversions'),
+          query_collector.Field(name='impressions', alias='imp'),
       ])
       collector2 = query_collector.Collector(
           metrics=[
-              query_elements.Field(name='impressions', alias='imp'),
-              query_elements.Field(name='conversions')
+              query_collector.Field(name='impressions', alias='imp'),
+              query_collector.Field(name='conversions')
           ],)
 
       assert collector1 == collector2
