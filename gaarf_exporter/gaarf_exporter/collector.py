@@ -34,8 +34,31 @@ import itertools
 from collections.abc import Mapping
 from collections.abc import MutableSequence
 from collections.abc import Sequence
+from typing import TypedDict
 
 from gaarf_exporter import util
+
+
+class QueryField(TypedDict):
+  field: str
+
+
+class QuerySpec(TypedDict):
+  level: str | None
+  metrics: list[str] | list[QueryField] | None
+  dimensions: list[QueryField] | None
+  resource_name: str | None
+  customizable: list[str] | None
+  filters: list[str] | None
+
+
+class CollectorDefinition(TypedDict):
+  name: str
+  type: str | dict[str, str] | None
+  query_spec: QuerySpec | None
+  query: str | None
+  has_conversion_split: str | None
+  registries: list[str]
 
 
 class Field:
@@ -82,6 +105,7 @@ class Field:
   def __hash__(self):
     return hash((util.remove_spaces(self.name),
                  util.remove_spaces(self.alias if self.alias else '')))
+
 
 class CollectorLevel(enum.IntEnum):
   """Represents minimal level of entity.
@@ -202,11 +226,11 @@ class Collector:
     self.suffix = suffix if suffix else name
 
   @classmethod
-  def from_definition(cls, definition: dict[str, dict[str]]) -> Collector:
+  def from_definition(cls, definition: CollectorDefinition) -> Collector:
     """Creates Collector from a dictionary.
 
     Args:
-      definition: Dictionary with necessary data to create Collector.
+      definition: Necessary data to create Collector.
 
     Returns:
       Initialized Collector.
@@ -215,9 +239,7 @@ class Collector:
     if definition.get('type') == 'service':
       metrics = [Field(name='1', alias='info')]
     elif service_alias := definition.get('type', {}).get('service'):
-      metrics = [
-          Field(name='1', alias=service_alias.get('alias'))
-      ]
+      metrics = [Field(name='1', alias=service_alias.get('alias'))]
     else:
       metrics = query_spec.get('metrics')
 
@@ -246,12 +268,9 @@ class Collector:
         level=self.level,
         metrics='all_conversions,all_conversions_value',
         dimensions=[
-            Field('segments.conversion_action_category',
-                                 'conversion_category'),
-            Field('segments.conversion_action_name',
-                                 'conversion_name'),
-            Field('segments.conversion_action~0',
-                                 'conversion_id')
+            Field('segments.conversion_action_category', 'conversion_category'),
+            Field('segments.conversion_action_name', 'conversion_name'),
+            Field('segments.conversion_action~0', 'conversion_id')
         ],
         resource_name=self.resource_name,
         filters='metrics.all_conversions > 0')
@@ -315,9 +334,7 @@ class Collector:
       return []
 
     if isinstance(fields, str):
-      field_list = [
-          Field(name=field) for field in fields.split(',')
-      ]
+      field_list = [Field(name=field) for field in fields.split(',')]
     elif isinstance(fields, MutableSequence):
       field_list = []
       for field in fields:
@@ -325,8 +342,7 @@ class Collector:
           element = field
         elif isinstance(field, Mapping):
           for alias, values in field.items():
-            element = Field(
-                name=values.get('field'), alias=alias)
+            element = Field(name=values.get('field'), alias=alias)
         else:
           element = Field(name=field)
         field_list.append(element)
@@ -485,12 +501,13 @@ def create_default_service_collector(level: CollectorLevel) -> ServiceCollector:
   filters = ''
 
   for collector_level in CollectorLevel:
-    if (collector_level not in (CollectorLevel.MCC, CollectorLevel.AD_GROUP_AD_ASSET) and
-        level <= collector_level and (level_info := _LEVELS.get(collector_level))):
+    if (collector_level
+        not in (CollectorLevel.MCC, CollectorLevel.AD_GROUP_AD_ASSET) and
+        level <= collector_level and
+        (level_info := _LEVELS.get(collector_level))):
       dimensions.extend([
           Field(name=level_info.id, alias=level_info.id_alias),
-          Field(
-              name=level_info.name, alias=level_info.name_alias),
+          Field(name=level_info.name, alias=level_info.name_alias),
       ])
       if filters:
         filters = filters + ' AND ' + level_info.active_entities_filter
