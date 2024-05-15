@@ -1,0 +1,140 @@
+- name: conversion_action
+  query_spec:
+    customizable:
+      - filters
+      - level
+    level: customer
+    metrics:
+      - all_conversions
+      - all_conversions_value
+    dimensions:
+      - conversion_name:
+          field: segments.conversion_action_name
+      - conversion_id:
+          field: segments.conversion_action~0
+    filters:
+      - 'metrics.all_conversions > 0'
+  registries:
+    - default
+
+- name: bid_budgets
+  query_spec:
+    customizable:
+      - filters
+      - level
+    level: campaign
+    metrics:
+      - budget:
+          field: campaign_budget.amount_micros / 1e6
+      - target_cpa:
+          field: campaign.target_cpa.target_cpa_micros / 1e6
+      - max_conv_target_cpa:
+          field: campaign.maximize_conversions.target_cpa_micros / 1e6
+      - target_roas:
+          field: campaign.target_roas.target_roas
+    filters:
+      - 'campaign.status = ENABLED'
+
+- name: keyword_quality_score
+  query_spec:
+    customizable:
+      - filters
+      - level
+    level: ad_group
+    resource_name: keyword_view
+    metrics:
+      - historical_quality_score
+    dimensions:
+      - keyword:
+          field: ad_group_criterion.keyword.text
+      - match_type:
+          field: ad_group_criterion.keyword.match_type
+    filters:
+      - 'segments.date DURING YESTERDAY'
+      - 'campaign.status = ENABLED'
+      - 'metrics.clicks > 0'
+
+- name: bid_budgets
+  query_spec:
+    customizable:
+      - filters
+      - level
+    level: campaign
+    metrics:
+      - budget:
+          field: campaign_budget.amount_micros / 1e6
+      - target_cpa:
+          field: campaign.target_cpa.target_cpa_micros / 1e6
+      - max_conv_target_cpa:
+          field: campaign.maximize_conversions.target_cpa_micros / 1e6
+      - target_roas:
+          field: campaign.target_roas.target_roas
+    filters:
+      - 'campaign.status = ENABLED'
+
+- name: keyword_quality_score
+  query_spec:
+    customizable:
+      - filters
+      - level
+    level: ad_group
+    resource_name: keyword_view
+    metrics:
+      - historical_quality_score
+    dimensions:
+      - keyword:
+          field: ad_group_criterion.keyword.text
+      - match_type:
+          field: ad_group_criterion.keyword.match_type
+    filters:
+      - 'segments.date DURING YESTERDAY'
+      - 'campaign.status = ENABLED'
+  registries:
+    - search
+
+- name: click_share
+  query_spec:
+    customizable:
+      - filters
+      - level
+    level: campaign
+    metrics:
+      - click_share:
+          field: search_click_share
+  registries:
+    - search
+
+- name: optimization_score
+  query_spec:
+    customizable:
+      - filters
+    level: campaign
+    metrics:
+      - optimization_score:
+          field: campaign.optimization_score
+    filters:
+      - 'campaign.status = ENABLED'
+  suffix: Remove
+
+- name: account_status
+  type: service
+  query_spec:
+    customizable:
+      - filters
+    level: customer
+    dimensions:
+      - status:
+          field: customer.status
+
+- name: campaign_serving_status
+  query_spec:
+    customizable:
+      - filters
+    level: campaign
+    dimensions:
+      - primary_status:
+          field: campaign.primary_status
+      - primary_status_reasons:
+          field: campaign.primary_status_reasons
+    filters:
+      - 'campaign.primary_status NOT IN (PAUSED, ENDED, REMOVED, ELIGIBLE)'

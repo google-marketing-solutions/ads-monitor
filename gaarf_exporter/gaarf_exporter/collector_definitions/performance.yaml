@@ -1,0 +1,234 @@
+- name: performance
+  query_spec:
+    customizable:
+      - all
+      - metrics
+      - dimensions
+      - filters
+      - level
+    level: ad_group
+    metrics:
+      - clicks
+      - impressions
+      - conversions
+      - cost:
+          field: cost_micros / 1e6
+    dimensions:
+      - network:
+          field: segments.ad_network_type
+  suffix: Remove
+  has_conversion_split:
+  registries:
+    - default
+
+- name: pmax_performance
+  query_spec:
+    customizable:
+      - all
+      - metrics
+      - dimensions
+      - filters
+      - level
+    level: unknown
+    resource_name: asset_group
+    metrics:
+      - clicks
+      - impressions
+      - conversions
+      - cost:
+          field: cost_micros / 1e6
+    dimensions:
+      - asset_group_id:
+          field: asset_group.id
+    filters:
+      - 'campaign.advertising_channel_type = PERFORMANCE_MAX'
+  registries:
+    - pmax
+
+- name: keywords
+  query_spec:
+    customizable:
+      - all
+      - metrics
+      - dimensions
+      - filters
+      - level
+    level: ad_group
+    resource_name: keyword_view
+    metrics:
+      - clicks
+      - impressions
+      - conversions
+      - cost:
+          field: cost_micros / 1e6
+    dimensions:
+      - keyword:
+          field: ad_group_criterion.keyword.text
+      - match_type:
+          field: ad_group_criterion.keyword.match_type
+  has_conversion_split:
+  registries:
+    - search
+
+- name: search_terms
+  query_spec:
+    customizable:
+      - all
+      - metrics
+      - dimensions
+      - filters
+      - level
+    level: ad_group
+    resource_name: search_term_view
+    metrics:
+      - clicks
+      - impressions
+      - conversions
+      - cost:
+          field: cost_micros / 1e6
+    dimensions:
+      - search_term:
+          field: search_term_view.search_term
+  has_conversion_split:
+  registries:
+    - search
+
+- name: placements
+  query_spec:
+    customizable:
+      - all
+      - metrics
+      - dimensions
+      - filters
+      - level
+    level: customer
+    resource_name: group_placement_view
+    metrics:
+      - clicks
+      - impressions
+      - conversions
+      - cost:
+          field: cost_micros / 1e6
+    dimensions:
+      - name:
+          field: group_placement_view.display_name
+      - type:
+          field: group_placement_view.placement_type
+  has_conversion_split:
+
+- name: asset_performance
+  query_spec:
+    customizable:
+      - all
+      - metrics
+      - dimensions
+      - filters
+      - level
+    level: ad_group_ad_asset
+    metrics:
+      - clicks
+      - impressions
+      - conversions
+      - cost:
+          field: cost_micros / 1e6
+    dimensions:
+      - ad_group_id:
+          field: ad_group.id
+      - network:
+          field: segments.ad_network_type
+      - performance_label:
+          field: ad_group_ad_asset_view.performance_label
+      - type:
+          field: ad_group_ad_asset_view.field_type
+  registries:
+    - app
+
+- name: age
+  query_spec:
+    customizable:
+      - all
+      - metrics
+      - dimensions
+      - filters
+      - level
+    level: campaign
+    resource_name: age_range_view
+    metrics:
+      - clicks
+      - impressions
+      - conversions
+      - cost:
+          field: cost_micros / 1e6
+    dimensions:
+      - age_range:
+          field: ad_group_criterion.age_range.type
+  has_conversion_split:
+  registries:
+    - demographics
+
+- name: gender
+  query_spec:
+    customizable:
+      - all
+      - metrics
+      - dimensions
+      - filters
+      - level
+    level: campaign
+    resource_name: gender_view
+    metrics:
+      - clicks
+      - impressions
+      - conversions
+      - cost:
+          field: cost_micros / 1e6
+    dimensions:
+      - gender:
+          field: ad_group_criterion.gender.type
+  has_conversion_split:
+  registries:
+    - demographics
+
+- name: user_location
+  query_spec:
+    customizable:
+      - all
+      - metrics
+      - dimensions
+      - filters
+      - level
+    level: campaign
+    resource_name: user_location_view
+    metrics:
+      - clicks
+      - impressions
+      - conversions
+      - cost:
+          field: cost_micros / 1e6
+    dimensions:
+      - country_id:
+          field: user_location_view.country_criterion_id
+  has_conversion_split:
+  registries:
+    - geo
+
+- name: landing_page
+  query_spec:
+    customizable:
+      - all
+      - metrics
+      - dimensions
+      - filters
+      - level
+    level: customer
+    resource_name: landing_page_view
+    metrics:
+      - clicks
+      - impressions
+      - conversions
+      - cost:
+          field: cost_micros / 1e6
+    dimensions:
+      - landing_page:
+          field: landing_page_view.unexpanded_final_url
+  has_conversion_split:

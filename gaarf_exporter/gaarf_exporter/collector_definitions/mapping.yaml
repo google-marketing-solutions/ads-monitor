@@ -1,0 +1,96 @@
+- name: mapping
+  type: service
+  query_spec:
+    customizable:
+      - level
+    level: ad_group
+    dimensions:
+      - campaign_name:
+          field: campaign.name
+      - campaign_id:
+          field: campaign.id
+      - ad_group_name:
+          field: ad_group.name
+      - ad_group_id:
+          field: ad_group.id
+    filters:
+      - 'campaign.status = ENABLED'
+      - 'ad_group.status = ENABLED'
+
+- name: app_campaign_mapping
+  type: service
+  query_spec:
+    level: campaign
+    dimensions:
+      - app_id:
+          field: campaign.app_campaign_setting.app_id
+      - app_store:
+          field: campaign.app_campaign_setting.app_store
+      - bidding_strategy:
+          field: campaign.app_campaign_setting.bidding_strategy_goal_type
+    filters:
+      - 'campaign.status = ENABLED'
+      - 'campaign.advertising_channel_type = MULTI_CHANNEL'
+  registries:
+    - app
+
+- name: app_asset_mapping
+  type: service
+  query_spec:
+    level: unknown
+    resource_name: asset
+    dimensions:
+      - asset_id:
+          field: asset.id
+      - asset_type:
+          field: asset.type
+      - asset_source:
+          field: asset.source
+      - asset_name:
+          field: asset.name
+      - text:
+          field: asset.text_asset.text
+      - video_id:
+          field: asset.youtube_video_asset.youtube_video_id
+    filters:
+      - 'asset.type IN (IMAGE, TEXT, YOUTUBE_VIDEO, MEDIA_BUNDLE)'
+  registries:
+    - app
+
+- name: pmax_asset_group_mapping
+  type: service
+  query_spec:
+    level: unknown
+    resource_name: asset_group
+    dimensions:
+      - asset_group_id:
+          field: asset_group.id
+      - asset_group_name:
+          field: asset_group.name
+    filters:
+      - 'campaign.status = ENABLED'
+      - 'campaign.advertising_channel_type = PERFORMANCE_MAX'
+      - 'asset_group.status = ENABLED'
+  registries:
+    - pmax
+
+- name: asset_performance_label
+  type: service
+  query_spec:
+    level: ad_group_ad_asset
+    dimensions:
+      - ad_group_id:
+          field: ad_group.id
+      - performance_label:
+          field: ad_group_ad_asset_view.performance_label
+      - type:
+          field: ad_group_ad_asset_view.field_type
+    filters:
+      - 'campaign.status = ENABLED'
+      - 'campaign.advertising_channel_type = MULTI_CHANNEL'
+      - 'ad_group.status = ENABLED'
+      - 'ad_group_ad_asset_view.enabled = True'
+      - 'segments.date DURING TODAY'
+
+  registries:
+    - app

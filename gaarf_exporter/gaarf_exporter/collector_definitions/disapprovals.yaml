@@ -1,0 +1,116 @@
+- name: ad_disapprovals
+  query_spec:
+    customizable:
+      - filters
+      - level
+    level: ad_group_ad
+    dimensions:
+      - ad_group_id:
+          field: ad_group.id
+      - approval_status:
+          field: ad_group_ad.policy_summary.approval_status
+      - review_status:
+          field: ad_group_ad.policy_summary.review_status
+      - topic_type:
+          field: ad_group_ad.policy_summary.policy_topic_entries:type
+      - topic:
+          field: ad_group_ad.policy_summary.policy_topic_entries:topic
+      - ad_count:
+          field: '1'
+    filters:
+      - 'campaign.status = ENABLED'
+      - 'ad_group.status = ENABLED'
+      - 'ad_group_ad.status = ENABLED'
+      - 'ad_group_ad.policy_summary.approval_status != APPROVED'
+  registries:
+    - default
+    - disapprovals
+
+- name: ad_group_ad_asset_disapprovals
+  query_spec:
+    customizable:
+      - filters
+      - level
+    level: ad_group_ad_asset
+    dimensions:
+      - ad_group_id:
+          field: ad_group.id
+      - asset_id:
+          field: asset.id
+      - approval_status:
+          field: ad_group_ad_asset_view.policy_summary:approval_status
+      - review_status:
+          field: ad_group_ad_asset_view.policy_summary:approval_status
+      - topic_type:
+          field: ad_group_ad_asset_view.policy_summary:policy_topic_entries.type
+      - topic:
+          field: ad_group_ad_asset_view.policy_summary:policy_topic_entries.topic
+      - asset_count:
+          field: '1'
+    filters:
+      - 'campaign.status = ENABLED'
+      - 'ad_group.status = ENABLED'
+      - 'ad_group_ad_asset_view.enabled = True'
+  registries:
+    - app
+    - disapprovals
+
+- name: sitelink_disapprovals
+  query_spec:
+    customizable:
+      - filters
+      - level
+    level: unknown
+    resource_name: asset
+    dimensions:
+      - asset_id:
+          field: asset.id
+      - sitelink_title:
+          field: asset.sitelink_asset.link_text
+      - sitelink_description1:
+          field: asset.sitelink_asset.description1
+      - sitelink_description2:
+          field: asset.sitelink_asset.description2
+      - approval_status:
+          field: asset.policy_summary.approval_status
+      - review_status:
+          field: asset.policy_summary.approval_status
+      - topic_type:
+          field: asset.policy_summary.policy_topic_entries:type
+      - topic:
+          field: asset.policy_summary.policy_topic_entries:topic
+      - sitelink_count:
+          field: '1'
+    filters:
+      - 'asset.type = SITELINK'
+      - 'asset.policy_summary.approval_status != APPROVED'
+  registries:
+    - disapprovals
+
+- name: pmax_disapprovals
+  query_spec:
+    customizable:
+      - dimensions
+    level: unknown
+    resource_name: asset_group_asset
+    dimensions:
+      - asset_group_id:
+          field: asset_group.id
+      - asset_id:
+          field: asset.id
+      - asset_type:
+          field: asset_group_asset.field_type
+      - approval_status:
+          field: asset_group_asset.policy_summary.approval_status
+      - review_status:
+          field: asset_group_asset.policy_summary.review_status
+      - topic_type:
+          field: asset_group_asset.policy_summary.policy_topic_entries:type
+      - topic:
+          field: asset_group_asset.policy_summary.policy_topic_entries:topic
+      - asset_count:
+          field: '1'
+    filters:
+      - 'campaign.status = ENABLED'
+      - 'campaign.advertising_channel_type = PERFORMANCE_MAX'
+      - 'asset_group_asset.status = ENABLED'
