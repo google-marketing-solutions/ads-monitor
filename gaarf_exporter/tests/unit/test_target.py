@@ -77,10 +77,8 @@ class TestTarget:
           level=query_target.TargetLevel.AD_GROUP,
           dimensions=[
               query_elements.Field(
-                  name='segments.conversion_action',
-                  alias='conversion_id',
-                  customizer=query_elements.Customizer(
-                      query_elements.CustomizerTypeEnum.INDEX, '0')),
+                  name='segments.conversion_action~0',
+                  alias='conversion_id'),
               query_elements.Field(
                   name='search_terms_view.search_term', alias='search_term')
           ])
@@ -109,10 +107,8 @@ class TestTarget:
           level=query_target.TargetLevel.AD_GROUP,
           dimensions=[
               query_elements.Field(
-                  name='segments.conversion_action',
-                  alias='conversion_id',
-                  customizer=query_elements.Customizer(
-                      query_elements.CustomizerTypeEnum.INDEX, '0')),
+                  name='segments.conversion_action~0',
+                  alias='conversion_id'),
               query_elements.Field(
                   name='search_terms_view.search_term', alias='search_term')
           ])

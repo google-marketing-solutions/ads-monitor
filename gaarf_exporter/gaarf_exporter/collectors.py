@@ -46,9 +46,7 @@ _DEFAULT_CONVERSION_SPLIT_DIMENSIONS = [
     query_elements.Field('segments.conversion_action_category',
                          'conversion_category'),
     query_elements.Field('segments.conversion_action_name', 'conversion_name'),
-    query_elements.Field(
-        'segments.conversion_action', 'conversion_id',
-        query_elements.Customizer(query_elements.CustomizerTypeEnum.INDEX, '0'))
+    query_elements.Field('segments.conversion_action~0', 'conversion_id'),
 ]
 
 _T = TypeVar('_T', bound='BaseCollector')
@@ -311,10 +309,7 @@ class ConversionActionCollector:
           query_elements.Field('customer.id', 'account_id'),
           query_elements.Field('segments.conversion_action_name',
                                'conversion_name'),
-          query_elements.Field(
-              'segments.conversion_action', 'conversion_id',
-              query_elements.Customizer(query_elements.CustomizerTypeEnum.INDEX,
-                                        '0')),
+          query_elements.Field('segments.conversion_action~0', 'conversion_id'),
       ],
       filters=('segments.date DURING TODAY'
                ' AND metrics.all_conversions > 0'))
@@ -416,14 +411,9 @@ class PmaxDisapprovalsCollector:
       name=name,
       level=query_target.TargetLevel.UNKNOWN,
       dimensions=[
-          query_elements.Field(
-              'asset_group_asset.asset', 'asset_id',
-              query_elements.Customizer(query_elements.CustomizerTypeEnum.INDEX,
-                                        '0')),
-          query_elements.Field(
-              'asset_group_asset.asset_group', 'asset_group_id',
-              query_elements.Customizer(query_elements.CustomizerTypeEnum.INDEX,
-                                        '0')),
+          query_elements.Field('asset_group_asset.asset~0', 'asset_id'),
+          query_elements.Field('asset_group_asset.asset_group~0',
+                               'asset_group_id'),
           query_elements.Field(
               'asset_group_asset.policy_summary.approval_status',
               'approval_status'),
