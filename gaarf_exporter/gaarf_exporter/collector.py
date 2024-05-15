@@ -34,7 +34,10 @@ import itertools
 from collections.abc import Mapping
 from collections.abc import MutableSequence
 from collections.abc import Sequence
+from datetime import datetime
 from typing import TypedDict
+
+from gaarf.cli import utils as gaarf_utils
 
 from gaarf_exporter import util
 
@@ -59,6 +62,15 @@ class CollectorDefinition(TypedDict):
   query: str | None
   has_conversion_split: str | None
   registries: list[str]
+
+
+class CollectorCustomization(TypedDict):
+  start_date: str
+  end_date: str
+  level: str
+  metrics: list[str] | list[QueryField]
+  dimensions: list[str] | list[QueryField]
+  filters: list[str]
 
 
 class Field:
@@ -452,6 +464,31 @@ class Collector:
             f'{self.formatted_dimensions}'
             f'FROM {self.resource_name}\n'
             f'{self.formatted_filters}')
+
+  def customize(self, collector_customization: CollectorCustomization) -> None:
+    """Customizes collector elements based on provided customization mapping.
+
+    Based on provided collector_customization mapping this method changes
+    elements of Customizer instance (metrics, level, dimensions, filters).
+
+    Args:
+      collector_customization:
+        Provides mapping between names of customized parameter and its updated
+        values.
+    """
+    if level := collector_customization.get('level'):
+      self.level = CollectorLevel[level.upper()]
+    if (start_date := collector_customization.get('start_date')) and (
+        end_date := collector_customization.get('end_date')):
+      start_date = gaarf_utils.convert_date(start_date)
+      end_date = gaarf_utils.convert_date(end_date)
+      if not self.filters or 'segments.date DURING TODAY' in self.filters:
+        self.filters.remove('segments.date DURING TODAY')
+        self.filters.add(
+            f"segments.date BETWEEN '{start_date}' AND '{end_date}'")
+      n_days = (datetime.strptime(end_date, '%Y-%m-%d') -
+                datetime.strptime(start_date, '%Y-%m-%d')).days + 1
+      self.dimensions.add(Field(str(n_days), 'n_days'))
 
   def is_similar(self, other: Collector) -> bool:
     """Compares similarity between two collectors.

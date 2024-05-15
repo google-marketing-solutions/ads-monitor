@@ -125,16 +125,29 @@ class CollectorSet(MutableSet):
   def __init__(self,
                collectors: set[query_collector.Collector] | None = None,
                service_collectors: bool = True) -> None:
-    """Initializes CollectorSet based on provided collectors."""
+    """Initializes CollectorSet based on provided collectors.
+
+    Args:
+      collectors:
+        Collectors to add to the set.
+      service_collectors:
+        Whether to generate default service collector for the set.
+    """
     self._collectors = collectors or set()
     self._service_collectors = service_collectors
 
   @property
   def collectors(self) -> set[query_collector.Collector]:
-    """Return customized or original collectors of the CollectorSet."""
+    """Returns deduplicated collectors with default service collector.
+
+    Collectors in CollectorSet can be similar (same metrics, dimensions, etc.)
+    but have different levels (i.e. ad_group and campaign). Getting the same
+    data twice is wasteful so we leave only collectors with the lowest level.
+    If needed the default service collector is generated at the lowest level
+    (i.e. ad_group) to ensure proper mapping between ids and names of entities.
+    """
     self.deduplicate_collectors()
     if self._service_collectors:
-      # FIXME: ServiceCollector might not be of mapping type
       has_service_collector = any([
           isinstance(collector, query_collector.ServiceCollector)
           for collector in self._collectors
@@ -154,7 +167,7 @@ class CollectorSet(MutableSet):
     return self._collectors
 
   def deduplicate_collectors(self) -> None:
-    """Dedupicates collectors in the set.
+    """Deduplicates collectors in the set.
 
     If there are similar collectors in the list return only those with
     the lowest level.
@@ -165,16 +178,18 @@ class CollectorSet(MutableSet):
         max_collector = max(collector_1, collector_2)
         self._collectors.remove(max_collector)
 
-  def customize(self, kwargs: dict) -> None:
+  def customize(
+      self,
+      collector_customization: query_collector.CollectorCustomization) -> None:
     """Changes collectors in the set based on provided arguments mapping.
 
     Args:
-      kwargs:
+      collector_customization:
         Mapping between name and values of elements in collector to be
         customized.
     """
     for collector in self.collectors:
-      collector.customize(kwargs)
+      collector.customize(collector_customization)
 
   def __bool__(self):
     return bool(self.collectors)

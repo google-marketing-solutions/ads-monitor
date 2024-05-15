@@ -126,14 +126,13 @@ class TestCollectorSet:
     assert simple_target_at_customer_level not in collector_set
     assert simple_target in collector_set
 
-  def test_collector_set_generatees_service_target(self, simple_target,
+  def test_collector_set_generates_service_target(self, simple_target,
                                                    no_metric_target):
     collector_set = collector_registry.CollectorSet({
         simple_target,
     })
     assert no_metric_target in collector_set
 
-  @pytest.mark.skip('To be implemented')
   def test_customize_returns_modified_target_start_end_date(
       self, collector_set):
     start_date = '2024-01-01'
@@ -148,7 +147,6 @@ class TestCollectorSet:
     assert f"segments.date BETWEEN '{start_date}' AND '{end_date}'" in (
         customized_collector.query)
 
-  @pytest.mark.skip('To be implemented')
   @pytest.mark.parametrize('level', ['ad_group', 'campaign', 'customer'])
   def test_customize_returns_modified_target_level(self, collector_set, level):
     customize_dict = {
@@ -159,7 +157,6 @@ class TestCollectorSet:
 
     assert f'FROM {level}' in customized_collector.query
 
-  @pytest.mark.skip('To be implemented')
   def test_customize_raises_key_error_on_incorrect_level(self, collector_set):
     customize_dict = {
         'level': 'unknown-level',
