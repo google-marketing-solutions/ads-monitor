@@ -89,14 +89,25 @@ class Registry:
   def all_collectors(self) -> CollectorSet:
     """Helper for getting all collectors from the registry."""
     all_collector_names = ','.join(self.collectors.keys())
-    return self.find_collectors(collector_names=all_collector_names)
+    return self.find_collectors(
+        collector_names=all_collector_names,
+        deduplicate=False,
+        service_collectors=False)
 
-  def find_collectors(self, collector_names: str | None = None) -> CollectorSet:
+  def find_collectors(
+      self,
+      collector_names: str | None = None,
+      service_collectors: bool = True,
+      deduplicate: bool = True,
+  ) -> CollectorSet:
     """Extracts collectors from registry and returns their initialized targets.
 
     Args:
       collector_names:
         Names of collectors that need to be fetched from registry.
+      service_collectors:
+        Whether to generate default service collector for the set.
+      deduplicate: Whether to perform deduplication of collectors.
 
     Returns:
       Found collectors.
@@ -116,7 +127,10 @@ class Registry:
           found_collectors.add(collector_)
       else:
         found_collectors.add(collector)
-    return CollectorSet(collectors=set(found_collectors))
+    return CollectorSet(
+        collectors=set(found_collectors),
+        deduplicate=deduplicate,
+        service_collectors=service_collectors)
 
 
 class CollectorSet(MutableSet):
@@ -124,7 +138,8 @@ class CollectorSet(MutableSet):
 
   def __init__(self,
                collectors: set[query_collector.Collector] | None = None,
-               service_collectors: bool = True) -> None:
+               service_collectors: bool = True,
+               deduplicate: bool = True) -> None:
     """Initializes CollectorSet based on provided collectors.
 
     Args:
@@ -132,9 +147,12 @@ class CollectorSet(MutableSet):
         Collectors to add to the set.
       service_collectors:
         Whether to generate default service collector for the set.
+      deduplicate:
+        Whether to perform deduplication of collectors in the set.
     """
     self._collectors = collectors or set()
     self._service_collectors = service_collectors
+    self._deduplicate = deduplicate
 
   @property
   def collectors(self) -> set[query_collector.Collector]:
@@ -146,7 +164,8 @@ class CollectorSet(MutableSet):
     If needed the default service collector is generated at the lowest level
     (i.e. ad_group) to ensure proper mapping between ids and names of entities.
     """
-    self.deduplicate_collectors()
+    if self._deduplicate:
+      self.deduplicate_collectors()
     if self._service_collectors:
       has_service_collector = any([
           isinstance(collector, query_collector.ServiceCollector)
