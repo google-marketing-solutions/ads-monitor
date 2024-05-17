@@ -37,7 +37,7 @@
 - name: app_asset_mapping
   type: service
   query_spec:
-    level: unknown
+    level: customer
     resource_name: asset
     dimensions:
       - asset_id:

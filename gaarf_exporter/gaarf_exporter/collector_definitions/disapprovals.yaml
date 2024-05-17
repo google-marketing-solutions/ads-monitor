@@ -60,7 +60,7 @@
     customizable:
       - filters
       - level
-    level: unknown
+    level: customer
     resource_name: asset
     dimensions:
       - asset_id:
