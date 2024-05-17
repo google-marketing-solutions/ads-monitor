@@ -13,6 +13,7 @@
 # limitations under the License.
 from __future__ import annotations
 
+import pathlib
 import random
 import subprocess
 
@@ -20,6 +21,7 @@ import pytest
 
 from gaarf_exporter import registry
 
+_SCRIPT_DIR = pathlib.Path(__file__).parent
 _START_PORT = 30000
 _END_PORT = 60000
 collectors_registry = registry.Registry.from_collector_definitions()
@@ -91,6 +93,25 @@ def test_gaarf_exporter_run_all_collectors_at_once():
       '--expose-metrics-with-zero-values',
       '--iterations=1',
       '--collectors=all',
+      '--delay=0',
+      '--api-version=16',
+  ],
+                          capture_output=True,
+                          text=True)
+  out = result.stdout
+  assert not result.stderr
+  assert 'Started http_server at http://0.0.0.0:8000' in out
+  assert 'Beginning export' in out
+  assert 'Export completed' in out
+
+
+@pytest.mark.e2e
+def test_gaarf_exporter_run_selected_collectors_from_config_file():
+  result = subprocess.run([
+      'gaarf-exporter',
+      '--expose-metrics-with-zero-values',
+      '--iterations=1',
+      f'-c={_SCRIPT_DIR}/test_gaarf_exporter.yaml',
       '--delay=0',
       '--api-version=16',
   ],

@@ -25,12 +25,9 @@ from time import sleep
 from time import time
 
 import prometheus_client
-import smart_open
-import yaml
 from gaarf.cli import utils as gaarf_utils
 
 from gaarf_exporter import bootstrap
-from gaarf_exporter import config as exporter_config
 from gaarf_exporter import exporter
 from gaarf_exporter import registry
 from gaarf_exporter import util
@@ -77,27 +74,25 @@ def main() -> None:
       'sql',
       'template',
   ]).parse(args_bag[1])
-  collectors_registry = registry.Registry.from_collector_definitions()
-  macros = params.get('macro', {})
   if config_file := args.config:
-    with smart_open.open(config_file, encoding='utf-8') as f:
-      config = yaml.safe_load(f)
-      queries = config.get('queries')
+    collectors_registry = registry.Registry.from_collector_definitions(
+        config_file)
+    active_collectors = collectors_registry.find_collectors(
+        collector_names='all', deduplicate=False, service_collectors=False)
   else:
+    collectors_registry = registry.Registry.from_collector_definitions()
     if not (active_collectors := collectors_registry.find_collectors(
         args.collectors)):
       logger.warning('Failed to get "%s" collectors, using default ones',
                      args.collectors)
       active_collectors = collectors_registry.default_collectors
-    if macros:
+    if macros := params.get('macro', {}):
       active_collectors.customize(macros)
-    config = exporter_config.Config(active_collectors.targets)
-    queries = config.queries
-  for query_name, query in queries.items():
-    if relative_metrics := util.find_relative_metrics(query['query']):
+  for collector in active_collectors:
+    if relative_metrics := util.find_relative_metrics(collector.query):
       logger.warning(
           'In query %s, relative metrics: [%s] are found, which might '
-          'not be useful.', query_name, ', '.join(relative_metrics))
+          'not be useful.', collector.name, ', '.join(relative_metrics))
   runtime_options = {
       'exclude_queries':
           args.exclude_queries.split(',') if args.exclude_queries else None,
@@ -142,25 +137,22 @@ def main() -> None:
     if not args.config:
       if macros:
         active_collectors.customize(macros)
-      config = exporter_config.Config(active_collectors.targets)
-      queries = config.queries
-    for name, content in queries.items():
-      if not (query_text := content.get('query')):
-        raise ValueError(f'Missing query text for query "{name}"')
+    for collector in active_collectors:
+      if not (query_text := collector.query):
+        raise ValueError(f'Missing query text for query "{collector.name}"')
       if include_queries := runtime_options.get('include_queries'):
-        if name not in include_queries:
+        if collector.name not in include_queries:
           continue
       if exclude_queries := runtime_options.get('exclude_queries'):
-        if name in exclude_queries:
+        if collector.name in exclude_queries:
           continue
-      suffix = content.get('suffix') or name
       logger.info('Beginning export')
       if not accounts:
         report = report_fetcher.fetch(query_text, accounts)
       else:
         with futures.ThreadPoolExecutor() as executor:
           future_to_account = {
-              executor.submit(report_fetcher.fetch, query_text, account):
+              executor.submit(report_fetcher.fetch, collector.query, account):
                   account for account in accounts
           }
           for future in futures.as_completed(future_to_account):
@@ -169,15 +161,18 @@ def main() -> None:
             report = future.result()
             end = time()
             gaarf_exporter.report_fetcher_gauge.labels(
-                collector=name, account=account).set(end - start)
+                collector=collector.name, account=account).set(end - start)
             if dependencies.get('convert_fake_report'):
               report.is_fake = False
             logging.info('Started export for query "[%s]" for account "[%s]"',
-                         name, account)
+                         collector.name, account)
             gaarf_exporter.export(
-                report=report, suffix=suffix, collector=name, account=account)
+                report=report,
+                suffix=collector.suffix,
+                collector=collector.name,
+                account=account)
             logging.info('Ended export for query "[%s]" for account "[%s]"',
-                         name, account)
+                         collector.name, account)
     logger.info('Export completed')
     end_export_time = time()
     gaarf_exporter.total_export_time_gauge.set(end_export_time -
