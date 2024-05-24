@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 import pytest
+import yaml
 
 from gaarf_exporter import collector as query_collector
 from gaarf_exporter import registry as collector_registry
@@ -127,7 +128,7 @@ class TestCollectorSet:
     assert simple_target in collector_set
 
   def test_collector_set_generates_service_target(self, simple_target,
-                                                   no_metric_target):
+                                                  no_metric_target):
     collector_set = collector_registry.CollectorSet({
         simple_target,
     })
@@ -164,3 +165,33 @@ class TestCollectorSet:
 
     with pytest.raises(KeyError):
       collector_set.customize(customize_dict)
+
+
+def test_initialize_collectors_from_config_file_loads_data_from_file(tmp_path):
+  config_file = tmp_path / 'config.yaml'
+  config = [{
+      'name': 'performance',
+      'query': 'SELECT customer.id FROM customer'
+  }]
+  with open(config_file, mode='w', encoding='utf-8') as f:
+    yaml.dump(config, f)
+  collectors = collector_registry.initialize_collectors(config_file=config_file)
+  assert {
+      'performance',
+  } == {c.name for c in collectors}
+
+
+def test_initialize_collectors_from_collector_names_returns_correct_collectors(
+    tmp_path):
+  collectors = collector_registry.initialize_collectors(
+      collector_names='performance', create_service_collectors=False)
+  assert {
+      'performance',
+  } == {c.name for c in collectors}
+
+
+def test_initialize_collectors_from_collector_names_returns_correct_collectors(
+    tmp_path):
+  collectors = collector_registry.initialize_collectors(
+      collector_names='performance', create_service_collectors=True)
+  assert {'performance', 'mapping'} == {c.name for c in collectors}

@@ -30,7 +30,6 @@ from gaarf.cli import utils as gaarf_utils
 from gaarf_exporter import bootstrap
 from gaarf_exporter import exporter
 from gaarf_exporter import registry
-from gaarf_exporter import util
 
 
 def main() -> None:
@@ -74,25 +73,9 @@ def main() -> None:
       'sql',
       'template',
   ]).parse(args_bag[1])
-  if config_file := args.config:
-    collectors_registry = registry.Registry.from_collector_definitions(
-        config_file)
-    active_collectors = collectors_registry.find_collectors(
-        collector_names='all', deduplicate=False, service_collectors=False)
-  else:
-    collectors_registry = registry.Registry.from_collector_definitions()
-    if not (active_collectors := collectors_registry.find_collectors(
-        args.collectors)):
-      logger.warning('Failed to get "%s" collectors, using default ones',
-                     args.collectors)
-      active_collectors = collectors_registry.default_collectors
-    if macros := params.get('macro', {}):
-      active_collectors.customize(macros)
-  for collector in active_collectors:
-    if relative_metrics := util.find_relative_metrics(collector.query):
-      logger.warning(
-          'In query %s, relative metrics: [%s] are found, which might '
-          'not be useful.', collector.name, ', '.join(relative_metrics))
+
+  active_collectors = registry.initialize_collectors(
+      config_file=args.config, collector_names=args.collectors)
   runtime_options = {
       'exclude_queries':
           args.exclude_queries.split(',') if args.exclude_queries else None,
@@ -134,9 +117,8 @@ def main() -> None:
       accounts = report_fetcher.expand_mcc(args.account)
       iterations_left = args.iterations_left
     start_export_time = time()
-    if not args.config:
-      if macros:
-        active_collectors.customize(macros)
+    if not args.config and params:
+      active_collectors.customize(params)
     for collector in active_collectors:
       if not (query_text := collector.query):
         raise ValueError(f'Missing query text for query "{collector.name}"')

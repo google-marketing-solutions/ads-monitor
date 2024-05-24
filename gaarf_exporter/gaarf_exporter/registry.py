@@ -17,6 +17,7 @@ Collectors are converted to gaarf queries that are sent to Ads API.
 from __future__ import annotations
 
 import itertools
+import logging
 import os
 import pathlib
 from collections import defaultdict
@@ -235,6 +236,40 @@ class CollectorSet(MutableSet):
 
   def discard(self, collector) -> None:
     self._collectors.discard(collector)
+
+
+def initialize_collectors(
+    config_file: str | None = None,
+    collector_names: str | None = None,
+    create_service_collectors: bool = True,
+    deduplicate_collectors: bool = True) -> CollectorSet():
+  """Initializes collectors either from file or CLI.
+
+  Args:
+    config_file: Path to file with collector definitions.
+    collector_names: Comma-separated string with collector names.
+
+  Returns:
+    All found collectors.
+
+  Raises:
+    ValueError: When neither collector_file nor collector_names were provided.
+  """
+  if config_file:
+    collectors_registry = Registry.from_collector_definitions(config_file)
+    return collectors_registry.find_collectors(
+        collector_names='all', deduplicate=False, service_collectors=False)
+  if collector_names:
+    collectors_registry = Registry.from_collector_definitions()
+    if not (active_collectors := collectors_registry.find_collectors(
+        collector_names,
+        deduplicate=deduplicate_collectors,
+        service_collectors=create_service_collectors)):
+      logging.warning('Failed to get "%s" collectors, using default ones',
+                      collector_names)
+      active_collectors = collectors_registry.default_collectors
+  return active_collectors
+  raise ValueError('Neither collector_file nor collector_names were provided')
 
 
 def _load_collector_data(
