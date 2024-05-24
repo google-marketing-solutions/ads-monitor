@@ -16,8 +16,8 @@ Collectors are converted to gaarf queries that are sent to Ads API.
 """
 from __future__ import annotations
 
-import glob
 import itertools
+import os
 import pathlib
 from collections import defaultdict
 from collections.abc import MutableSet
@@ -45,14 +45,19 @@ class Registry:
   @classmethod
   def from_collector_definitions(
       cls,
-      path_to_definitions: str = f'{_SCRIPT_DIR}/collector_definitions/*.yaml'
+      path_to_definitions: str
+      | os.Pathlike = f'{_SCRIPT_DIR}/collector_definitions/'
   ) -> Registry:
-    """Builds Registry from one or multiple definitions."""
+    """Builds Registry from one or multiple definitions.
+
+    Args:
+      path_to_definition: Path to file / folder with collector definitions.
+
+    Returns:
+      Initialized collector registry.
+    """
     collectors: dict = defaultdict(dict)
-    results = []
-    for file in glob.glob(path_to_definitions):
-      with open(file, 'r', encoding='utf-8') as f:
-        results.append(yaml.safe_load(f))
+    results = _load_collector_data(path_to_definitions)
     for data in results:
       for collector_data in data:
         if collector_data.get('type') == 'service' or collector_data.get(
@@ -230,3 +235,27 @@ class CollectorSet(MutableSet):
 
   def discard(self, collector) -> None:
     self._collectors.discard(collector)
+
+
+def _load_collector_data(
+    path_to_definitions: str | os.Pathlike
+) -> list[query_collector.CollectorDefinition]:
+  """Loads collectors data from file or folder.
+
+  Args:
+    path_to_definition: Local path to file / folder with collector definitions.
+  Returns:
+    Loaded collector definitions.
+  """
+  if isinstance(path_to_definitions, str):
+    path_to_definitions = pathlib.Path(path_to_definitions)
+  results = []
+  if path_to_definitions.is_file():
+    with open(path_to_definitions, 'r', encoding='utf-8') as f:
+      results.append(yaml.safe_load(f))
+  else:
+    for file in path_to_definitions.iterdir():
+      if file.suffix == '.yaml':
+        with open(file, 'r', encoding='utf-8') as f:
+          results.append(yaml.safe_load(f))
+  return results
