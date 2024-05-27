@@ -38,8 +38,6 @@ def main() -> None:
   parser.add_argument('-c', dest='config', default=None)
   parser.add_argument('--ads-config', dest='ads_config', default=None)
   parser.add_argument('--api-version', dest='api_version', default=None)
-  parser.add_argument('--queries.exclude', dest='exclude_queries', default=None)
-  parser.add_argument('--queries.include', dest='include_queries', default=None)
   parser.add_argument('--log', '--loglevel', dest='loglevel', default='info')
   parser.add_argument(
       '--http_server.address', dest='address', default='0.0.0.0')
@@ -61,7 +59,16 @@ def main() -> None:
       dest='zero_value_metrics',
       action='store_true')
   parser.add_argument('--namespace', dest='namespace', default='googleads')
+  parser.add_argument('--max-parallel', dest='parallel', default=None)
   parser.add_argument('--collectors', dest='collectors', default='default')
+  parser.add_argument(
+      '--no-deduplicate-collectors', dest='deduplicate', action='store_false')
+  parser.add_argument(
+      '--no-service-collectors',
+      dest='service_collectors',
+      action='store_false')
+  parser.set_defaults(deduplicate=True)
+  parser.set_defaults(service_collectors=True)
   args_bag = parser.parse_known_args()
   args = args_bag[0]
 
@@ -75,13 +82,10 @@ def main() -> None:
   ]).parse(args_bag[1])
 
   active_collectors = registry.initialize_collectors(
-      config_file=args.config, collector_names=args.collectors)
-  runtime_options = {
-      'exclude_queries':
-          args.exclude_queries.split(',') if args.exclude_queries else None,
-      'include_queries':
-          args.include_queries.split(',') if args.include_queries else None,
-  }
+      config_file=args.config,
+      collector_names=args.collectors,
+      create_service_collectors=args.service_collectors,
+      deduplicate_collectors=args.deduplicate)
 
   dependencies = bootstrap.inject_dependencies(
       ads_config_path=args.ads_config,
@@ -122,17 +126,11 @@ def main() -> None:
     for collector in active_collectors:
       if not (query_text := collector.query):
         raise ValueError(f'Missing query text for query "{collector.name}"')
-      if include_queries := runtime_options.get('include_queries'):
-        if collector.name not in include_queries:
-          continue
-      if exclude_queries := runtime_options.get('exclude_queries'):
-        if collector.name in exclude_queries:
-          continue
       logger.info('Beginning export')
       if not accounts:
         report = report_fetcher.fetch(query_text, accounts)
       else:
-        with futures.ThreadPoolExecutor() as executor:
+        with futures.ThreadPoolExecutor(max_workers=args.parallel) as executor:
           future_to_account = {
               executor.submit(report_fetcher.fetch, collector.query, account):
                   account for account in accounts
