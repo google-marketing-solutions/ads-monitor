@@ -11,12 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-'''Module for building Prometheus Alert expression.'''
+"""Module for building Prometheus Alert expression."""
+
 from __future__ import annotations
 
 
 class Label:
-
   def __init__(self, name: str, value: str, operator: str = '=') -> None:
     self.name = name
     self.value = value
@@ -28,7 +28,6 @@ class Label:
 
 
 class MetricDefinition:
-
   def __init__(self, metric, label: Label):
     self.metric = metric
     self.label = str(label)
@@ -43,13 +42,13 @@ class MetricDefinition:
 
 
 class AlertRule:
-
   def __init__(
-      self,
-      metric_definition: MetricDefinition,
-      aggregation_level: str = 'campaign_id',  # Available from Target only
-      offset: str = '30m',
-      threshold: float = 2.0) -> None:
+    self,
+    metric_definition: MetricDefinition,
+    aggregation_level: str = 'campaign_id',  # Available from Target only
+    offset: str = '30m',
+    threshold: float = 2.0,
+  ) -> None:
     self.metric_definition = str(metric_definition)
     self.aggregation_level = aggregation_level
     self.offset = offset

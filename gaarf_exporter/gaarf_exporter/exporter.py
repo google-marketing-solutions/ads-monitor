@@ -16,6 +16,7 @@
 GaarfExporter specifies whether to push Prometheus metrics converted from
 GaarfReport.
 """
+
 from __future__ import annotations
 
 import logging
@@ -29,31 +30,31 @@ import prometheus_client
 logger = logging.getLogger(__name__)
 
 _METRICS = (
-    'campaign.target_cpa.target_cpa_micros',
-    'campaign_budget.amount_micros',
-    'campaign.target_roas.target_roas',
-    'campaign.manual_cpm',
-    'campaign.manual_cpv',
-    'campaign.maximize_conversion_value.target_roas',
-    'campaign.maximize_conversions.target_cpa_micros',
-    'campaign.target_spend.cpc_bid_ceiling_micros',
-    'campaign.target_spend.target_spend_micros',
-    'campaign.target_roas.cpc_bid_ceiling_micros',
-    'campaign.target_roas.cpc_bid_floor_micros',
-    'campaign.target_cpa.cpc_bid_ceiling_micros',
-    'campaign.target_cpa.cpc_bid_floor_micros',
-    'ad_group.cpc_bid_micros',
-    'ad_group.cpm_bid_micros',
-    'ad_group.cpv_bid_micros',
-    'ad_group.effective_target_cpa_micros',
-    'ad_group.effective_target_cpa_source',
-    'ad_group.effective_target_roas',
-    'ad_group.percent_cpc_bid_micros',
-    'ad_group.target_cpa_micros',
-    'ad_group.target_cpm_micros',
-    'ad_group.target_roas',
-    'campaign.optimization_score',
-    'customer.optimization_score',
+  'campaign.target_cpa.target_cpa_micros',
+  'campaign_budget.amount_micros',
+  'campaign.target_roas.target_roas',
+  'campaign.manual_cpm',
+  'campaign.manual_cpv',
+  'campaign.maximize_conversion_value.target_roas',
+  'campaign.maximize_conversions.target_cpa_micros',
+  'campaign.target_spend.cpc_bid_ceiling_micros',
+  'campaign.target_spend.target_spend_micros',
+  'campaign.target_roas.cpc_bid_ceiling_micros',
+  'campaign.target_roas.cpc_bid_floor_micros',
+  'campaign.target_cpa.cpc_bid_ceiling_micros',
+  'campaign.target_cpa.cpc_bid_floor_micros',
+  'ad_group.cpc_bid_micros',
+  'ad_group.cpm_bid_micros',
+  'ad_group.cpv_bid_micros',
+  'ad_group.effective_target_cpa_micros',
+  'ad_group.effective_target_cpa_source',
+  'ad_group.effective_target_roas',
+  'ad_group.percent_cpc_bid_micros',
+  'ad_group.target_cpa_micros',
+  'ad_group.target_cpm_micros',
+  'ad_group.target_roas',
+  'campaign.optimization_score',
+  'customer.optimization_score',
 )
 
 
@@ -68,12 +69,14 @@ class GaarfExporter:
     expose_metrics_with_zero_values: Whether to send zero metrics.
   """
 
-  def __init__(self,
-               pushgateway_url: str | None = None,
-               http_server_url: str = 'localhost:8000',
-               namespace: str = 'googleads',
-               job_name: str = 'gaarf_exporter',
-               expose_metrics_with_zero_values: bool = False) -> None:
+  def __init__(
+    self,
+    pushgateway_url: str | None = None,
+    http_server_url: str = 'localhost:8000',
+    namespace: str = 'googleads',
+    job_name: str = 'gaarf_exporter',
+    expose_metrics_with_zero_values: bool = False,
+  ) -> None:
     """Initializes GaarfExporter to serve metrics.
 
     Args:
@@ -96,7 +99,8 @@ class GaarfExporter:
     self.job_name = job_name
     self.expose_metrics_with_zero_values = expose_metrics_with_zero_values
     self.registry: prometheus_client.CollectorRegistry = (
-        prometheus_client.CollectorRegistry())
+      prometheus_client.CollectorRegistry()
+    )
     self._init_service_metrics(self.namespace)
     logger.debug(str(self))
 
@@ -107,29 +111,34 @@ class GaarfExporter:
       namespace: Global prefix for service metrics.
     """
     self.total_export_time_gauge = self._define_gauge(
-        'exporting_seconds', suffix='Remove', namespace=namespace)
+      'exporting_seconds', suffix='Remove', namespace=namespace
+    )
     self.report_fetcher_gauge = self._define_gauge(
-        name='report_fetching_seconds',
-        suffix='Remove',
-        labelnames=(
-            'collector',
-            'account',
-        ),
-        namespace=namespace)
+      name='report_fetching_seconds',
+      suffix='Remove',
+      labelnames=(
+        'collector',
+        'account',
+      ),
+      namespace=namespace,
+    )
     self.delay_gauge = self._define_gauge(
-        'delay_seconds', suffix='Remove', namespace=namespace)
+      'delay_seconds', suffix='Remove', namespace=namespace
+    )
 
   def reset_registry(self) -> None:
     """Removes all metrics from registry before export."""
     self.registry._collector_to_names.clear()
     self.registry._names_to_collectors.clear()
 
-  def export(self,
-             report: gaarf.report.GaarfReport,
-             namespace: str | None = None,
-             suffix: str = '',
-             collector: str | None = None,
-             account: str | None = None) -> None:
+  def export(
+    self,
+    report: gaarf.report.GaarfReport,
+    namespace: str | None = None,
+    suffix: str = '',
+    collector: str | None = None,
+    account: str | None = None,
+  ) -> None:
     """Exports data from report into the format consumable by Prometheus.
 
     Iterates over each row or report and creates gauges (metrics with labels
@@ -147,16 +156,18 @@ class GaarfExporter:
       return
     start = time.time()
     export_time_gauge = self._define_gauge(
-        name='query_export_time_seconds',
-        suffix='Remove',
-        labelnames=(
-            'collector',
-            'account',
-        ),
-        namespace='gaarf')
+      name='query_export_time_seconds',
+      suffix='Remove',
+      labelnames=(
+        'collector',
+        'account',
+      ),
+      namespace='gaarf',
+    )
     api_requests_counter = self._define_counter(name='api_requests_count')
-    metrics = self._define_metrics(report.query_specification, suffix,
-                                   namespace)
+    metrics = self._define_metrics(
+      report.query_specification, suffix, namespace
+    )
     labels = self._define_labels(report.query_specification)
     for row in report:
       label_values = []
@@ -167,23 +178,30 @@ class GaarfExporter:
           label_value = row.get(label)
         label_values.append(label_value)
       for name, metric in metrics.items():
-        if (metric_value := getattr(row, name) or
-            self.expose_metrics_with_zero_values):
+        if (
+          metric_value := getattr(row, name)
+          or self.expose_metrics_with_zero_values
+        ):
           if not isinstance(metric_value, str):
             metric.labels(*label_values).set(metric_value)
     end = time.time()
-    export_time_gauge.labels(
-        collector=collector, account=account).set(end - start)
+    export_time_gauge.labels(collector=collector, account=account).set(
+      end - start
+    )
     api_requests_counter.inc()
     if self.pushgateway_url:
       prometheus_client.push_to_gateway(
-          self.pushgateway_url, job=self.job_name, registry=self.registry)
+        self.pushgateway_url, job=self.job_name, registry=self.registry
+      )
     else:
       self.registry.collect()
 
   def _define_metrics(
-      self, query_specification: gaarf.query_editor.QuerySpecification,
-      suffix: str, namespace: str) -> dict[str, prometheus_client.Gauge]:
+    self,
+    query_specification: gaarf.query_editor.QuerySpecification,
+    suffix: str,
+    namespace: str,
+  ) -> dict[str, prometheus_client.Gauge]:
     """Defines metrics to be exposed Prometheus.
 
     Metrics are defined based on query_specification of report that needs to
@@ -211,8 +229,8 @@ class GaarfExporter:
     return metrics
 
   def _define_labels(
-      self,
-      query_specification: gaarf.query_editor.QuerySpecification) -> list[str]:
+    self, query_specification: gaarf.query_editor.QuerySpecification
+  ) -> list[str]:
     """Defines names of labels to be attached to metrics.
 
     Label names are build based on column names of the report. Later on each
@@ -234,11 +252,13 @@ class GaarfExporter:
     logger.debug('labelnames: %s', labelnames)
     return labelnames
 
-  def _define_gauge(self,
-                    name: str,
-                    suffix: str,
-                    labelnames: Sequence[str] = (),
-                    namespace: str | None = None) -> prometheus_client.Gauge:
+  def _define_gauge(
+    self,
+    name: str,
+    suffix: str,
+    labelnames: Sequence[str] = (),
+    namespace: str | None = None,
+  ) -> prometheus_client.Gauge:
     """Defines Gauge metric to be created in Prometheus and add labels to it.
 
     Gauge has the following structure '<namespace>_<suffix>_<name>' and might
@@ -264,10 +284,11 @@ class GaarfExporter:
     if gauge_name in self.registry._names_to_collectors:
       return self.registry._names_to_collectors.get(gauge_name)
     return prometheus_client.Gauge(
-        name=gauge_name,
-        documentation=name,
-        labelnames=labelnames,
-        registry=self.registry)
+      name=gauge_name,
+      documentation=name,
+      labelnames=labelnames,
+      registry=self.registry,
+    )
 
   def _define_counter(self, name: str) -> prometheus_client.Counter:
     """Define Counter metric based on provided name.
@@ -281,11 +302,12 @@ class GaarfExporter:
     if counter_name in self.registry._names_to_collectors:
       return self.registry._names_to_collectors.get(counter_name)
     return prometheus_client.Counter(
-        name=counter_name, documentation=name, registry=self.registry)
+      name=counter_name, documentation=name, registry=self.registry
+    )
 
   def _get_non_virtual_columns(
-      self,
-      query_specification: gaarf.query_editor.QuerySpecification) -> list[str]:
+    self, query_specification: gaarf.query_editor.QuerySpecification
+  ) -> list[str]:
     """Returns all non-virtual columns from query.
 
     Virtual columns have special handling during the export so they need
@@ -299,10 +321,12 @@ class GaarfExporter:
       All columns from the query that are not virtual.
     """
     return [
-        column for column in query_specification.column_names
-        if column not in query_specification.virtual_columns
+      column
+      for column in query_specification.column_names
+      if column not in query_specification.virtual_columns
     ]
 
   def __str__(self) -> str:
-    return (f'GaarfExporter(namespace={self.namespace}, '
-            f'job_name={self.job_name})')
+    return (
+      f'GaarfExporter(namespace={self.namespace}, ' f'job_name={self.job_name})'
+    )

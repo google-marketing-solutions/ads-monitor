@@ -16,11 +16,8 @@ from __future__ import annotations
 import re
 
 import yaml
-
 from gaarf_exporter.alert import Alert
-from gaarf_exporter.alert_elements import AlertRule
-from gaarf_exporter.alert_elements import Label
-from gaarf_exporter.alert_elements import MetricDefinition
+from gaarf_exporter.alert_elements import AlertRule, Label, MetricDefinition
 
 
 def test_label():
@@ -29,14 +26,16 @@ def test_label():
 
 
 def test_metric_definition():
-  metric_definition = MetricDefinition('googleads_impressions',
-                                       Label('network', 'CONTENT'))
+  metric_definition = MetricDefinition(
+    'googleads_impressions', Label('network', 'CONTENT')
+  )
   assert str(metric_definition) == 'googleads_impressions{network="CONTENT"}'
 
 
 def test_alert_rule():
-  metric_definition = MetricDefinition('googleads_impressions',
-                                       Label('network', 'CONTENT'))
+  metric_definition = MetricDefinition(
+    'googleads_impressions', Label('network', 'CONTENT')
+  )
   alert_rule = AlertRule(metric_definition)
   expected_alert_rule = 'sum by(campaign_id) (googleads_impressions{network="CONTENT"}) / sum by(campaign_id) (googleads_impressions{network="CONTENT"} offset 30m) > 2.0'
   # substitute \s+ to nothing for comparison
@@ -46,8 +45,9 @@ def test_alert_rule():
 
 
 def test_create_alert():
-  metric_definition = MetricDefinition('googleads_cost',
-                                       Label('network', 'CONTENT'))
+  metric_definition = MetricDefinition(
+    'googleads_cost', Label('network', 'CONTENT')
+  )
   alert = Alert('sample_alert', AlertRule(metric_definition=metric_definition))
   expected_yaml = """
         alert: sample_alert

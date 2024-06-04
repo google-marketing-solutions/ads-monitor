@@ -25,15 +25,14 @@ Collector can be:
 Metrics, dimensions and filters of a Collector can be dynamically changed thus
 allowing Collector customization at the runtime.
 """
+
 from __future__ import annotations
 
 import copy
 import dataclasses
 import enum
 import itertools
-from collections.abc import Mapping
-from collections.abc import MutableSequence
-from collections.abc import Sequence
+from collections.abc import Mapping, MutableSequence, Sequence
 from datetime import datetime
 from typing import TypedDict
 
@@ -115,8 +114,12 @@ class Field:
     return util.remove_spaces(str(self)) > util.remove_spaces(str(other))
 
   def __hash__(self):
-    return hash((util.remove_spaces(self.name),
-                 util.remove_spaces(self.alias if self.alias else '')))
+    return hash(
+      (
+        util.remove_spaces(self.name),
+        util.remove_spaces(self.alias if self.alias else ''),
+      )
+    )
 
 
 class CollectorLevel(enum.IntEnum):
@@ -126,6 +129,7 @@ class CollectorLevel(enum.IntEnum):
   is associated with metrics and dimensions for a given collector.
   Collector levels are ordered hierarchically to support comparison operations.
   """
+
   UNKNOWN = 0
   AD_GROUP_AD_ASSET = 1
   AD_GROUP_AD = 2
@@ -154,6 +158,7 @@ class LevelInfo:
     name_alias: Alias for entity content (i.e ad_group_name, campaign_name).
     active_entities_filter: Filter to get only active entities.
   """
+
   resource_name: str
   id: str
   id_alias: str
@@ -171,28 +176,54 @@ class LevelInfo:
 
 
 _LEVELS = {
-    CollectorLevel.AD_GROUP_AD_ASSET:
-        LevelInfo('ad_group_ad_asset_view', 'asset.id', 'asset_id',
-                  'asset.name', 'asset',
-                  'ad_group_ad_asset_view.enabled = TRUE'),
-    CollectorLevel.AD_GROUP_AD:
-        LevelInfo('ad_group_ad', 'ad_group_ad.ad.id', 'ad_id',
-                  'ad_group_ad.ad.name', 'ad_name',
-                  'ad_group_ad.status = ENABLED'),
-    CollectorLevel.AD_GROUP:
-        LevelInfo('ad_group', 'ad_group.id', 'ad_group_id', 'ad_group.name',
-                  'ad_group_name', 'ad_group.status = ENABLED'),
-    CollectorLevel.CAMPAIGN:
-        LevelInfo('campaign', 'campaign.id', 'campaign_id', 'campaign.name',
-                  'campaign_name', 'campaign.status = ENABLED'),
-    CollectorLevel.CUSTOMER:
-        LevelInfo('customer', 'customer.id', 'customer_id',
-                  'customer.descriptive_name', 'account_name',
-                  'customer.status = ENABLED'),
-    CollectorLevel.MCC:
-        LevelInfo('customer', 'customer.id', 'customer_id',
-                  'customer.descriptive_name', 'account_name',
-                  'customer.status = ENABLED'),
+  CollectorLevel.AD_GROUP_AD_ASSET: LevelInfo(
+    'ad_group_ad_asset_view',
+    'asset.id',
+    'asset_id',
+    'asset.name',
+    'asset',
+    'ad_group_ad_asset_view.enabled = TRUE',
+  ),
+  CollectorLevel.AD_GROUP_AD: LevelInfo(
+    'ad_group_ad',
+    'ad_group_ad.ad.id',
+    'ad_id',
+    'ad_group_ad.ad.name',
+    'ad_name',
+    'ad_group_ad.status = ENABLED',
+  ),
+  CollectorLevel.AD_GROUP: LevelInfo(
+    'ad_group',
+    'ad_group.id',
+    'ad_group_id',
+    'ad_group.name',
+    'ad_group_name',
+    'ad_group.status = ENABLED',
+  ),
+  CollectorLevel.CAMPAIGN: LevelInfo(
+    'campaign',
+    'campaign.id',
+    'campaign_id',
+    'campaign.name',
+    'campaign_name',
+    'campaign.status = ENABLED',
+  ),
+  CollectorLevel.CUSTOMER: LevelInfo(
+    'customer',
+    'customer.id',
+    'customer_id',
+    'customer.descriptive_name',
+    'account_name',
+    'customer.status = ENABLED',
+  ),
+  CollectorLevel.MCC: LevelInfo(
+    'customer',
+    'customer.id',
+    'customer_id',
+    'customer.descriptive_name',
+    'account_name',
+    'customer.status = ENABLED',
+  ),
 }
 
 
@@ -210,15 +241,17 @@ class Collector:
     suffix: Optional custom identifier to the collector.
   """
 
-  def __init__(self,
-               name: str | None = None,
-               metrics: str | list[Field] | None = None,
-               level: CollectorLevel | None = CollectorLevel.AD_GROUP,
-               resource_name: str | None = None,
-               dimensions: str | list[Field] | None = None,
-               filters: str | None = None,
-               suffix: str | None = None,
-               query: str | None = None) -> None:
+  def __init__(
+    self,
+    name: str | None = None,
+    metrics: str | list[Field] | None = None,
+    level: CollectorLevel | None = CollectorLevel.AD_GROUP,
+    resource_name: str | None = None,
+    dimensions: str | list[Field] | None = None,
+    filters: str | None = None,
+    suffix: str | None = None,
+    query: str | None = None,
+  ) -> None:
     """Initializes Collector.
 
     Args:
@@ -252,9 +285,10 @@ class Collector:
     """
     if query := definition.get('query'):
       return cls(
-          name=definition.get('name'),
-          query=query,
-          suffix=definition.get('suffix'))
+        name=definition.get('name'),
+        query=query,
+        suffix=definition.get('suffix'),
+      )
     query_spec = definition.get('query_spec', {})
     if definition.get('type') == 'service':
       metrics = [Field(name='1', alias='info')]
@@ -268,13 +302,14 @@ class Collector:
     else:
       level = CollectorLevel.AD_GROUP
     return cls(
-        name=definition.get('name'),
-        suffix=definition.get('suffix'),
-        metrics=metrics,
-        dimensions=query_spec.get('dimensions'),
-        filters=query_spec.get('filters'),
-        resource_name=query_spec.get('resource_name'),
-        level=level)
+      name=definition.get('name'),
+      suffix=definition.get('suffix'),
+      metrics=metrics,
+      dimensions=query_spec.get('dimensions'),
+      filters=query_spec.get('filters'),
+      resource_name=query_spec.get('resource_name'),
+      level=level,
+    )
 
   def create_conversion_split_collector(self) -> Collector:
     """Builds new Collector with conversions metric and dimensions.
@@ -283,17 +318,18 @@ class Collector:
         New Collector on the same level as the seed one.
     """
     return Collector(
-        name=f'{self.name}_conversion_split',
-        suffix=self.suffix,
-        level=self.level,
-        metrics='all_conversions,all_conversions_value',
-        dimensions=[
-            Field('segments.conversion_action_category', 'conversion_category'),
-            Field('segments.conversion_action_name', 'conversion_name'),
-            Field('segments.conversion_action~0', 'conversion_id')
-        ],
-        resource_name=self.resource_name,
-        filters='metrics.all_conversions > 0')
+      name=f'{self.name}_conversion_split',
+      suffix=self.suffix,
+      level=self.level,
+      metrics='all_conversions,all_conversions_value',
+      dimensions=[
+        Field('segments.conversion_action_category', 'conversion_category'),
+        Field('segments.conversion_action_name', 'conversion_name'),
+        Field('segments.conversion_action~0', 'conversion_id'),
+      ],
+      resource_name=self.resource_name,
+      filters='metrics.all_conversions > 0',
+    )
 
   @property
   def level(self) -> CollectorLevel | None:
@@ -349,9 +385,9 @@ class Collector:
     """Changes saved dimensions of a collector."""
     self._filters = values
 
-  def _init_fields(self,
-                   fields: str | list[Field],
-                   prefix: str = '') -> list[Field]:
+  def _init_fields(
+    self, fields: str | list[Field], prefix: str = ''
+  ) -> list[Field]:
     """Transforms fields to proper Field format based on optional prefix.
 
     Args:
@@ -422,7 +458,8 @@ class Collector:
     if not self.metrics:
       return '\n'
     metrics_info = ',\n'.join(
-        [field.to_query_field() for field in sorted(self.metrics)])
+      [field.to_query_field() for field in sorted(self.metrics)]
+    )
     return f'{metrics_info},\n'
 
   @property
@@ -435,7 +472,8 @@ class Collector:
     if not dimensions:
       return '\n'
     dimensions_info = ',\n'.join(
-        [field.to_query_field() for field in sorted(dimensions)])
+      [field.to_query_field() for field in sorted(dimensions)]
+    )
     return f'{dimensions_info},\n'
 
   @property
@@ -460,10 +498,12 @@ class Collector:
     """Formats query based on elements."""
     if self._query:
       return self._query
-    return (f'SELECT {self.formatted_level}{self.formatted_metrics}'
-            f'{self.formatted_dimensions}'
-            f'FROM {self.resource_name}\n'
-            f'{self.formatted_filters}')
+    return (
+      f'SELECT {self.formatted_level}{self.formatted_metrics}'
+      f'{self.formatted_dimensions}'
+      f'FROM {self.resource_name}\n'
+      f'{self.formatted_filters}'
+    )
 
   def customize(self, collector_customization: CollectorCustomization) -> None:
     """Customizes collector elements based on provided customization mapping.
@@ -479,15 +519,19 @@ class Collector:
     if level := collector_customization.get('level'):
       self.level = CollectorLevel[level.upper()]
     if (start_date := collector_customization.get('start_date')) and (
-        end_date := collector_customization.get('end_date')):
+      end_date := collector_customization.get('end_date')
+    ):
       start_date = gaarf_utils.convert_date(start_date)
       end_date = gaarf_utils.convert_date(end_date)
       if not self.filters or 'segments.date DURING TODAY' in self.filters:
         self.filters.remove('segments.date DURING TODAY')
         self.filters.add(
-            f"segments.date BETWEEN '{start_date}' AND '{end_date}'")
-      n_days = (datetime.strptime(end_date, '%Y-%m-%d') -
-                datetime.strptime(start_date, '%Y-%m-%d')).days + 1
+          f"segments.date BETWEEN '{start_date}' AND '{end_date}'"
+        )
+      n_days = (
+        datetime.strptime(end_date, '%Y-%m-%d')
+        - datetime.strptime(start_date, '%Y-%m-%d')
+      ).days + 1
       self.dimensions.add(Field(str(n_days), 'n_days'))
 
   def is_similar(self, other: Collector) -> bool:
@@ -504,11 +548,15 @@ class Collector:
     if not other or not isinstance(other, Collector):
       return False
 
-    if (self.resource_name != other.resource_name and
-        not (CollectorLevel.contains(self.resource_name, other.resource_name))):
+    if self.resource_name != other.resource_name and not (
+      CollectorLevel.contains(self.resource_name, other.resource_name)
+    ):
       return False
-    if (self.metrics, self.dimensions,
-        self.filters) == (other.metrics, other.dimensions, other.filters):
+    if (self.metrics, self.dimensions, self.filters) == (
+      other.metrics,
+      other.dimensions,
+      other.filters,
+    ):
       return True
     return False
 
@@ -543,7 +591,7 @@ class ServiceCollector(Collector):
   def metrics(self) -> set[Field]:
     """Returns default info metric."""
     return set(self._metrics) or {
-        Field(name='1', alias='info'),
+      Field(name='1', alias='info'),
     }
 
   @metrics.setter
@@ -555,13 +603,13 @@ class ServiceCollector(Collector):
 def create_default_service_collector(level: CollectorLevel) -> ServiceCollector:
   """Generates correct ServiceCollector based on provided level.
 
-   Based on level (AD_GROUP, CAMPAIGN, ACCOUNT, etc.) corresponding
-   ServiceCollector is created that contains all necessary mapping information
-   downstream. I.e. if 'level=AD_GROUP' then information on ad_group, campaign
-   and customer will be included in to the mapping.
+  Based on level (AD_GROUP, CAMPAIGN, ACCOUNT, etc.) corresponding
+  ServiceCollector is created that contains all necessary mapping information
+  downstream. I.e. if 'level=AD_GROUP' then information on ad_group, campaign
+  and customer will be included in to the mapping.
 
-   Returns:
-    ServiceCollector called 'mapping' for an appropriate level.
+  Returns:
+   ServiceCollector called 'mapping' for an appropriate level.
 
   """
   if level == CollectorLevel.MCC:
@@ -570,21 +618,26 @@ def create_default_service_collector(level: CollectorLevel) -> ServiceCollector:
   filters = ''
 
   for collector_level in CollectorLevel:
-    if (collector_level
-        not in (CollectorLevel.MCC, CollectorLevel.AD_GROUP_AD_ASSET) and
-        level <= collector_level and
-        (level_info := _LEVELS.get(collector_level))):
-      dimensions.extend([
+    if (
+      collector_level
+      not in (CollectorLevel.MCC, CollectorLevel.AD_GROUP_AD_ASSET)
+      and level <= collector_level
+      and (level_info := _LEVELS.get(collector_level))
+    ):
+      dimensions.extend(
+        [
           Field(name=level_info.id, alias=level_info.id_alias),
           Field(name=level_info.name, alias=level_info.name_alias),
-      ])
+        ]
+      )
       if filters:
         filters = filters + ' AND ' + level_info.active_entities_filter
       else:
         filters = level_info.active_entities_filter
 
   return ServiceCollector(
-      name='mapping', dimensions=dimensions, level=level, filters=filters)
+    name='mapping', dimensions=dimensions, level=level, filters=filters
+  )
 
 
 def collectors_similarity_check(collectors: list[Collector]) -> list[Collector]:

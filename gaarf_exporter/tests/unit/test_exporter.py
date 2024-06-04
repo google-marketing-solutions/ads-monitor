@@ -16,13 +16,11 @@ from __future__ import annotations
 import pytest
 from gaarf.query_editor import QuerySpecification
 from gaarf.report import GaarfReport
-from prometheus_client import samples
-
 from gaarf_exporter.exporter import GaarfExporter
+from prometheus_client import samples
 
 
 class TestGaaarfExporter:
-
   @pytest.fixture
   def gaarf_exporter(self):
     return GaarfExporter()
@@ -32,30 +30,32 @@ class TestGaaarfExporter:
     query = 'SELECT campaign.id, metrics.clicks AS clicks FROM campaign'
     query_specification = QuerySpecification(query).generate()
     return GaarfReport(
-        results=[
-            [1, 10],
-            [2, 20],
-        ],
-        column_names=[
-            'campaign_id',
-            'clicks',
-        ],
-        query_specification=query_specification)
+      results=[
+        [1, 10],
+        [2, 20],
+      ],
+      column_names=[
+        'campaign_id',
+        'clicks',
+      ],
+      query_specification=query_specification,
+    )
 
   @pytest.fixture
   def report_with_virtual_column(self):
     query = 'SELECT campaign.id, 1 AS info FROM campaign'
     query_specification = QuerySpecification(query).generate()
     return GaarfReport(
-        results=[
-            [1, 1],
-            [2, 1],
-        ],
-        column_names=[
-            'campaign_id',
-            'info',
-        ],
-        query_specification=query_specification)
+      results=[
+        [1, 1],
+        [2, 1],
+      ],
+      column_names=[
+        'campaign_id',
+        'info',
+      ],
+      query_specification=query_specification,
+    )
 
   def test_gaarf_exporter_has_default_values(self, gaarf_exporter):
     assert gaarf_exporter.http_server_url
@@ -70,7 +70,8 @@ class TestGaaarfExporter:
     assert 'googleads_clicks' in [metric.name for metric in metrics]
 
   def test_export_returns_correct_metric_name_with_suffix_and_namespace(
-      self, gaarf_exporter, report):
+    self, gaarf_exporter, report
+  ):
     namespace = 'ads'
     suffix = 'performance'
     gaarf_exporter.export(report=report, namespace=namespace, suffix=suffix)
@@ -78,13 +79,15 @@ class TestGaaarfExporter:
     assert f'{namespace}_{suffix}_clicks' in [metric.name for metric in metrics]
 
   def test_export_returns_correct_virtual_metric_name(
-      self, gaarf_exporter, report_with_virtual_column):
+    self, gaarf_exporter, report_with_virtual_column
+  ):
     gaarf_exporter.export(report=report_with_virtual_column)
     metrics = list(gaarf_exporter.registry.collect())
     assert 'googleads_info' in [metric.name for metric in metrics]
 
-  def test_export_returns_correct_metric_documentation(self, gaarf_exporter,
-                                                       report):
+  def test_export_returns_correct_metric_documentation(
+    self, gaarf_exporter, report
+  ):
     gaarf_exporter.export(report)
     metrics = list(gaarf_exporter.registry.collect())
     assert 'clicks' in [metric.documentation for metric in metrics]
@@ -96,15 +99,22 @@ class TestGaaarfExporter:
       if metric.name == 'googleads_clicks':
         assert len(metric.samples) == len(report.results)
 
-  @pytest.mark.parametrize('expected_samples', [[
-      samples.Sample(
-          name='googleads_clicks', labels={'campaign_id': '1'}, value=10.0),
-      samples.Sample(
-          name='googleads_clicks', labels={'campaign_id': '2'}, value=20.0),
-  ]])
-  def test_export_returns_correct_metric_samples_values(self, gaarf_exporter,
-                                                        report,
-                                                        expected_samples):
+  @pytest.mark.parametrize(
+    'expected_samples',
+    [
+      [
+        samples.Sample(
+          name='googleads_clicks', labels={'campaign_id': '1'}, value=10.0
+        ),
+        samples.Sample(
+          name='googleads_clicks', labels={'campaign_id': '2'}, value=20.0
+        ),
+      ]
+    ],
+  )
+  def test_export_returns_correct_metric_samples_values(
+    self, gaarf_exporter, report, expected_samples
+  ):
     gaarf_exporter.export(report)
     metrics = list(gaarf_exporter.registry.collect())
     for metric in metrics:

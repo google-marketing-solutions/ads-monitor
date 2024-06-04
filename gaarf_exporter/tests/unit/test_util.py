@@ -14,24 +14,39 @@
 from __future__ import annotations
 
 import pytest
-
 from gaarf_exporter import util
 
 
-@pytest.mark.parametrize('expression, expected', [
-    ('clicks', [
+@pytest.mark.parametrize(
+  'expression, expected',
+  [
+    (
+      'clicks',
+      [
         ('clicks', 'IDENTIFIER'),
-    ]),
-    ('metrics.clicks', [
+      ],
+    ),
+    (
+      'metrics.clicks',
+      [
         ('metrics.clicks', 'PREFIXED_IDENTIFIER'),
-    ]),
-    ('prefix_1.metrics.clicks', [
+      ],
+    ),
+    (
+      'prefix_1.metrics.clicks',
+      [
         ('prefix_1.metrics.clicks', 'PREFIXED_IDENTIFIER'),
-    ]),
-    ('prefix_2.prefix_1.metrics.clicks', [
+      ],
+    ),
+    (
+      'prefix_2.prefix_1.metrics.clicks',
+      [
         ('prefix_2.prefix_1.metrics.clicks', 'PREFIXED_IDENTIFIER'),
-    ]),
-    ('(prefix_1.metrics.clicks + var1)/20', [
+      ],
+    ),
+    (
+      '(prefix_1.metrics.clicks + var1)/20',
+      [
         ('(', 'MATH_OPERATOR'),
         ('prefix_1.metrics.clicks', 'PREFIXED_IDENTIFIER'),
         ('+', 'MATH_OPERATOR'),
@@ -39,15 +54,20 @@ from gaarf_exporter import util
         (')', 'MATH_OPERATOR'),
         ('/', 'MATH_OPERATOR'),
         ('20', 'NUMBER'),
-    ]),
-])
+      ],
+    ),
+  ],
+)
 def test_tokenize_return_correct_expression(expression, expected):
   actual = util.tokenize(expression)
   assert actual == expected
 
 
-@pytest.mark.parametrize('query,expected', [
-    ("""
+@pytest.mark.parametrize(
+  'query,expected',
+  [
+    (
+      """
       SeLeCt
           average_cost
           campaign.bidding_strategy_type,
@@ -62,16 +82,20 @@ def test_tokenize_return_correct_expression(expression, expected):
           AND campaign.status = "ENABLED"
           AND ad_group.status = "ENABLED"
           AND metrics.cost_micros >= 0
-     """, [
+     """,
+      [
         'absolute_top_impression_percentage',
         'active_view_cpm',
         'active_view_ctr',
         'all_conversions_from_interactions_rate',
         'auction_insight_search_impression_share',
         'average_cost',
-    ]),
-])
+      ],
+    ),
+  ],
+)
 def test_find_relative_metrics_returns_correct_relative_metrics(
-    query, expected):
+  query, expected
+):
   actual = util.find_relative_metrics(query)
   assert sorted(actual) == expected

@@ -14,6 +14,7 @@
 
 Collectors are converted to gaarf queries that are sent to Ads API.
 """
+
 from __future__ import annotations
 
 import itertools
@@ -45,9 +46,9 @@ class Registry:
 
   @classmethod
   def from_collector_definitions(
-      cls,
-      path_to_definitions: str
-      | os.Pathlike = f'{_SCRIPT_DIR}/collector_definitions/'
+    cls,
+    path_to_definitions: str
+    | os.Pathlike = f'{_SCRIPT_DIR}/collector_definitions/',
   ) -> Registry:
     """Builds Registry from one or multiple definitions.
 
@@ -62,9 +63,11 @@ class Registry:
     for data in results:
       for collector_data in data:
         if collector_data.get('type') == 'service' or collector_data.get(
-            'type', {}).get('service'):
+          'type', {}
+        ).get('service'):
           coll = query_collector.ServiceCollector.from_definition(
-              collector_data)
+            collector_data
+          )
         else:
           coll = query_collector.Collector.from_definition(collector_data)
         collectors[coll.name] = coll
@@ -83,7 +86,7 @@ class Registry:
 
   @property
   def all_subregistries(self) -> CollectorSet:
-    """Helper for getting only sub-registries. """
+    """Helper for getting only sub-registries."""
     collector_names = set()
     for name, collector in self.collectors.items():
       if isinstance(collector, dict):
@@ -96,15 +99,16 @@ class Registry:
     """Helper for getting all collectors from the registry."""
     all_collector_names = ','.join(self.collectors.keys())
     return self.find_collectors(
-        collector_names=all_collector_names,
-        deduplicate=False,
-        service_collectors=False)
+      collector_names=all_collector_names,
+      deduplicate=False,
+      service_collectors=False,
+    )
 
   def find_collectors(
-      self,
-      collector_names: str | None = None,
-      service_collectors: bool = True,
-      deduplicate: bool = True,
+    self,
+    collector_names: str | None = None,
+    service_collectors: bool = True,
+    deduplicate: bool = True,
   ) -> CollectorSet:
     """Extracts collectors from registry and returns their initialized targets.
 
@@ -123,8 +127,9 @@ class Registry:
     if collector_names == 'all':
       return self.all_collectors
     collectors_subset = [
-        collector for name, collector in self.collectors.items()
-        if name in collector_names.strip().split(',')
+      collector
+      for name, collector in self.collectors.items()
+      if name in collector_names.strip().split(',')
     ]
     found_collectors = set()
     for collector in collectors_subset:
@@ -134,18 +139,21 @@ class Registry:
       else:
         found_collectors.add(collector)
     return CollectorSet(
-        collectors=set(found_collectors),
-        deduplicate=deduplicate,
-        service_collectors=service_collectors)
+      collectors=set(found_collectors),
+      deduplicate=deduplicate,
+      service_collectors=service_collectors,
+    )
 
 
 class CollectorSet(MutableSet):
   """Represent a set of collectors returned from Registry."""
 
-  def __init__(self,
-               collectors: set[query_collector.Collector] | None = None,
-               service_collectors: bool = True,
-               deduplicate: bool = True) -> None:
+  def __init__(
+    self,
+    collectors: set[query_collector.Collector] | None = None,
+    service_collectors: bool = True,
+    deduplicate: bool = True,
+  ) -> None:
     """Initializes CollectorSet based on provided collectors.
 
     Args:
@@ -173,20 +181,24 @@ class CollectorSet(MutableSet):
     if self._deduplicate:
       self.deduplicate_collectors()
     if self._service_collectors:
-      has_service_collector = any([
+      has_service_collector = any(
+        [
           isinstance(collector, query_collector.ServiceCollector)
           for collector in self._collectors
-      ])
+        ]
+      )
       if not has_service_collector:
         valid_collector_levels = [
-            collector.level
-            for collector in self._collectors
-            if collector.level != query_collector.CollectorLevel.UNKNOWN
+          collector.level
+          for collector in self._collectors
+          if collector.level != query_collector.CollectorLevel.UNKNOWN
         ]
         if valid_collector_levels:
           default_service_collector = (
-              query_collector.create_default_service_collector(
-                  min(valid_collector_levels)))
+            query_collector.create_default_service_collector(
+              min(valid_collector_levels)
+            )
+          )
           self._collectors.add(default_service_collector)
 
     return self._collectors
@@ -204,8 +216,8 @@ class CollectorSet(MutableSet):
         self._collectors.remove(max_collector)
 
   def customize(
-      self,
-      collector_customization: query_collector.CollectorCustomization) -> None:
+    self, collector_customization: query_collector.CollectorCustomization
+  ) -> None:
     """Changes collectors in the set based on provided arguments mapping.
 
     Args:
@@ -239,10 +251,11 @@ class CollectorSet(MutableSet):
 
 
 def initialize_collectors(
-    config_file: str | None = None,
-    collector_names: str | None = None,
-    create_service_collectors: bool = True,
-    deduplicate_collectors: bool = True) -> CollectorSet():
+  config_file: str | None = None,
+  collector_names: str | None = None,
+  create_service_collectors: bool = True,
+  deduplicate_collectors: bool = True,
+) -> CollectorSet():
   """Initializes collectors either from file or CLI.
 
   Args:
@@ -258,22 +271,27 @@ def initialize_collectors(
   if config_file:
     collectors_registry = Registry.from_collector_definitions(config_file)
     return collectors_registry.find_collectors(
-        collector_names='all', deduplicate=False, service_collectors=False)
+      collector_names='all', deduplicate=False, service_collectors=False
+    )
   if collector_names:
     collectors_registry = Registry.from_collector_definitions()
-    if not (active_collectors := collectors_registry.find_collectors(
+    if not (
+      active_collectors := collectors_registry.find_collectors(
         collector_names,
         deduplicate=deduplicate_collectors,
-        service_collectors=create_service_collectors)):
-      logging.warning('Failed to get "%s" collectors, using default ones',
-                      collector_names)
+        service_collectors=create_service_collectors,
+      )
+    ):
+      logging.warning(
+        'Failed to get "%s" collectors, using default ones', collector_names
+      )
       active_collectors = collectors_registry.default_collectors
   return active_collectors
   raise ValueError('Neither collector_file nor collector_names were provided')
 
 
 def _load_collector_data(
-    path_to_definitions: str | os.Pathlike
+  path_to_definitions: str | os.Pathlike,
 ) -> list[query_collector.CollectorDefinition]:
   """Loads collectors data from file or folder.
 

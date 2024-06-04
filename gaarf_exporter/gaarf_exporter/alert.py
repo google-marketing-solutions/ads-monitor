@@ -11,7 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-'''Module for building Prometheus alert.'''
+"""Module for building Prometheus alert."""
+
 from __future__ import annotations
 
 import yaml
@@ -20,12 +21,13 @@ from gaarf_exporter.alert_elements import AlertRule
 
 
 class Alert:
-
-  def __init__(self,
-               name: str,
-               alert_rule: AlertRule,
-               labels: str | None = None,
-               duration: str = '1h') -> None:
+  def __init__(
+    self,
+    name: str,
+    alert_rule: AlertRule,
+    labels: str | None = None,
+    duration: str = '1h',
+  ) -> None:
     self.name = name
     self.alert_rule = str(alert_rule)
     self.labels = labels

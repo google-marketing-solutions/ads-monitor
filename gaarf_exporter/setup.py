@@ -15,8 +15,7 @@ from __future__ import annotations
 
 import pathlib
 
-from setuptools import find_packages
-from setuptools import setup
+from setuptools import find_packages, setup
 
 HERE = pathlib.Path(__file__).parent
 README = (HERE / 'README.md').read_text()
@@ -39,15 +38,19 @@ setup(
     'Intended Audience :: Developers',
     'Topic :: Software Development :: Libraries :: Python Modules',
     'Operating System :: OS Independent',
-    'License :: OSI Approved :: Apache Software License'
+    'License :: OSI Approved :: Apache Software License',
   ],
   packages=find_packages(),
   package_data={'': ['collector_definitions/*.yaml']},
   install_requires=[
-    'prometheus-client', 'google-ads-api-report-fetcher==1.13.4'
+    'prometheus-client',
+    'google-ads-api-report-fetcher==1.13.4',
   ],
   setup_requires=['pytest-runner'],
   tests_requires=['pytest'],
   entry_points={
-    'console_scripts': ['gaarf-exporter=gaarf_exporter.main:main',]
-  })
+    'console_scripts': [
+      'gaarf-exporter=gaarf_exporter.main:main',
+    ]
+  },
+)

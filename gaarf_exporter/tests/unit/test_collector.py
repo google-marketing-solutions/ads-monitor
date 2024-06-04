@@ -16,7 +16,6 @@ from __future__ import annotations
 import re
 
 import pytest
-
 from gaarf_exporter import collector as query_collector
 
 
@@ -40,61 +39,62 @@ def assert_sql_functionally_equivalent(actual_sql, expected_sql):
 
 
 class TestCollector:
-
   def test_from_definition_with_query_spec_creates_correct_collector(self):
     collector_definition = {
-        'name': 'test',
-        'query_spec': {
-            'level': 'ad_group',
-            'metrics': ['clicks']
-        }
+      'name': 'test',
+      'query_spec': {'level': 'ad_group', 'metrics': ['clicks']},
     }
     collector = query_collector.Collector.from_definition(collector_definition)
     expected_collector = query_collector.Collector(
-        name='test',
-        metrics='clicks',
-        level=query_collector.CollectorLevel.AD_GROUP)
+      name='test',
+      metrics='clicks',
+      level=query_collector.CollectorLevel.AD_GROUP,
+    )
     assert collector == expected_collector
 
   def test_from_definition_with_query_creates_correct_collector(self):
     collector_definition = {
-        'name': 'test',
-        'query': 'SELECT campaign.id FROM campaign',
+      'name': 'test',
+      'query': 'SELECT campaign.id FROM campaign',
     }
     collector = query_collector.Collector.from_definition(collector_definition)
     expected_collector = query_collector.Collector(
-        name='test', query='SELECT campaign.id FROM campaign')
+      name='test', query='SELECT campaign.id FROM campaign'
+    )
     assert collector.query == expected_collector.query
 
   def test_create_conversion_split_collector_returns_correct_collector(self):
     test_collector = query_collector.Collector(
-        name='test',
-        metrics='clicks',
-        level=query_collector.CollectorLevel.AD_GROUP)
+      name='test',
+      metrics='clicks',
+      level=query_collector.CollectorLevel.AD_GROUP,
+    )
     conv_split_collector = test_collector.create_conversion_split_collector()
     expected_collector = query_collector.Collector(
-        name='test_conversion_split',
-        metrics='all_conversions,all_conversions_value',
-        level=test_collector.level,
-        dimensions=[
-            query_collector.Field('segments.conversion_action_category',
-                                  'conversion_category'),
-            query_collector.Field('segments.conversion_action_name',
-                                  'conversion_name'),
-            query_collector.Field('segments.conversion_action~0',
-                                  'conversion_id')
-        ],
-        resource_name=test_collector.resource_name,
-        filters='metrics.all_conversions > 0')
+      name='test_conversion_split',
+      metrics='all_conversions,all_conversions_value',
+      level=test_collector.level,
+      dimensions=[
+        query_collector.Field(
+          'segments.conversion_action_category', 'conversion_category'
+        ),
+        query_collector.Field(
+          'segments.conversion_action_name', 'conversion_name'
+        ),
+        query_collector.Field('segments.conversion_action~0', 'conversion_id'),
+      ],
+      resource_name=test_collector.resource_name,
+      filters='metrics.all_conversions > 0',
+    )
     assert conv_split_collector == expected_collector
 
   class TestCollectorQuery:
-
     def test_simple_collector_creates_correct_query(self):
       collector = query_collector.Collector(
-          name='simple',
-          metrics='impressions',
-          level=query_collector.CollectorLevel.AD_GROUP)
+        name='simple',
+        metrics='impressions',
+        level=query_collector.CollectorLevel.AD_GROUP,
+      )
       expected_sql = """
         SELECT
             ad_group.id AS ad_group_id,
@@ -106,14 +106,17 @@ class TestCollector:
 
     def test_complex_collector_creates_correct_query(self):
       collector = query_collector.Collector(
-          metrics='impressions,clicks',
-          level=query_collector.CollectorLevel.AD_GROUP,
-          dimensions=[
-              query_collector.Field(
-                  name='segments.conversion_action~0', alias='conversion_id'),
-              query_collector.Field(
-                  name='search_terms_view.search_term', alias='search_term')
-          ])
+        metrics='impressions,clicks',
+        level=query_collector.CollectorLevel.AD_GROUP,
+        dimensions=[
+          query_collector.Field(
+            name='segments.conversion_action~0', alias='conversion_id'
+          ),
+          query_collector.Field(
+            name='search_terms_view.search_term', alias='search_term'
+          ),
+        ],
+      )
       expected_sql = """
         SELECT
             ad_group.id AS ad_group_id,
@@ -128,21 +131,25 @@ class TestCollector:
 
     def test_complex_collector_with_virtual_column_creates_correct_query(self):
       collector = query_collector.Collector(
-          metrics=[
-              query_collector.Field(name='impressions'),
-              query_collector.Field(name='clicks'),
-              query_collector.Field(name='cost_micros * 1e6', alias='cost'),
-              query_collector.Field(name='clicks / impressions', alias='ctr'),
-              query_collector.Field(
-                  name='var1-var2/(1.05e3+var3)*100.5', alias='vc')
-          ],
-          level=query_collector.CollectorLevel.AD_GROUP,
-          dimensions=[
-              query_collector.Field(
-                  name='segments.conversion_action~0', alias='conversion_id'),
-              query_collector.Field(
-                  name='search_terms_view.search_term', alias='search_term')
-          ])
+        metrics=[
+          query_collector.Field(name='impressions'),
+          query_collector.Field(name='clicks'),
+          query_collector.Field(name='cost_micros * 1e6', alias='cost'),
+          query_collector.Field(name='clicks / impressions', alias='ctr'),
+          query_collector.Field(
+            name='var1-var2/(1.05e3+var3)*100.5', alias='vc'
+          ),
+        ],
+        level=query_collector.CollectorLevel.AD_GROUP,
+        dimensions=[
+          query_collector.Field(
+            name='segments.conversion_action~0', alias='conversion_id'
+          ),
+          query_collector.Field(
+            name='search_terms_view.search_term', alias='search_term'
+          ),
+        ],
+      )
       expected_sql = """
         SELECT
             ad_group.id AS ad_group_id,
@@ -161,21 +168,23 @@ class TestCollector:
 
     def test_service_collector_creates_correct_query(self):
       collector = query_collector.ServiceCollector(
-          name='mapping',
-          dimensions=[
-              query_collector.Field(name='ad_group.id', alias='ad_group_id'),
-              query_collector.Field(
-                  name='ad_group.name', alias='ad_group_name'),
-              query_collector.Field(name='campaign.id', alias='campaign_id'),
-              query_collector.Field(
-                  name='campaign.name', alias='campaign_name'),
-              query_collector.Field(name='customer.id', alias='customer_id'),
-              query_collector.Field(
-                  name='customer.descriptive_name', alias='account_name'),
-          ],
-          filters=('ad_group.status = ENABLED'
-                   ' AND campaign.status = ENABLED'
-                   ' AND customer.status = ENABLED'))
+        name='mapping',
+        dimensions=[
+          query_collector.Field(name='ad_group.id', alias='ad_group_id'),
+          query_collector.Field(name='ad_group.name', alias='ad_group_name'),
+          query_collector.Field(name='campaign.id', alias='campaign_id'),
+          query_collector.Field(name='campaign.name', alias='campaign_name'),
+          query_collector.Field(name='customer.id', alias='customer_id'),
+          query_collector.Field(
+            name='customer.descriptive_name', alias='account_name'
+          ),
+        ],
+        filters=(
+          'ad_group.status = ENABLED'
+          ' AND campaign.status = ENABLED'
+          ' AND customer.status = ENABLED'
+        ),
+      )
 
       expected_sql = """
           SELECT
@@ -195,18 +204,20 @@ class TestCollector:
 
     def test_service_collector_cannot_change_metrics_value(self):
       collector = query_collector.ServiceCollector(
-          name='mapping',
-          dimensions=[
-              query_collector.Field(name='ad_group.id', alias='ad_group_id'),
-          ])
+        name='mapping',
+        dimensions=[
+          query_collector.Field(name='ad_group.id', alias='ad_group_id'),
+        ],
+      )
       with pytest.raises(ValueError):
         collector.metrics = query_collector.Field('ad_group.id')
 
     def test_mcc_level_collector_creates_correct_customer_level_query(self):
       collector = query_collector.Collector(
-          name='simple_mcc_level',
-          metrics='impressions',
-          level=query_collector.CollectorLevel.MCC)
+        name='simple_mcc_level',
+        metrics='impressions',
+        level=query_collector.CollectorLevel.MCC,
+      )
       expected_sql = """
         SELECT
             customer.id AS customer_id,
@@ -218,9 +229,10 @@ class TestCollector:
 
     def test_ad_group_ad_level_collector_creates_correct_query(self):
       collector = query_collector.Collector(
-          name='simple_ad_group_ad_level',
-          metrics='impressions',
-          level=query_collector.CollectorLevel.AD_GROUP_AD)
+        name='simple_ad_group_ad_level',
+        metrics='impressions',
+        level=query_collector.CollectorLevel.AD_GROUP_AD,
+      )
 
       expected_sql = """
         SELECT
@@ -232,23 +244,27 @@ class TestCollector:
       assert_sql_functionally_equivalent(collector.query, expected_sql)
 
     def test_ad_group_level_collector_with_resource_name_creates_correct_query(
-        self):
+      self,
+    ):
       collector = query_collector.Collector(
-          name='simple_with_resource',
-          metrics='impressions',
-          resource_name='search_term_view',
-          level=query_collector.CollectorLevel.AD_GROUP)
+        name='simple_with_resource',
+        metrics='impressions',
+        resource_name='search_term_view',
+        level=query_collector.CollectorLevel.AD_GROUP,
+      )
       assert f'FROM {collector.resource_name}' in collector.query
 
     def test_collector_with_not_unique_files_creates_query_with_unique_fields(
-        self):
+      self,
+    ):
       collector = query_collector.Collector(
-          name='simple',
-          metrics='impressions',
-          dimensions=[
-              query_collector.Field('ad_group.id'),
-          ],
-          level=query_collector.CollectorLevel.AD_GROUP)
+        name='simple',
+        metrics='impressions',
+        dimensions=[
+          query_collector.Field('ad_group.id'),
+        ],
+        level=query_collector.CollectorLevel.AD_GROUP,
+      )
       expected_sql = """
         SELECT
             ad_group.id AS ad_group_id,
@@ -260,14 +276,16 @@ class TestCollector:
 
     def test_collector_with_nested_fieds_names_creates_correct_query(self):
       collector = query_collector.Collector(
-          name='bid_budget',
-          metrics=[
-              query_collector.Field('impressions'),
-              query_collector.Field('campaign_budget.amount_micros', 'budget'),
-              query_collector.Field('campaign.target_cpa.target_cpa_micros',
-                                    'target_cpa'),
-          ],
-          level=query_collector.CollectorLevel.CAMPAIGN)
+        name='bid_budget',
+        metrics=[
+          query_collector.Field('impressions'),
+          query_collector.Field('campaign_budget.amount_micros', 'budget'),
+          query_collector.Field(
+            'campaign.target_cpa.target_cpa_micros', 'target_cpa'
+          ),
+        ],
+        level=query_collector.CollectorLevel.CAMPAIGN,
+      )
       expected_sql = """
         SELECT
             campaign.id AS campaign_id,
@@ -281,21 +299,24 @@ class TestCollector:
 
     def test_collector_with_empty_metrics_creates_correct_query(self):
       collector = query_collector.Collector(
-          name='disapproval',
-          level=query_collector.CollectorLevel.AD_GROUP_AD,
-          dimensions=[
-              query_collector.Field('campaign.id', 'campaign_id'),
-              query_collector.Field(
-                  'ad_group_ad.policy_summary.approval_status',
-                  'approval_status'),
-              query_collector.Field('ad_group_ad.policy_summary.review_status',
-                                    'review_status')
-          ],
-          filters=(
-              'campaign.status = ENABLED'
-              ' AND ad_group.status = ENABLED'
-              ' AND ad_group_ad.status = ENABLED'
-              ' AND ad_group_ad.policy_summary.approval_status != APPROVED'))
+        name='disapproval',
+        level=query_collector.CollectorLevel.AD_GROUP_AD,
+        dimensions=[
+          query_collector.Field('campaign.id', 'campaign_id'),
+          query_collector.Field(
+            'ad_group_ad.policy_summary.approval_status', 'approval_status'
+          ),
+          query_collector.Field(
+            'ad_group_ad.policy_summary.review_status', 'review_status'
+          ),
+        ],
+        filters=(
+          'campaign.status = ENABLED'
+          ' AND ad_group.status = ENABLED'
+          ' AND ad_group_ad.status = ENABLED'
+          ' AND ad_group_ad.policy_summary.approval_status != APPROVED'
+        ),
+      )
       expected_sql = """
         SELECT
             ad_group_ad.ad.id AS ad_id,
@@ -310,8 +331,12 @@ class TestCollector:
         """
       assert_sql_functionally_equivalent(collector.query, expected_sql)
 
-    @pytest.mark.parametrize('test_level, expected_sql', [
-        (query_collector.CollectorLevel.AD_GROUP_AD, """
+    @pytest.mark.parametrize(
+      'test_level, expected_sql',
+      [
+        (
+          query_collector.CollectorLevel.AD_GROUP_AD,
+          """
                 SELECT
                     1 AS info,
                     ad_group_ad.ad.id AS ad_id,
@@ -327,8 +352,11 @@ class TestCollector:
                     AND ad_group.status = ENABLED
                     AND campaign.status = ENABLED
                     AND customer.status = ENABLED
-            """),
-        (query_collector.CollectorLevel.AD_GROUP, """
+            """,
+        ),
+        (
+          query_collector.CollectorLevel.AD_GROUP,
+          """
                 SELECT
                     1 AS info,
                     ad_group.id AS ad_group_id,
@@ -341,8 +369,11 @@ class TestCollector:
                 WHERE ad_group.status = ENABLED
                     AND campaign.status = ENABLED
                     AND customer.status = ENABLED
-            """),
-        (query_collector.CollectorLevel.CAMPAIGN, """
+            """,
+        ),
+        (
+          query_collector.CollectorLevel.CAMPAIGN,
+          """
                 SELECT
                     1 AS info,
                     campaign.id AS campaign_id,
@@ -352,67 +383,84 @@ class TestCollector:
                 FROM campaign
                 WHERE campaign.status = ENABLED
                     AND customer.status = ENABLED
-            """),
-        (query_collector.CollectorLevel.CUSTOMER, """
+            """,
+        ),
+        (
+          query_collector.CollectorLevel.CUSTOMER,
+          """
                 SELECT
                     1 AS info,
                     customer.id AS customer_id,
                     customer.descriptive_name AS account_name,
                 FROM customer
                 WHERE customer.status = ENABLED
-            """),
-        (query_collector.CollectorLevel.MCC, """
+            """,
+        ),
+        (
+          query_collector.CollectorLevel.MCC,
+          """
                 SELECT
                     1 AS info,
                     customer.id AS customer_id,
                     customer.descriptive_name AS account_name,
                 FROM customer
                 WHERE customer.status = ENABLED
-            """),
-    ])
+            """,
+        ),
+      ],
+    )
     def test_create_default_service_collector_returns_correct_service_collector_query_for_level(  # pylint: disable=line-too-long
-        self, test_level, expected_sql):
+      self, test_level, expected_sql
+    ):
       actual_collector = query_collector.create_default_service_collector(
-          test_level)
+        test_level
+      )
       assert_sql_functionally_equivalent(actual_collector.query, expected_sql)
 
   class TestCollectorProperties:
-
     def test_metrics_returns_correct_fields(self):
       collector = query_collector.Collector(metrics='clicks')
       assert collector.metrics == {
-          query_collector.Field(name='metrics.clicks', alias='clicks'),
+        query_collector.Field(name='metrics.clicks', alias='clicks'),
       }
 
     def test_dimensions_returns_correct_fields(self):
       collector = query_collector.Collector(dimensions='segments.date')
       assert collector.dimensions == {
-          query_collector.Field(name='segments.date', alias=None),
+        query_collector.Field(name='segments.date', alias=None),
       }
 
-    @pytest.mark.parametrize('filters,expected_filter', [
-        ('segments.date DURING YESTERDAY',
-         'WHERE segments.date DURING YESTERDAY'),
+    @pytest.mark.parametrize(
+      'filters,expected_filter',
+      [
+        (
+          'segments.date DURING YESTERDAY',
+          'WHERE segments.date DURING YESTERDAY',
+        ),
         (None, 'WHERE segments.date DURING TODAY'),
-    ])
+      ],
+    )
     def test_filters_returns_correct_expression(self, filters, expected_filter):
       collector = query_collector.Collector(metrics='clicks', filters=filters)
 
       assert collector.formatted_filters == expected_filter
 
     def test_resource_name_returns_correct_expression_for_explicit_resource_name(
-        self):
+      self,
+    ):
       resource_name = 'search_term_view'
       level = query_collector.CollectorLevel.AD_GROUP
       expected_resource_name = 'search_term_view'
 
       collector = query_collector.Collector(
-          level=level, resource_name=resource_name)
+        level=level, resource_name=resource_name
+      )
 
       assert collector.resource_name == expected_resource_name
 
     def test_resource_name_returns_correct_expression_for_missing_resource_name(
-        self):
+      self,
+    ):
       level = query_collector.CollectorLevel.CAMPAIGN
       expected_resource_name = 'campaign'
 
@@ -421,7 +469,8 @@ class TestCollector:
       assert collector.resource_name == expected_resource_name
 
     def test_resource_name_returns_correct_expression_for_missing_resource_name_and_level(  # pylint: disable=line-too-long
-        self):
+      self,
+    ):
       expected_resource_name = 'ad_group'
 
       collector = query_collector.Collector()
@@ -429,146 +478,178 @@ class TestCollector:
       assert collector.resource_name == expected_resource_name
 
   class TestCollectorEquality:
-
     def test_collector_with_the_same_metrics_are_equal(self):
       collector1 = query_collector.Collector(
-          name='collector1', metrics='clicks,conversions')
+        name='collector1', metrics='clicks,conversions'
+      )
       collector2 = query_collector.Collector(
-          name='collector2', metrics='clicks,conversions')
+        name='collector2', metrics='clicks,conversions'
+      )
 
       assert collector1 == collector2
 
     def test_collectors_with_different_metrics_and_dimensions_are_not_equal(
-        self):
+      self,
+    ):
       collector1 = query_collector.Collector(
-          name='collector1', metrics='clicks,conversions')
+        name='collector1', metrics='clicks,conversions'
+      )
       collector2 = query_collector.Collector(
-          name='collector2', dimensions='clicks,conversions')
+        name='collector2', dimensions='clicks,conversions'
+      )
 
       assert collector1 != collector2
 
     def test_collectors_with_same_metrics_but_different_instantiations_are_equal(
-        self):
+      self,
+    ):
       collector1 = query_collector.Collector(metrics='clicks,conversions')
-      collector2 = query_collector.Collector(metrics=[
+      collector2 = query_collector.Collector(
+        metrics=[
           query_collector.Field(name='clicks'),
           query_collector.Field(name='conversions'),
-      ])
+        ]
+      )
 
       assert collector1 == collector2
 
     def test_collectors_with_different_order_of_metrics_are_equal(self):
-      collector1 = query_collector.Collector(metrics=[
+      collector1 = query_collector.Collector(
+        metrics=[
           query_collector.Field(name='conversions'),
           query_collector.Field(name='impressions', alias='imp'),
-      ])
+        ]
+      )
       collector2 = query_collector.Collector(
-          metrics=[
-              query_collector.Field(name='impressions', alias='imp'),
-              query_collector.Field(name='conversions')
-          ],)
+        metrics=[
+          query_collector.Field(name='impressions', alias='imp'),
+          query_collector.Field(name='conversions'),
+        ],
+      )
 
       assert collector1 == collector2
 
   class TestCollectorSimilarity:
-
     def test_collectors_with_same_metrics_and_dimensions_are_similar(self):
       collector1 = query_collector.Collector(
-          name='collector1',
-          metrics='clicks,conversions',
-          dimensions='segments.date',
-          filters='segments.date DURING TODAY',
-          level=query_collector.CollectorLevel.AD_GROUP)
+        name='collector1',
+        metrics='clicks,conversions',
+        dimensions='segments.date',
+        filters='segments.date DURING TODAY',
+        level=query_collector.CollectorLevel.AD_GROUP,
+      )
       collector2 = query_collector.Collector(
-          name='collector2',
-          metrics='clicks,conversions',
-          dimensions='segments.date',
-          filters='segments.date DURING TODAY',
-          level=query_collector.CollectorLevel.AD_GROUP_AD)
+        name='collector2',
+        metrics='clicks,conversions',
+        dimensions='segments.date',
+        filters='segments.date DURING TODAY',
+        level=query_collector.CollectorLevel.AD_GROUP_AD,
+      )
       assert collector1.is_similar(collector2)
       assert collector1 != collector2
 
     def test_collectors_with_different_metrics_and_same_dimensions_are_not_similar(
-        self):
+      self,
+    ):
       collector1 = query_collector.Collector(
-          name='collector1',
-          metrics='clicks',
-          dimensions='segments.date',
-          level=query_collector.CollectorLevel.AD_GROUP)
+        name='collector1',
+        metrics='clicks',
+        dimensions='segments.date',
+        level=query_collector.CollectorLevel.AD_GROUP,
+      )
       collector2 = query_collector.Collector(
-          name='collector2',
-          metrics='clicks,conversions',
-          dimensions='segments.date',
-          level=query_collector.CollectorLevel.AD_GROUP_AD)
+        name='collector2',
+        metrics='clicks,conversions',
+        dimensions='segments.date',
+        level=query_collector.CollectorLevel.AD_GROUP_AD,
+      )
       assert not collector1.is_similar(collector2)
 
     def test_collectors_with_same_metrics_and_different_dimensions_are_not_similar(
-        self):
+      self,
+    ):
       collector1 = query_collector.Collector(
-          name='collector1',
-          metrics='clicks,conversions',
-          level=query_collector.CollectorLevel.AD_GROUP)
+        name='collector1',
+        metrics='clicks,conversions',
+        level=query_collector.CollectorLevel.AD_GROUP,
+      )
       collector2 = query_collector.Collector(
-          name='collector2',
-          metrics='clicks,conversions',
-          dimensions='segments.date',
-          level=query_collector.CollectorLevel.AD_GROUP_AD)
+        name='collector2',
+        metrics='clicks,conversions',
+        dimensions='segments.date',
+        level=query_collector.CollectorLevel.AD_GROUP_AD,
+      )
       assert not collector1.is_similar(collector2)
 
     def test_collectors_with_different_filters_are_not_similar(self):
       collector1 = query_collector.Collector(
-          name='collector1',
-          metrics='clicks,conversions',
-          dimensions='segments.date',
-          filters='segments.date DURING TODAY',
-          level=query_collector.CollectorLevel.AD_GROUP)
+        name='collector1',
+        metrics='clicks,conversions',
+        dimensions='segments.date',
+        filters='segments.date DURING TODAY',
+        level=query_collector.CollectorLevel.AD_GROUP,
+      )
       collector2 = query_collector.Collector(
-          name='collector2',
-          metrics='clicks,conversions',
-          dimensions='segments.date',
-          filters='segments.date DURING YESTERDAY',
-          level=query_collector.CollectorLevel.AD_GROUP)
+        name='collector2',
+        metrics='clicks,conversions',
+        dimensions='segments.date',
+        filters='segments.date DURING YESTERDAY',
+        level=query_collector.CollectorLevel.AD_GROUP,
+      )
       assert not collector1.is_similar(collector2)
 
     def test_collectors_with_different_resource_names_are_not_similar(self):
       collector1 = query_collector.Collector(
-          name='collector1',
-          metrics='clicks,conversions',
-          dimensions='segments.date',
-          filters='segments.date DURING TODAY',
-          resource_name='age_view',
-          level=query_collector.CollectorLevel.AD_GROUP)
+        name='collector1',
+        metrics='clicks,conversions',
+        dimensions='segments.date',
+        filters='segments.date DURING TODAY',
+        resource_name='age_view',
+        level=query_collector.CollectorLevel.AD_GROUP,
+      )
       collector2 = query_collector.Collector(
-          name='collector2',
-          metrics='clicks,conversions',
-          dimensions='segments.date',
-          resource_name='gender_view',
-          filters='segments.date DURING TODAY',
-          level=query_collector.CollectorLevel.AD_GROUP_AD)
+        name='collector2',
+        metrics='clicks,conversions',
+        dimensions='segments.date',
+        resource_name='gender_view',
+        filters='segments.date DURING TODAY',
+        level=query_collector.CollectorLevel.AD_GROUP_AD,
+      )
       assert not collector1.is_similar(collector2)
 
 
-@pytest.mark.parametrize('collectors,expected', [
-    ([
+@pytest.mark.parametrize(
+  'collectors,expected',
+  [
+    (
+      [
         query_collector.Collector(
-            name='collector1',
-            metrics='clicks,conversions',
-            level=query_collector.CollectorLevel.CUSTOMER),
+          name='collector1',
+          metrics='clicks,conversions',
+          level=query_collector.CollectorLevel.CUSTOMER,
+        ),
         query_collector.Collector(
-            name='collector2',
-            metrics='clicks,conversions',
-            level=query_collector.CollectorLevel.AD_GROUP),
+          name='collector2',
+          metrics='clicks,conversions',
+          level=query_collector.CollectorLevel.AD_GROUP,
+        ),
         query_collector.Collector(
-            name='collector3',
-            metrics='clicks,conversions',
-            level=query_collector.CollectorLevel.AD_GROUP_AD),
+          name='collector3',
+          metrics='clicks,conversions',
+          level=query_collector.CollectorLevel.AD_GROUP_AD,
+        ),
         query_collector.Collector(
-            name='collector4',
-            metrics='clicks,conversions,impressions',
-            level=query_collector.CollectorLevel.MCC)
-    ], ['collector3', 'collector4']),
-])
+          name='collector4',
+          metrics='clicks,conversions,impressions',
+          level=query_collector.CollectorLevel.MCC,
+        ),
+      ],
+      ['collector3', 'collector4'],
+    ),
+  ],
+)
 def test_collectors_similarity_check_returns_deduplicated_collectors(
-    collectors, expected):
+  collectors, expected
+):
   actual = query_collector.collectors_similarity_check(collectors)
   assert set([t.name for t in actual]) == set(expected)

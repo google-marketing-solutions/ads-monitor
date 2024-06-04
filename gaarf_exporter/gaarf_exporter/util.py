@@ -12,21 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Module for defining various helpers."""
+
 from __future__ import annotations
 
 import re
 
-_TOKEN_PATTERNS = (r'(?i)(?P<INDEX>~\d+)'
-                   r'|(?P<NESTED_RESOURCE>:(\w+\.)+\w+)'
-                   r'|(?P<STRING>".*?")'
-                   r'|(?P<SEPARATOR>,)'
-                   r'|(?P<KEYWORD_AS>AS)'
-                   r'|(?P<KEYWORD_FROM>FROM)'
-                   r'|(?P<KEYWORD>SELECT|WHERE|DURING|TODAY|AND|OR|NOT)'
-                   r'|(?P<NUMBER>\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)'
-                   r'|(?P<PREFIXED_IDENTIFIER>(\w+\.)+\w+)'
-                   r'|(?P<IDENTIFIER>\w+)'
-                   r'|(?P<MATH_OPERATOR>((\>\=)|(\<\=))|([\+\-\*/\(\)\=\>\<]))')
+_TOKEN_PATTERNS = (
+  r'(?i)(?P<INDEX>~\d+)'
+  r'|(?P<NESTED_RESOURCE>:(\w+\.)+\w+)'
+  r'|(?P<STRING>".*?")'
+  r'|(?P<SEPARATOR>,)'
+  r'|(?P<KEYWORD_AS>AS)'
+  r'|(?P<KEYWORD_FROM>FROM)'
+  r'|(?P<KEYWORD>SELECT|WHERE|DURING|TODAY|AND|OR|NOT)'
+  r'|(?P<NUMBER>\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)'
+  r'|(?P<PREFIXED_IDENTIFIER>(\w+\.)+\w+)'
+  r'|(?P<IDENTIFIER>\w+)'
+  r'|(?P<MATH_OPERATOR>((\>\=)|(\<\=))|([\+\-\*/\(\)\=\>\<]))'
+)
 
 _RELATIVE_METRIC_PATTERNS = r'(?i)average_|_cpm|ctr|_percentage|_rate|_share'
 
@@ -41,8 +44,9 @@ def tokenize(expression) -> list[tuple[str, str | None]]:
   for match in re.finditer(_TOKEN_PATTERNS, expression):
     token_type = match.lastgroup
     token_value = match.group()
-    tokens.append((token_value,
-                   'ALIAS' if prev_token_type == 'KEYWORD_AS' else token_type))
+    tokens.append(
+      (token_value, 'ALIAS' if prev_token_type == 'KEYWORD_AS' else token_type)
+    )
     prev_token_type = token_type
   return tokens
 
