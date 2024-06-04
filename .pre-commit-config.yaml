@@ -1,5 +1,7 @@
 # See https://pre-commit.com for more information
 # See https://pre-commit.com/hooks.html for more hooks
+fail_fast: true
+default_stages: [commit]
 repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v3.2.0
@@ -10,19 +12,6 @@ repos:
   - id: check-added-large-files
   - id: debug-statements
   - id: double-quote-string-fixer
-- repo: https://github.com/asottile/reorder-python-imports
-  rev: v3.12.0
-  hooks:
-  - id: reorder-python-imports
-    args:
-      - --py38-plus
-      - --add-import
-      - from __future__ import annotations
-- repo: https://github.com/PyCQA/autoflake
-  rev: v2.2.1
-  hooks:
-  - id: autoflake
-    args: [--remove-all-unused-imports, --in-place]
 - repo: https://github.com/pre-commit/mirrors-mypy
   rev: v1.8.0
   hooks:
@@ -30,18 +19,31 @@ repos:
     verbose: true
     entry: bash -c 'mypy "$@" || true'
     args: [--ignore-missing-imports]
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.4.6
+  hooks:
+    - id: ruff
+      args: [ --fix, --select, I]
+    - id: ruff-format
 - repo: local
   hooks:
   - id: pytest-check
     name: pytest-check
-    entry: pytest -m 'not slow' gaarf_exporter/tests/unit/
+    entry: pytest -n auto gaarf_exporter/tests/unit/
     language: system
     pass_filenames: false
     always_run: true
-  - id: yapf
-    name: yapf-formatter
-    entry: yapf
-    args: [--style=yapf]
+  - id: behave-uat
+    stages: [push]
+    name: uat
+    entry: behave  tests/uat/features
+    language: system
+    pass_filenames: false
+    always_run: true
+  - id: pytest-e2e
+    stages: [push]
+    name: e2e
+    entry: pytest tests/end-to-end
     language: system
     pass_filenames: false
     always_run: true
