@@ -33,7 +33,7 @@ from gaarf_exporter import bootstrap, exporter, registry
 def main() -> None:
   parser = argparse.ArgumentParser()
   parser.add_argument('--account', dest='account', default=None)
-  parser.add_argument('-c', dest='config', default=None)
+  parser.add_argument('-c', '--config', dest='config', default=None)
   parser.add_argument('--ads-config', dest='ads_config', default=None)
   parser.add_argument('--api-version', dest='api_version', default=None)
   parser.add_argument('--log', '--loglevel', dest='loglevel', default='info')
