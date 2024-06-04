@@ -11,6 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Module for installing gaarf-exporter as a package."""
+
 from __future__ import annotations
 
 import pathlib
@@ -22,7 +24,7 @@ README = (HERE / 'README.md').read_text()
 
 setup(
   name='gaarf-exporter',
-  version='0.7.1',
+  version='1.0.0',
   long_description=README,
   long_description_content_type='text/markdown',
   author='Google Inc. (gTech gPS CSE team)',
@@ -44,7 +46,7 @@ setup(
   package_data={'': ['collector_definitions/*.yaml']},
   install_requires=[
     'prometheus-client',
-    'google-ads-api-report-fetcher==1.13.4',
+    'google-ads-api-report-fetcher==1.14.0',
   ],
   setup_requires=['pytest-runner'],
   tests_requires=['pytest'],
