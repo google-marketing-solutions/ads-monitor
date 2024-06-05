@@ -24,13 +24,14 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install tox pytest
+          pip install pytest behave pytest-xdist faker pytest-cov
+          pip install -e gaarf_exporter/.
       - name: Run unit tests
         run: |
-          cd gaarf_exporter
-          tox
-      - name: Run integration tests
+          pytest -n auto gaarf_exporter/tests/unit/
+      - name: Run user acceptance tests
         run: |
-          cd gaarf_exporter
-          pip install -e .
-          gaarf-exporter --expose-metrics-with-zero-values --iterations 1 --delay 0
+          behave gaarf_exporter/tests/uat/features
+      - name: Run end-to-end tests
+        run: |
+          pytest gaarf_exporter/tests/end-to-end/
