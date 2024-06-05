@@ -146,7 +146,8 @@ def main() -> None:
       if not accounts:
         report = report_fetcher.fetch(query_text, accounts)
       else:
-        with futures.ThreadPoolExecutor(max_workers=args.parallel) as executor:
+        max_workers = int(args.parallel) if args.parallel else None
+        with futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
           future_to_account = {
             executor.submit(
               report_fetcher.fetch, collector.query, account
