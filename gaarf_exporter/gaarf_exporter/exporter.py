@@ -101,29 +101,46 @@ class GaarfExporter:
     self.registry: prometheus_client.CollectorRegistry = (
       prometheus_client.CollectorRegistry()
     )
-    self._init_service_metrics(self.namespace)
-    logger.debug(str(self))
 
-  def _init_service_metrics(self, namespace: str = 'gaarf_') -> None:
-    """Initializes metrics related to export/fetching of reports.
-
-    Args:
-      namespace: Global prefix for service metrics.
-    """
-    self.total_export_time_gauge = self._define_gauge(
-      'exporting_seconds', suffix='Remove', namespace=namespace
+  @property
+  def export_started(self) -> prometheus_client.Gauge:
+    """Gauge for tracking start of collectors export."""
+    return self._define_gauge(
+      'export_started_seconds', suffix='Remove', namespace=self.namespace
     )
-    self.report_fetcher_gauge = self._define_gauge(
+
+  @property
+  def export_completed(self) -> prometheus_client.Gauge:
+    """Gauge for tracking end of collectors export."""
+    return self._define_gauge(
+      'export_completed_seconds', suffix='Remove', namespace=self.namespace
+    )
+
+  @property
+  def total_export_time_gauge(self) -> prometheus_client.Gauge:
+    """Gauge for tracking exports in seconds."""
+    return self._define_gauge(
+      'exporting_seconds', suffix='Remove', namespace=self.namespace
+    )
+
+  @property
+  def report_fetcher_gauge(self) -> prometheus_client.Gauge:
+    """Gauge for tracking report fetching for account in seconds."""
+    return self._define_gauge(
       name='report_fetching_seconds',
       suffix='Remove',
       labelnames=(
         'collector',
         'account',
       ),
-      namespace=namespace,
+      namespace=self.namespace,
     )
-    self.delay_gauge = self._define_gauge(
-      'delay_seconds', suffix='Remove', namespace=namespace
+
+  @property
+  def delay_gauge(self) -> prometheus_client.Gauge:
+    """Gauge for exposing delay between exports."""
+    return self._define_gauge(
+      'delay_seconds', suffix='Remove', namespace=self.namespace
     )
 
   def reset_registry(self) -> None:

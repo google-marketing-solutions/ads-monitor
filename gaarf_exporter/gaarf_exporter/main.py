@@ -137,6 +137,7 @@ def main() -> None:
       accounts = report_fetcher.expand_mcc(args.account)
       iterations_left = args.iterations_left
     start_export_time = time()
+    gaarf_exporter.export_started.set(start_export_time)
     if not args.config and params:
       active_collectors.customize(params)
     for collector in active_collectors:
@@ -182,6 +183,7 @@ def main() -> None:
             )
     logger.info('Export completed')
     end_export_time = time()
+    gaarf_exporter.export_completed.set(end_export_time)
     gaarf_exporter.total_export_time_gauge.set(
       end_export_time - start_export_time
     )
