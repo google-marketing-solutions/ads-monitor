@@ -171,6 +171,11 @@ class GaarfExporter:
     """
     if not report:
       return
+    logger.info(
+      'Started export for query "[%s]" for account "[%s]"',
+      collector,
+      account,
+    )
     start = time.time()
     export_time_gauge = self._define_gauge(
       name='query_export_time_seconds',
@@ -204,6 +209,11 @@ class GaarfExporter:
     end = time.time()
     export_time_gauge.labels(collector=collector, account=account).set(
       end - start
+    )
+    logger.info(
+      'Ended export for query "[%s]" for account "[%s]"',
+      collector,
+      account,
     )
     api_requests_counter.inc()
     if self.pushgateway_url:

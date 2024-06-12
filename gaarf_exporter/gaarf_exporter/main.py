@@ -20,7 +20,6 @@ and expose them to Prometheus.
 from __future__ import annotations
 
 import argparse
-import logging
 from concurrent import futures
 from time import sleep, time
 
@@ -79,7 +78,9 @@ def main() -> None:
   args = args_bag[0]
 
   logger = gaarf_utils.init_logging(
-    loglevel=args.loglevel.upper(), logger_type=args.logger
+    loglevel=args.loglevel.upper(),
+    logger_type=args.logger,
+    name='gaarf-exporter',
   )
 
   params = gaarf_utils.ParamsParser(
@@ -139,6 +140,7 @@ def main() -> None:
     if accounts and iterations_left == 0:
       accounts = report_fetcher.expand_mcc(args.account)
       iterations_left = args.iterations_left
+    logger.info('Beginning export')
     start_export_time = time()
     gaarf_exporter.export_started.set(start_export_time)
     if not args.config and params:
@@ -146,7 +148,6 @@ def main() -> None:
     for collector in active_collectors:
       if not (query_text := collector.query):
         raise ValueError(f'Missing query text for query "{collector.name}"')
-      logger.info('Beginning export')
       if not accounts:
         report = report_fetcher.fetch(query_text, accounts)
       else:
@@ -170,21 +171,11 @@ def main() -> None:
             ).set(end - start)
             if dependencies.get('convert_fake_report'):
               report.is_fake = False
-            logging.info(
-              'Started export for query "[%s]" for account "[%s]"',
-              collector.name,
-              account,
-            )
             gaarf_exporter.export(
               report=report,
               suffix=collector.suffix,
               collector=collector.name,
               account=account,
-            )
-            logging.info(
-              'Ended export for query "[%s]" for account "[%s]"',
-              collector.name,
-              account,
             )
     logger.info('Export completed')
     end_export_time = time()
