@@ -63,6 +63,9 @@ def main() -> None:
   )
   parser.add_argument('--namespace', dest='namespace', default='googleads')
   parser.add_argument('--max-parallel', dest='parallel', default=None)
+  parser.add_argument(
+    '--fetching-timeout-seconds', dest='fetching_timeout', default=120, type=int
+  )
   parser.add_argument('--collectors', dest='collectors', default='default')
   parser.add_argument(
     '--no-deduplicate-collectors', dest='deduplicate', action='store_false'
@@ -155,7 +158,9 @@ def main() -> None:
             ): account
             for account in accounts
           }
-          for future in futures.as_completed(future_to_account):
+          for future in futures.as_completed(
+            future_to_account, timeout=args.fetching_timeout
+          ):
             account = future_to_account[future]
             start = time()
             report = future.result()
