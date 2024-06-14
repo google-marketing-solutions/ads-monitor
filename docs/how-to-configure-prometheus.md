@@ -13,17 +13,16 @@ alerting:
         - localhost:9093
 scrape_configs:
   - job_name: 'gaarf'
-    honor_labels: true
     scrape_interval: 30s
     static_configs:
-      - targets: ['localhost:9091']
+      - targets: ['localhost:8000']
 ```
 
 Please refer to [prometheus.yml](../prometheus/prometheus.yml) example.
 
 ## Adding new target to existing prometheus.yml
 
-Since `gaarf_exporter` push metrics to Pushgateway you need to add the following
+Since `gaarf_exporter` exposed metrics as HTTP server you need to add the following
 target in your `prometheus.yml`.
 
 ```
@@ -31,5 +30,5 @@ target in your `prometheus.yml`.
   honor_labels: true
   scrape_interval: 30s
   static_configs:
-    - targets: ['pushgateway_url:9091']
+    - targets: ['gaarf_exporter:8000']
 ```

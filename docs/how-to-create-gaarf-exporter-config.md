@@ -4,30 +4,35 @@
 
 `gaarf_exporter.yaml` can be used to configure `gaarf_exporter` to execute a particular GAQL-query (based on [gaarf syntax](https://github.com/google/ads-api-report-fetcher/blob/main/docs/how-to-write-queries.md)).
 
-It contains `queries` section that contains one or more queries with dimensions and metrics to be exposed to Prometheus
+It contains one or more queries with dimensions and metrics to be exposed to Prometheus.
 
 ```
-queries:
-  query_name:
-    query: |
-      SELECT
-        ...
-      FROM ...
-      WHERE
-          segments.date DURING TODAY
-          AND campaign.status = "ENABLED"
-          AND ad_group.status = "ENABLED"
-          AND metrics.cost_micros > 0
-    job_name: custom_job_name
-    suffix: custom_suffix
+- name: query_name
+  query: |
+    SELECT
+        customer.id AS customer_id,
+        campaign.id AS campaign_id,
+        ad_group.id AS ad_group_id,
+        segments.ad_network_type AS network,
+        metrics.clicks AS clicks,
+        metrics.impressions AS impressions,
+        metrics.conversions AS conversions,
+        metrics.conversions_value AS conversions_value,
+        metrics.cost_micros / 1e6 AS cost
+    FROM ad_group
+    WHERE
+        segments.date DURING TODAY
+        AND campaign.status = ENABLED
+        AND ad_group.status = ENABLED
+        AND metrics.impressions > 0
+  suffix: custom-suffix
 ```
 
 `queries` must contains at least one key that identifies data being fetched
 from Google Ads and consist of the following elements.
 
-* `<query_name>` (i.e. `impressions`)
+* `<query_name>` (i.e. `performance`)
 * `query` - text of a query (based on [gaarf syntax](https://github.com/google/ads-api-report-fetcher/blob/main/docs/how-to-write-queries.md)).
-* `job_name` - custom job name added as an label in the metrics (by default the same as `<query_name>`.
 * `suffix` - custom suffix for the metrics for the query.
   * By default `suffix` is the same and query name; so if you have a query `placements`
   the metric in Prometheus will look like `googleads_placements_impressions`.
@@ -42,8 +47,4 @@ Every [virtual column](https://github.com/google/ads-api-report-fetcher/blob/mai
 The rest will be a label for the metrics defined in the query.
 > `gaarf_exporter` currently works with Gauges.
 
-Useful virtual columns:
-
-`1 AS column_name` - metric `namespace_suffix_column_name` will be exposed to Prometheus.
-
-You can check example queries in [gaarf-config.yaml](../src/gaarf_config.yaml).
+You can check example queries in [gaarf-config.yaml](../gaarf_exporter/gaarf_exporter.yaml).

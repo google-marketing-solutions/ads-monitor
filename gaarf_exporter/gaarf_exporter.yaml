@@ -1,4 +1,4 @@
-# Copyright 2023 Google LLC
+# Copyright 2024 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,43 +12,42 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-queries:
-  placements:
-    query: |
-      SELECT
-          group_placement_view.display_name AS name,
-          group_placement_view.placement_type AS type,
-          metrics.clicks AS clicks,
-          metrics.impressions AS impressions,
-          metrics.conversions AS conversions,
-          metrics.cost_micros / 1e6 AS cost
-      FROM group_placement_view
-      WHERE
-          segments.date DURING TODAY
-          AND campaign.status = "ENABLED"
-          AND ad_group.status = "ENABLED"
-          AND metrics.cost_micros > 0
-  performance:
-    query: |
-      SELECT
-          customer.id AS customer_id,
-          campaign.id AS campaign_id,
-          ad_group.id AS ad_group_id,
-          segments.ad_network_type AS network,
-          metrics.clicks AS clicks,
-          metrics.impressions AS impressions,
-          metrics.conversions AS conversions,
-          metrics.conversions_value AS conversions_value,
-          metrics.cost_micros / 1e6 AS cost
-      FROM ad_group
-      WHERE
-          segments.date DURING TODAY
-          AND campaign.status = "ENABLED"
-          AND ad_group.status = "ENABLED"
-          AND metrics.impressions > 0
-    suffix: Remove
-  mapping:
-    query: |
+- name: placements
+  query: |
+    SELECT
+        group_placement_view.display_name AS name,
+        group_placement_view.placement_type AS type,
+        metrics.clicks AS clicks,
+        metrics.impressions AS impressions,
+        metrics.conversions AS conversions,
+        metrics.cost_micros / 1e6 AS cost
+    FROM group_placement_view
+    WHERE
+        segments.date DURING TODAY
+        AND campaign.status = ENABLED
+        AND ad_group.status = ENABLED
+        AND metrics.cost_micros > 0
+- name: performance
+  query: |
+    SELECT
+        customer.id AS customer_id,
+        campaign.id AS campaign_id,
+        ad_group.id AS ad_group_id,
+        segments.ad_network_type AS network,
+        metrics.clicks AS clicks,
+        metrics.impressions AS impressions,
+        metrics.conversions AS conversions,
+        metrics.conversions_value AS conversions_value,
+        metrics.cost_micros / 1e6 AS cost
+    FROM ad_group
+    WHERE
+        segments.date DURING TODAY
+        AND campaign.status = ENABLED
+        AND ad_group.status = ENABLED
+        AND metrics.impressions > 0
+  suffix: Remove
+- name: mapping
+  query: |
       SELECT
           customer.descriptive_name AS account_name,
           campaign.name AS campaign_name,
@@ -56,47 +55,18 @@ queries:
           ad_group.name AS ad_group_name,
           1 AS info
       FROM ad_group
-      WHERE campaign.status = 'ENABLED'
-          AND ad_group.status = 'ENABLED'
-  approvals:
-    query: |
-      SELECT
-          campaign.id AS campaign_id,
-          ad_group_ad.policy_summary.approval_status AS approval_status,
-          ad_group_ad.policy_summary.review_status AS review_status,
-          1 AS ad_count
-      FROM ad_group_ad
-      WHERE campaign.status = 'ENABLED'
-          AND ad_group.status = 'ENABLED'
-          AND ad_group_ad.status = 'ENABLED'
-  conversions_mapping:
-    query: |
-      SELECT
-        customer.id AS customer_id,
-        conversion_action.id AS conversion_id,
-        conversion_action.include_in_conversions_metric AS include_in_conversions,
-        conversion_action.name AS name,
-        conversion_action.type AS type,
-        conversion_action.origin AS origin,
-        conversion_action.category AS category,
-        1 AS info
-      FROM conversion_action
-      WHERE conversion_action.status = "ENABLED"
-  conversion_action:
-    query: |
-      SELECT
-          customer.id AS account_id,
-          segments.conversion_action~0 AS conversion_id,
-          metrics.all_conversions AS all_conversions
-      FROM customer
-      WHERE segments.date DURING TODAY
-        AND metrics.all_conversions > 0
-  search_terms:
-    query: |
-      SELECT
-        search_term_view.search_term AS search_term,
-        metrics.clicks AS clicks
-      FROM search_term_view
-      WHERE search_term_view.status = "ADDED"
-        AND segments.date DURING TODAY
-        AND metrics.clicks > 0
+      WHERE campaign.status = ENABLED
+          AND ad_group.status = ENABLED
+          AND segments.date DURING TODAY
+          AND metrics.impressions > 0
+- name: approvals
+  query: |
+    SELECT
+        campaign.id AS campaign_id,
+        ad_group_ad.policy_summary.approval_status AS approval_status,
+        ad_group_ad.policy_summary.review_status AS review_status,
+        1 AS ad_count
+    FROM ad_group_ad
+    WHERE campaign.status = ENABLED
+        AND ad_group.status = ENABLED
+        AND ad_group_ad.status = ENABLED

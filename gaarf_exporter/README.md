@@ -21,7 +21,7 @@ gaarf-exporter
 
 ```
 docker run --network=host \
-  -v /path/to/google-ads.yaml:/root/google-ads.yaml \
+  -v /path/to/google-ads.yaml:/google-ads.yaml \
   -v `pwd`/gaarf_exporter.yaml:/app/gaarf_exporter.yaml \
   gaarf_exporter
 ```
@@ -57,7 +57,7 @@ customize it you can provide optional flags:
 * `--macro.end_date=:YYYYMMDD-M`, where `N` is number of days starting from today
 
 It will add an additional metric to be exposed to Prometheus `*_n_days` (i.e.
-`googleads_clicks_n_days`.
+`googleads_clicks_n_days`).
 
 ### Collectors
 
@@ -67,7 +67,6 @@ There are two types of collectors - *registry* (contains other collectors groupe
 #### `default` registry.
 
 * `performance` - extracts *clicks*, *impressions*, *cost*, *conversions* on by *ad_network* and *ad_group_id*
-* `disapprovals` - extracts *approval_status*, *review_status*, *topic*, *topic_type* by *ad_group_id* and *ad_id* only for not approved ads
 * `conversion_action` - extracts *all_conversions* by *conversion_id* and *account_id*
 * `mapping` - performance mapping between *ad_group_id*, *ad_group_name*, *campaign_id*, *campaign_name,* *campaign_status*, *account_id*, *account_name*
 

@@ -18,7 +18,7 @@ a solid monitoring environment for your crucial Ads metrics and dimensions.
 
 Ads Monitor provides you with a Grafana dashboard and a set of default [alerts](prometheus/alerts.yml).
 Data that powers the dashboard and alerts are extracted from Google Ads API and
-stored in a Prometheus. --collectors app,disapprovals --collectors app,disapprovals
+stored in a Prometheus.
 
 ## Deployment
 
@@ -68,7 +68,7 @@ docker build -t gaarf_exporter .
 
 ```
 docker run --network=host \
-  -v /path/to/google-ads.yaml:/root/google-ads.yaml \
+  -v /path/to/google-ads.yaml:/google-ads.yaml \
   gaarf_exporter
 ```
 
@@ -88,7 +88,7 @@ you can specify by adding with `--collectors <collector_name>` CLI argument.
 
 ```
 docker run --network=host \
-  -v /path/to/google-ads.yaml:/root/google-ads.yaml \
+  -v /path/to/google-ads.yaml:/google-ads.yaml \
   gaarf_exporter --collectors app,disapprovals
 ```
 
@@ -97,24 +97,9 @@ Alternatively you can pass an `--config` argument `gaarf_exporter`
 
 ```
 docker run --network=host \
-  -v /path/to/google-ads.yaml:/root/google-ads.yaml \
+  -v /path/to/google-ads.yaml:/google-ads.yaml \
   -v /path/to/gaarf_exporter.yaml:/app/gaarf_exporter.yaml \
-  gaarf_exporter --config /app/gaarf-exporter.yaml
-```
-
-There are two CLI flags that can help fine-tuning which queries from config
-file should be run:
-
-* `--queries.include` - comma-separated query names (i.e. `performance,search_terms`) that will be taken from `gaarf_exporter.yaml` for fetching.
-* `--queries.exclude` - comma-separated query names (i.e. `performance,search_terms`) that will be will be excluded from fetching despite being in the `gaarf_exporter.yaml` config.
-
-```
-docker run --network=host \
-  -v /path/to/google-ads.yaml:/root/google-ads.yaml \
-  -v /path/to/gaarf_exporter.yaml:/app/gaarf_exporter.yaml \
-  gaarf_exporter \
-  --config /app/gaarf-exporter.yaml \
-  --queries.include=performance,disapprovals
+  gaarf_exporter --config /app/gaarf_exporter.yaml
 ```
 
 ### Usage
