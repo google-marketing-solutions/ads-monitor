@@ -524,10 +524,10 @@ class Collector:
       start_date = gaarf_utils.convert_date(start_date)
       end_date = gaarf_utils.convert_date(end_date)
       if not self.filters or 'segments.date DURING TODAY' in self.filters:
-        self.filters.remove('segments.date DURING TODAY')
         self.filters.add(
           f"segments.date BETWEEN '{start_date}' AND '{end_date}'"
         )
+        self.filters.remove('segments.date DURING TODAY')
       n_days = (
         datetime.strptime(end_date, '%Y-%m-%d')
         - datetime.strptime(start_date, '%Y-%m-%d')
