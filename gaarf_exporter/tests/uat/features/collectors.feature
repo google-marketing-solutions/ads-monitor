@@ -23,9 +23,9 @@ Feature: gaarf-exporter selects correct collectors
   Scenario: Return concrete collectors from mix of registry / collector
     Given collector registry is initialized
     When I specify default registry and keywords collector
-    Then performance, mapping, keywords, ad_disapprovals, conversion_action collectors are returned
+    Then performance, mapping, keywords, conversion_action collectors are returned
 
   Scenario: Return unique collectors from mix of registry / collector
     Given collector registry is initialized
     When I specify default registry and performance collector
-    Then performance, mapping, ad_disapprovals, conversion_action collectors are returned
+    Then performance, mapping, conversion_action collectors are returned

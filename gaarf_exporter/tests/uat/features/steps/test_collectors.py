@@ -33,7 +33,6 @@ class TestCollector:
     assert {
       'performance',
       'conversion_action',
-      'ad_disapprovals',
       'mapping',
     } == {c.name for c in ctx.collector_set}
 
@@ -80,14 +79,13 @@ class TestCollector:
     )
 
   @behave.then(
-    'performance, mapping, keywords, ad_disapprovals, '
+    'performance, mapping, keywords, '
     'conversion_action collectors are returned'
   )
   def collector_from_default_registry_and_keywords(ctx):
     assert {
       'performance',
       'conversion_action',
-      'ad_disapprovals',
       'mapping',
       'keywords',
     } == {c.name for c in ctx.collector_set}
@@ -99,13 +97,11 @@ class TestCollector:
     )
 
   @behave.then(
-    'performance, mapping, ad_disapprovals, conversion_action collectors '
-    'are returned'
+    'performance, mapping, conversion_action collectors are returned'
   )
   def collector_from_default_registry_returned(ctx):
     assert {
       'performance',
       'conversion_action',
-      'ad_disapprovals',
       'mapping',
     } == {c.name for c in ctx.collector_set}
