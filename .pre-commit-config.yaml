@@ -36,14 +36,14 @@ repos:
   - id: behave-uat
     stages: [push]
     name: uat
-    entry: behave  tests/uat/features
+    entry: behave  gaarf_exporter/tests/uat/features
     language: system
     pass_filenames: false
     always_run: true
   - id: pytest-e2e
     stages: [push]
     name: e2e
-    entry: pytest tests/end-to-end
+    entry: pytest gaarf_exporter/tests/end-to-end
     language: system
     pass_filenames: false
     always_run: true

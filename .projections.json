@@ -1,0 +1,5 @@
+{
+  "gaarf_exporter/gaarf_exporter/*.py": {"type": "exporter", "alternate": "gaarf_exporter/tests/unit/test_{}.py"},
+  "gaarf_exporter/tests/unit/test_*.py": {"alternate": "gaarf_exporter/gaarf_exporter/{}.py"},
+  "gaarf_exporter/gaarf_exporter/collector_definitions/*.yaml": {"type": "collectors"},
+}
