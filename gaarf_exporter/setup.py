@@ -24,7 +24,7 @@ README = (HERE / 'README.md').read_text()
 
 setup(
   name='gaarf-exporter',
-  version='1.0.0',
+  version='1.1.0',
   long_description=README,
   long_description_content_type='text/markdown',
   author='Google Inc. (gTech gPS CSE team)',
