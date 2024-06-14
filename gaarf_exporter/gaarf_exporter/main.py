@@ -83,13 +83,7 @@ def main() -> None:
     name='gaarf-exporter',
   )
 
-  params = gaarf_utils.ParamsParser(
-    [
-      'macro',
-      'sql',
-      'template',
-    ]
-  ).parse(args_bag[1])
+  params = gaarf_utils.ParamsParser(['macro']).parse(args_bag[1]).get('macro')
 
   active_collectors = registry.initialize_collectors(
     config_file=args.config,
