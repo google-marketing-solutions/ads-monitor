@@ -28,7 +28,6 @@ class TestRegistry:
     default_collectors = registry.default_collectors
     expected = {
       'conversion_action',
-      'ad_disapprovals',
       'mapping',
       'performance',
     }
@@ -52,7 +51,6 @@ class TestRegistry:
     actual = registry.find_collectors('default')
     expected = {
       'conversion_action',
-      'ad_disapprovals',
       'mapping',
       'performance',
     }
@@ -65,7 +63,6 @@ class TestRegistry:
     actual = registry.find_collectors('default,performance,mapping')
     expected = {
       'conversion_action',
-      'ad_disapprovals',
       'mapping',
       'performance',
     }

@@ -23,7 +23,6 @@
       - 'ad_group_ad.status = ENABLED'
       - 'ad_group_ad.policy_summary.approval_status != APPROVED'
   registries:
-    - default
     - disapprovals
 
 - name: ad_group_ad_asset_disapprovals

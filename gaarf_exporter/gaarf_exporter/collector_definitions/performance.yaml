@@ -6,7 +6,7 @@
       - dimensions
       - filters
       - level
-    level: ad_group
+    level: campaign
     metrics:
       - clicks
       - impressions
