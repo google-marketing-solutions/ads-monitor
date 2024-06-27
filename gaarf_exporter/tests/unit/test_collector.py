@@ -16,6 +16,7 @@ from __future__ import annotations
 import re
 
 import pytest
+
 from gaarf_exporter import collector as query_collector
 
 
@@ -477,6 +478,99 @@ class TestCollector:
 
       assert collector.resource_name == expected_resource_name
 
+    def test_set_metrics_from_fields_returns_updated_fields(self):
+      collector = query_collector.Collector(metrics='clicks')
+      collector.metrics = [query_collector.Field(name='impressions')]
+      assert collector.metrics == {
+        query_collector.Field(name='metrics.impressions', alias='impressions'),
+      }
+
+    def test_set_metrics_from_strings_returns_updated_fields(self):
+      collector = query_collector.Collector(metrics='clicks')
+      collector.metrics = ['impressions']
+      assert collector.metrics == {
+        query_collector.Field(name='metrics.impressions', alias='impressions'),
+      }
+
+    def test_add_metrics_returns_updated_fields(self):
+      collector = query_collector.Collector(metrics='clicks')
+      collector.metrics.add(
+        query_collector.Field(name='metrics.impressions', alias='impressions')
+      )
+      assert collector.metrics == {
+        query_collector.Field(name='metrics.clicks', alias='clicks'),
+        query_collector.Field(name='metrics.impressions', alias='impressions'),
+      }
+
+    def test_set_dimensions_from_fields_returns_updated_fields(self):
+      collector = query_collector.Collector(dimensions='campaign.name')
+      collector.dimensions = [query_collector.Field(name='campaign.id')]
+      assert collector.dimensions == {
+        query_collector.Field(name='campaign.id', alias='campaign_id'),
+      }
+
+    def test_set_dimensions_from_strings_returns_updated_fields(self):
+      collector = query_collector.Collector(dimensions='campaign.name')
+      collector.dimensions = ['campaign.id']
+      assert collector.dimensions == {
+        query_collector.Field(name='campaign.id', alias='campaign_id'),
+      }
+
+    def test_add_dimensions_returns_updated_fields(self):
+      collector = query_collector.Collector(dimensions='campaign.name')
+      collector.dimensions.add(query_collector.Field(name='campaign.id'))
+      assert collector.dimensions == {
+        query_collector.Field(name='campaign.name', alias='campaign_name'),
+        query_collector.Field(name='campaign.id', alias='campaign_id'),
+      }
+
+    def test_get_filters_from_and_condition_returns_set(self):
+      collector = query_collector.Collector(
+        filters='campaign.status = ENABLED AND ad_group.status = ENABLED'
+      )
+      assert collector.filters == {
+        'campaign.status = ENABLED',
+        'ad_group.status = ENABLED',
+      }
+
+    def test_get_filters_from_collector_with_metrics_and_filters_adds_segment_date(  # pylint: disable=line-too-long
+      self,
+    ):
+      collector = query_collector.Collector(
+        metrics='impressions',
+        filters='campaign.status = ENABLED AND ad_group.status = ENABLED',
+      )
+      assert collector.filters == {
+        'campaign.status = ENABLED',
+        'ad_group.status = ENABLED',
+        'segments.date DURING TODAY',
+      }
+
+    def test_get_filters_from_collector_with_metrics_and_no_filters_adds_segment_date(  # pylint: disable=line-too-long
+      self,
+    ):
+      collector = query_collector.Collector(
+        metrics='impressions',
+      )
+      assert collector.filters == {
+        'segments.date DURING TODAY',
+      }
+
+    def test_set_filters_from_strings_returns_updated_fields(self):
+      collector = query_collector.Collector(filters='campaign.status = ENABLED')
+      collector.filters = ['campaign.status = PAUSED']
+      assert collector.filters == {
+        'campaign.status = PAUSED',
+      }
+
+    def test_add_filters_returns_updated_fields(self):
+      collector = query_collector.Collector(filters='campaign.status = ENABLED')
+      collector.filters.add('ad_group.status = ENABLED')
+      assert collector.filters == {
+        'campaign.status = ENABLED',
+        'ad_group.status = ENABLED',
+      }
+
   class TestCollectorEquality:
     def test_collector_with_the_same_metrics_are_equal(self):
       collector1 = query_collector.Collector(
@@ -500,7 +594,7 @@ class TestCollector:
 
       assert collector1 != collector2
 
-    def test_collectors_with_same_metrics_but_different_instantiations_are_equal(
+    def test_collectors_with_same_metrics_but_different_instantiations_are_equal(  # pylint: disable=line-too-long
       self,
     ):
       collector1 = query_collector.Collector(metrics='clicks,conversions')
@@ -548,7 +642,7 @@ class TestCollector:
       assert collector1.is_similar(collector2)
       assert collector1 != collector2
 
-    def test_collectors_with_different_metrics_and_same_dimensions_are_not_similar(
+    def test_collectors_with_different_metrics_and_same_dimensions_are_not_similar(  # pylint: disable=line-too-long
       self,
     ):
       collector1 = query_collector.Collector(
@@ -565,7 +659,7 @@ class TestCollector:
       )
       assert not collector1.is_similar(collector2)
 
-    def test_collectors_with_same_metrics_and_different_dimensions_are_not_similar(
+    def test_collectors_with_same_metrics_and_different_dimensions_are_not_similar(  # pylint: disable=line-too-long
       self,
     ):
       collector1 = query_collector.Collector(

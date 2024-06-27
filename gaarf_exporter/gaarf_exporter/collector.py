@@ -344,22 +344,22 @@ class Collector:
   @property
   def metrics(self) -> set[Field]:
     """Returns unique metrics."""
-    return set(self._metrics)
+    return self._metrics
 
   @metrics.setter
   def metrics(self, values: Sequence[Field]) -> None:
     """Changes saved metrics of a collector."""
-    self._metrics = set(values)
+    self._metrics = self._init_fields(values, 'metrics')
 
   @property
   def dimensions(self) -> set[Field]:
     """Returns unique metrics."""
-    return set(self._dimensions)
+    return self._dimensions
 
   @dimensions.setter
   def dimensions(self, values: Sequence[Field]) -> None:
     """Changes saved dimensions of a collector."""
-    self._dimensions = values
+    self._dimensions = self._init_fields(values)
 
   @property
   def filters(self) -> str:
@@ -387,7 +387,7 @@ class Collector:
 
   def _init_fields(
     self, fields: str | list[Field], prefix: str = ''
-  ) -> list[Field]:
+  ) -> set[Field]:
     """Transforms fields to proper Field format based on optional prefix.
 
     Args:
@@ -401,7 +401,7 @@ class Collector:
       ValueError: If fields has non-aliased virtual column.
     """
     if not fields:
-      return []
+      return set()
 
     if isinstance(fields, str):
       field_list = [Field(name=field) for field in fields.split(',')]
@@ -420,7 +420,7 @@ class Collector:
       field_list = fields
 
     if not prefix:
-      return field_list
+      return set(field_list)
 
     for field in field_list:
       raw_tokens = util.tokenize(field.name)
@@ -438,7 +438,7 @@ class Collector:
 
       field.name = ' '.join(processed_tokens)
 
-    return field_list
+    return set(field_list)
 
   @property
   def level_info(self) -> LevelInfo | None:
@@ -590,7 +590,7 @@ class ServiceCollector(Collector):
   @property
   def metrics(self) -> set[Field]:
     """Returns default info metric."""
-    return set(self._metrics) or {
+    return self._metrics or {
       Field(name='1', alias='info'),
     }
 
