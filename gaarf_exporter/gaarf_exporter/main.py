@@ -139,18 +139,20 @@ def main() -> None:
     gaarf_exporter.export_started.set(start_export_time)
     if not args.config and params:
       active_collectors.customize(params)
+    for key, value in params.items():
+      params[key] = gaarf_utils.convert_date(value)
     for collector in active_collectors:
       if not (query_text := collector.query):
         raise ValueError(f'Missing query text for query "{collector.name}"')
+      if params:
+        query_text = query_text.format(**params)
       if not accounts:
         report = report_fetcher.fetch(query_text, accounts)
       else:
         max_workers = int(args.parallel) if args.parallel else None
         with futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
           future_to_account = {
-            executor.submit(
-              report_fetcher.fetch, collector.query, account
-            ): account
+            executor.submit(report_fetcher.fetch, query_text, account): account
             for account in accounts
           }
           for future in futures.as_completed(
