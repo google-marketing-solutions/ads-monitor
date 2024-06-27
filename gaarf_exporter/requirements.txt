@@ -104,9 +104,8 @@ charset-normalizer==3.3.2 \
     --hash=sha256:fd1abc0d89e30cc4e02e4064dc67fcc51bd941eb395c502aac3ec19fab46b519 \
     --hash=sha256:ff8fa367d09b717b2a17a052544193ad76cd49979c805768879cb63d9ca50561
     # via requests
-gaarf-exporter==1.1.0 \
-    --hash=sha256:41742c36ae6c4c6e2bb98af6f790b1a507fe2fd9ef1f930ad1a69e8c5e2b8ab2 \
-    --hash=sha256:d2c27a7cb76d0150d4593b09517c187d2c16041ff712e0972bc72ad650e31d85
+gaarf-exporter==1.1.1 \
+    --hash=sha256:9c6a7a83be2184435eedc583e3a7a07eb49e8dfb85238f04b2650791fad90c2f
     # via -r requirements.in
 google-ads==24.0.0 \
     --hash=sha256:53892ded2a8ede15c1f6af014774a8fdfd7c249ee0800eeab666240ef81c03bd \
