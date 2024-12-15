@@ -12,15 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-version: '3'
-
 networks:
   ads-monitor:
     driver: bridge
 
 volumes:
-  prometheus_data: {}
-  grafana_data: {}
+  prometheus_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/ads-monitor/prometheus
+  grafana_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/ads-monitor/grafana
 
 services:
   prometheus:
@@ -55,8 +63,7 @@ services:
       - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
       - grafana_data:/var/lib/grafana
   gaarf_exporter:
-    build: gaarf_exporter/.
-    image: gaarf_exporter
+    image: ghcr.io/google-marketing-solutions/gaarf-exporter:v1.1.1
     container_name: gaarf_exporter
     networks:
       - ads-monitor

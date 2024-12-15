@@ -1,0 +1,69 @@
+#cloud-config
+groups:
+  - docker
+
+apt:
+  sources:
+    docker.list:
+      source: deb [arch=amd64] https://download.docker.com/linux/ubuntu jammy stable
+      keyid: 9DC858229FC7DD38854AE2D88D81803C0EBFCD88
+
+package_update: true
+packages:
+  - apt-transport-https
+  - ca-certificates
+  - curl
+  - software-properties-common
+  - gnupg
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+  - docker-compose-plugin
+
+bootcmd:
+  - mkfs.ext4 -F /dev/disk/by-id/google-DISK_NAME
+  - mount /dev/disk/by-id/google-DISK_NAME /opt/ads-monitor
+  - echo "/dev/disk/by-id/google-DISK_NAME /opt/ads-monitor ext4 discard,defaults 0 0" >> /etc/fstab
+  - mkdir -p /opt/ads-monitor/prometheus /opt/ads-monitor/grafana /opt/ads-monitor/alertmanager
+  - chown -R 472:472 /opt/ads-monitor/grafana
+  - mkdir -p /config
+
+
+write_files:
+- path: /opt/ads-monitor/prometheus/prometheus.yml
+  permissions: '0644'
+  content: |
+    # PROMETHEUS CONFIG
+
+- path: /opt/ads-monitor/prometheus/alerts.yml
+  permissions: '0644'
+  content: |
+    # PROMETHEUS ALERTS
+
+- path: /opt/ads-monitor/alertmanager/alertmanager.yml
+  permissions: '0644'
+  content: |
+    # ALERTMANAGER CONFIG
+
+- path: /opt/ads-monitor/docker-compose.yaml
+  permissions: '0644'
+  content: |
+    # DOCKER COMPOSE CONTENT
+
+- path: /opt/ads-monitor/google-ads.yaml
+  permissions: '0644'
+  content: |
+    # GOOGLE ADS YAML CONTENT
+
+- path: /opt/ads-monitor/.env
+  permissions: '0644'
+  content: |
+    GAARF_EXPORTER_ACCOUNT_ID=GAARF_EXPORTER_ACCOUNT_ID_VAR
+    GOOGLE_ADS_YAML=/opt/ads-monitor/google-ads.yaml
+    REPO_LOCATION=REPO_LOCATION_VAR
+    REPO_NAME=REPO_NAME_VAR
+    PROJECT_ID=PROJECT_ID_VAR
+
+runcmd:
+  - usermod -aG docker ubuntu
+  - cd /opt/ads-monitor && docker compose -f docker-compose.yaml --env-file .env up -d
