@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gaarf-exporter"
+dependencies = [
+  "prometheus-client",
+  "google-ads-api-report-fetcher",
+]
+
+authors = [
+  {name = "Google Inc. (gTech gPS CSE team)", email = "no-reply@google.com"},
+]
+license = {text = "Apache 2.0"}
+requires-python = ">=3.8"
+description = "Comprehensive system for monitoring changes and fluctuations in Google Ads."
+readme = "README.md"
+classifiers = [
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Intended Audience :: Developers",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Operating System :: OS Independent",
+  "License :: OSI Approved :: Apache Software License",
+]
+
+dynamic = ["version"]
+
+[tool.setuptools.dynamic]
+version = {attr = "gaarf_exporter.__version__"}
+
+[options.extras_require]
+test =  [
+  "pytest",
+  "pytest-cov"
+]
+
+[tool.setuptools.package-data]
+"*"= ["*.yaml"]
+
+[project.scripts]
+gaarf-exporter="gaarf_exporter.main:main"

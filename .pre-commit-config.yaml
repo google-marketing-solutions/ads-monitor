@@ -1,7 +1,7 @@
 # See https://pre-commit.com for more information
 # See https://pre-commit.com/hooks.html for more hooks
 fail_fast: true
-default_stages: [commit]
+default_stages: [pre-commit]
 repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v3.2.0
@@ -34,14 +34,14 @@ repos:
     pass_filenames: false
     always_run: true
   - id: behave-uat
-    stages: [push]
+    stages: [pre-push]
     name: uat
     entry: behave  gaarf_exporter/tests/uat/features
     language: system
     pass_filenames: false
     always_run: true
   - id: pytest-e2e
-    stages: [push]
+    stages: [pre-push]
     name: e2e
     entry: pytest gaarf_exporter/tests/end-to-end
     language: system

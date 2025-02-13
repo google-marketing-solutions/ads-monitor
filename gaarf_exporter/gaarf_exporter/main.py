@@ -11,6 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# pylint: disable=C0330, g-bad-import-order, g-multiple-import
+
 """Entrypoint for running GaarfExporter.
 
 Defines GaarfExporter collectors, fetches data from Google Ads API
@@ -20,13 +23,15 @@ and expose them to Prometheus.
 from __future__ import annotations
 
 import argparse
+import sys
 from concurrent import futures
 from time import sleep, time
 
 import prometheus_client
 from gaarf.cli import utils as gaarf_utils
 
-from gaarf_exporter import bootstrap, exporter, registry
+import gaarf_exporter
+from gaarf_exporter import bootstrap, registry
 
 
 def main() -> None:
@@ -72,10 +77,14 @@ def main() -> None:
   parser.add_argument(
     '--no-service-collectors', dest='service_collectors', action='store_false'
   )
+  parser.add_argument('-v', '--version', dest='version', action='store_true')
   parser.set_defaults(deduplicate=True)
   parser.set_defaults(service_collectors=True)
-  args_bag = parser.parse_known_args()
-  args = args_bag[0]
+  args, kwargs = parser.parse_known_args()
+
+  if args.version:
+    print(f'gaarf-exporter version: {gaarf_exporter.__version__}')
+    sys.exit()
 
   logger = gaarf_utils.init_logging(
     loglevel=args.loglevel.upper(),
@@ -83,7 +92,7 @@ def main() -> None:
     name='gaarf-exporter',
   )
 
-  params = gaarf_utils.ParamsParser(['macro']).parse(args_bag[1]).get('macro')
+  params = gaarf_utils.ParamsParser(['macro']).parse(kwargs).get('macro')
 
   active_collectors = registry.initialize_collectors(
     config_file=args.config,
@@ -107,12 +116,12 @@ def main() -> None:
   }
 
   if args.pushgateway_address and args.pushgateway_port:
-    gaarf_exporter = exporter.GaarfExporter(
+    exporter = gaarf_exporter.GaarfExporter(
       pushgateway_url=f'{args.pushgateway_address}:{args.pushgateway_port}',
       **gaarf_exporter_options,
     )
   elif args.address and args.port:
-    gaarf_exporter = exporter.GaarfExporter(
+    exporter = gaarf_exporter.GaarfExporter(
       http_server_url=f'{args.address}:{args.port}', **gaarf_exporter_options
     )
   else:
@@ -121,13 +130,11 @@ def main() -> None:
       '- either http_server or pushgateway'
     )
 
-  if gaarf_exporter.http_server_url and not gaarf_exporter.pushgateway_url:
+  if exporter.http_server_url and not exporter.pushgateway_url:
     prometheus_client.start_http_server(
-      port=args.port, addr=args.address, registry=gaarf_exporter.registry
+      port=args.port, addr=args.address, registry=exporter.registry
     )
-    logger.info(
-      'Started http_server at http://%s', gaarf_exporter.http_server_url
-    )
+    logger.info('Started http_server at http://%s', exporter.http_server_url)
   while True:
     if iterations_left := args.iterations_left:
       iterations_left -= 1
@@ -136,7 +143,7 @@ def main() -> None:
       iterations_left = args.iterations_left
     logger.info('Beginning export')
     start_export_time = time()
-    gaarf_exporter.export_started.set(start_export_time)
+    exporter.export_started.set(start_export_time)
     if not args.config and params:
       active_collectors.customize(params)
     for key, value in params.items():
@@ -162,12 +169,12 @@ def main() -> None:
             start = time()
             report = future.result()
             end = time()
-            gaarf_exporter.report_fetcher_gauge.labels(
+            exporter.report_fetcher_gauge.labels(
               collector=collector.name, account=account
             ).set(end - start)
             if dependencies.get('convert_fake_report'):
               report.is_fake = False
-            gaarf_exporter.export(
+            exporter.export(
               report=report,
               suffix=collector.suffix,
               collector=collector.name,
@@ -175,17 +182,13 @@ def main() -> None:
             )
     logger.info('Export completed')
     end_export_time = time()
-    gaarf_exporter.export_completed.set(end_export_time)
-    gaarf_exporter.total_export_time_gauge.set(
-      end_export_time - start_export_time
-    )
-    gaarf_exporter.delay_gauge.set(args.delay * 60)
+    exporter.export_completed.set(end_export_time)
+    exporter.total_export_time_gauge.set(end_export_time - start_export_time)
+    exporter.delay_gauge.set(args.delay * 60)
 
-    if gaarf_exporter.pushgateway_url:
-      logger.info(
-        'Saving data to pushgateway at %s', gaarf_exporter.pushgateway_url
-      )
-      exit()
+    if exporter.pushgateway_url:
+      logger.info('Saving data to pushgateway at %s', exporter.pushgateway_url)
+      sys.exit()
     sleep(int(args.delay) * 60)
     if iterations := args.iterations:
       iterations -= 1

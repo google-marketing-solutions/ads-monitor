@@ -11,6 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# pylint: disable=C0330, g-bad-import-order, g-multiple-import
+
 from __future__ import annotations
 
 import pathlib
@@ -18,6 +21,7 @@ import random
 import subprocess
 
 import pytest
+
 from gaarf_exporter import registry
 
 _SCRIPT_DIR = pathlib.Path(__file__).parent
@@ -51,10 +55,10 @@ def test_gaarf_exporter_run_all_collectors_by_one(collector, port):
       f'--collectors={collector}',
       f'--http_server.port={port}',
       '--delay=0',
-      '--api-version=16',
     ],
     capture_output=True,
     text=True,
+    check=False,
   )
   out = result.stdout
   assert not result.stderr
@@ -77,10 +81,10 @@ def test_gaarf_exporter_run_all_subregistries_by_one(collector, port):
       f'--collectors={collector}',
       f'--http_server.port={port}',
       '--delay=0',
-      '--api-version=16',
     ],
     capture_output=True,
     text=True,
+    check=False,
   )
   out = result.stdout
   assert not result.stderr
@@ -98,10 +102,10 @@ def test_gaarf_exporter_run_all_collectors_at_once():
       '--iterations=1',
       '--collectors=all',
       '--delay=0',
-      '--api-version=16',
     ],
     capture_output=True,
     text=True,
+    check=False,
   )
   out = result.stdout
   assert not result.stderr
@@ -119,10 +123,10 @@ def test_gaarf_exporter_run_selected_collectors_from_config_file():
       '--iterations=1',
       f'-c={_SCRIPT_DIR}/test_gaarf_exporter.yaml',
       '--delay=0',
-      '--api-version=16',
     ],
     capture_output=True,
     text=True,
+    check=False,
   )
   out = result.stdout
   assert not result.stderr
