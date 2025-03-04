@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import pytest
 import yaml
+
 from gaarf_exporter import collector as query_collector
 from gaarf_exporter import registry as collector_registry
 

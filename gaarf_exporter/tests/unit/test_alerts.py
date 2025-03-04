@@ -16,6 +16,7 @@ from __future__ import annotations
 import re
 
 import yaml
+
 from gaarf_exporter.alert import Alert
 from gaarf_exporter.alert_elements import AlertRule, Label, MetricDefinition
 

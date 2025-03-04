@@ -15,4 +15,3 @@ scrape_configs:
     scrape_interval: 30s
     static_configs:
       - targets: ['gaarf_exporter:8000']
-

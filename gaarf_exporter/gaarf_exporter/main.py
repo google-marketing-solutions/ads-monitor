@@ -1,6 +1,4 @@
 # Copyright 2023 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
@@ -23,34 +21,125 @@ and expose them to Prometheus.
 from __future__ import annotations
 
 import argparse
-import sys
-from concurrent import futures
-from time import sleep, time
+import asyncio
+import contextlib
+import datetime
 
+import fastapi
 import prometheus_client
+import requests
+import uvicorn
 from gaarf.cli import utils as gaarf_utils
 
 import gaarf_exporter
-from gaarf_exporter import bootstrap, registry
+from gaarf_exporter import exporter_service
 
 
-def main() -> None:
+class GaarfExporterError(Exception):
+  """Base class for GaarfExporter errors."""
+
+
+def healthcheck(host: str, port: int) -> bool:
+  """Validates that the GaarfExporter export happened recently.
+
+  Healthcheck compares the time passed since the last successful export with
+  the delay between exports. If this delta if greater than 1.5 check is failed.
+
+  Args:
+    host: Hostname gaarf-exporter http server (i.e. localhost).
+    port: Port gaarf-exporter http server is running (i.e. 8000).
+
+
+  Returns:
+    Whether or not the check is successful.
+  """
+  try:
+    res = requests.get(f'http://{host}:{port}/metrics/').text.split('\n')
+  except requests.exceptions.ConnectionError:
+    return False
+  last_exported = [r for r in res if 'export_completed_seconds 1' in r][
+    0
+  ].split(' ')[1]
+  delay = None
+  for result in [r for r in res if 'delay_seconds' in r]:
+    _, *value = result.split(' ', maxsplit=2)
+    with contextlib.suppress(ValueError):
+      delay = float(value[0])
+  if not delay:
+    return False
+
+  max_allowed_delta = 1.5
+  is_lagged_export = (
+    datetime.datetime.now().timestamp() - float(last_exported)
+  ) > (max_allowed_delta * delay)
+
+  return not is_lagged_export
+
+
+app = fastapi.FastAPI(debug=False)
+exporter = gaarf_exporter.GaarfExporter()
+metrics_app = prometheus_client.make_asgi_app(registry=exporter.registry)
+app.mount('/metrics', metrics_app)
+
+logger = gaarf_utils.init_logging(
+  loglevel='INFO',
+  logger_type='rich',
+  name='gaarf-exporter',
+)
+
+
+async def start_metric_generation(
+  request: exporter_service.GaarfExporterRequest,
+):
+  """Continuously exports metrics from Google Ads API."""
+  iterations = None
+  export_metrics = True
+  while export_metrics:
+    exporter_service.generate_metrics(request, exporter)
+    if request.runtime_options.expose_type == 'pushgateway':
+      prometheus_client.push_to_gateway(
+        request.runtime_parameters.address,
+        job=request.runtime_parameters.job_name,
+        registry=exporter.registry,
+      )
+      export_metrics = False
+    await asyncio.sleep(request.runtime_options.delay_minutes)
+    if iterations := iterations or request.runtime_options.iterations:
+      iterations -= 1
+      if iterations == 0:
+        export_metrics = False
+
+
+async def startup_event(
+  request: exporter_service.GaarfExporterRequest,
+):
+  """Start async task for metrics export."""
+  asyncio.create_task(start_metric_generation(request))
+
+
+@app.get('/health')
+def health(request: fastapi.Request):
+  """Defines healthcheck endpoint for GaarfExporter."""
+  host = request.url.hostname
+  port = request.url.port
+  if not healthcheck(host, port):
+    raise fastapi.HTTPException(status_code=404, detail='Not updated properly')
+
+
+def main() -> None:  # noqa: D103
   parser = argparse.ArgumentParser()
   parser.add_argument('--account', dest='account', default=None)
   parser.add_argument('-c', '--config', dest='config', default=None)
   parser.add_argument('--ads-config', dest='ads_config', default=None)
-  parser.add_argument('--api-version', dest='api_version', default=None)
   parser.add_argument('--log', '--loglevel', dest='loglevel', default='info')
   parser.add_argument(
-    '--http_server.address', dest='address', default='0.0.0.0'
+    '--expose-type',
+    dest='expose_type',
+    choices=['http', 'pushgateway'],
+    default='http',
   )
-  parser.add_argument('--http_server.port', dest='port', type=int, default=8000)
-  parser.add_argument(
-    '--pushgateway.address', dest='pushgateway_address', default=None
-  )
-  parser.add_argument(
-    '--pushgateway.port', dest='pushgateway_port', default=None
-  )
+  parser.add_argument('--host', dest='host', default='0.0.0.0')
+  parser.add_argument('--port', dest='port', type=int, default=8000)
   parser.add_argument('--logger', dest='logger', default='local')
   parser.add_argument('--iterations', dest='iterations', default=None, type=int)
   parser.add_argument(
@@ -81,119 +170,46 @@ def main() -> None:
   parser.set_defaults(deduplicate=True)
   parser.set_defaults(service_collectors=True)
   args, kwargs = parser.parse_known_args()
-
-  if args.version:
-    print(f'gaarf-exporter version: {gaarf_exporter.__version__}')
-    sys.exit()
-
-  logger = gaarf_utils.init_logging(
-    loglevel=args.loglevel.upper(),
-    logger_type=args.logger,
-    name='gaarf-exporter',
+  macros = gaarf_utils.ParamsParser(['macro']).parse(kwargs).get('macro')
+  runtime_options = exporter_service.GaarfExporterRuntimeOptions(
+    expose_type=args.expose_type,
+    host=args.host,
+    port=args.port,
+    namespace=args.namespace,
+    fetching_timeout=args.fetching_timeout,
+    iterations=args.iterations,
+    delay_minutes=args.delay,
   )
-
-  params = gaarf_utils.ParamsParser(['macro']).parse(kwargs).get('macro')
-
-  active_collectors = registry.initialize_collectors(
-    config_file=args.config,
-    collector_names=args.collectors,
-    create_service_collectors=args.service_collectors,
-    deduplicate_collectors=args.deduplicate,
-  )
-
-  dependencies = bootstrap.inject_dependencies(
-    ads_config_path=args.ads_config,
-    api_version=args.api_version,
-    account=args.account,
-  )
-  report_fetcher, accounts = (
-    dependencies.get('report_fetcher'),
-    dependencies.get('accounts'),
-  )
-  gaarf_exporter_options = {
-    'expose_metrics_with_zero_values': args.zero_value_metrics,
-    'namespace': args.namespace,
-  }
-
-  if args.pushgateway_address and args.pushgateway_port:
-    exporter = gaarf_exporter.GaarfExporter(
-      pushgateway_url=f'{args.pushgateway_address}:{args.pushgateway_port}',
-      **gaarf_exporter_options,
-    )
-  elif args.address and args.port:
-    exporter = gaarf_exporter.GaarfExporter(
-      http_server_url=f'{args.address}:{args.port}', **gaarf_exporter_options
+  if not args.account and args.ads_config:
+    request = exporter_service.GaarfExporterRequest(
+      collectors=args.collectors,
+      collectors_config=args.config,
+      macros=macros,
+      runtime_options=runtime_options,
     )
   else:
-    raise ValueError(
-      'Specify option for exposing data to Prometheus '
-      '- either http_server or pushgateway'
+    request = exporter_service.GaarfExporterRequest(
+      account=args.account,
+      collectors=args.collectors,
+      ads_config_path=args.ads_config,
+      collectors_config=args.config,
+      macros=macros,
+      runtime_options=runtime_options,
     )
+  exporter.namespace = request.runtime_options.namespace
 
-  if exporter.http_server_url and not exporter.pushgateway_url:
-    prometheus_client.start_http_server(
-      port=args.port, addr=args.address, registry=exporter.registry
+  async def start_uvicorn():
+    await startup_event(request)
+    config = uvicorn.Config(
+      app,
+      host=request.runtime_options.host,
+      port=request.runtime_options.port,
+      reload=True,
     )
-    logger.info('Started http_server at http://%s', exporter.http_server_url)
-  while True:
-    if iterations_left := args.iterations_left:
-      iterations_left -= 1
-    if accounts and iterations_left == 0:
-      accounts = report_fetcher.expand_mcc(args.account)
-      iterations_left = args.iterations_left
-    logger.info('Beginning export')
-    start_export_time = time()
-    exporter.export_started.set(start_export_time)
-    if not args.config and params:
-      active_collectors.customize(params)
-    for key, value in params.items():
-      params[key] = gaarf_utils.convert_date(value)
-    for collector in active_collectors:
-      if not (query_text := collector.query):
-        raise ValueError(f'Missing query text for query "{collector.name}"')
-      if params:
-        query_text = query_text.format(**params)
-      if not accounts:
-        report = report_fetcher.fetch(query_text, accounts)
-      else:
-        max_workers = int(args.parallel) if args.parallel else None
-        with futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-          future_to_account = {
-            executor.submit(report_fetcher.fetch, query_text, account): account
-            for account in accounts
-          }
-          for future in futures.as_completed(
-            future_to_account, timeout=args.fetching_timeout
-          ):
-            account = future_to_account[future]
-            start = time()
-            report = future.result()
-            end = time()
-            exporter.report_fetcher_gauge.labels(
-              collector=collector.name, account=account
-            ).set(end - start)
-            if dependencies.get('convert_fake_report'):
-              report.is_fake = False
-            exporter.export(
-              report=report,
-              suffix=collector.suffix,
-              collector=collector.name,
-              account=account,
-            )
-    logger.info('Export completed')
-    end_export_time = time()
-    exporter.export_completed.set(end_export_time)
-    exporter.total_export_time_gauge.set(end_export_time - start_export_time)
-    exporter.delay_gauge.set(args.delay * 60)
+    server = uvicorn.Server(config)
+    await server.serve()
 
-    if exporter.pushgateway_url:
-      logger.info('Saving data to pushgateway at %s', exporter.pushgateway_url)
-      sys.exit()
-    sleep(int(args.delay) * 60)
-    if iterations := args.iterations:
-      iterations -= 1
-      if iterations == 0:
-        break
+  asyncio.run(start_uvicorn())
 
 
 if __name__ == '__main__':

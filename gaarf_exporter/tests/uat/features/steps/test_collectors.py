@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 import behave
+
 from gaarf_exporter import registry
 
 

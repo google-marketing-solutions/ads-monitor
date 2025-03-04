@@ -11,6 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# pylint: disable=C0330, g-bad-import-order, g-multiple-import
+
 """Module for defining GaarfExporter.
 
 GaarfExporter specifies whether to push Prometheus metrics converted from
@@ -26,8 +29,6 @@ from collections.abc import Sequence
 
 import gaarf
 import prometheus_client
-
-logger = logging.getLogger(__name__)
 
 _METRICS = (
   'campaign.target_cpa.target_cpa_micros',
@@ -62,8 +63,6 @@ class GaarfExporter:
   """Exposes reports from Ads API in Prometheus format.
 
   Attributes:
-    pushgateway_url: Address when Pushgateway is running.
-    http_server_url: Address of HTTP server to expose data.
     namespace: Global prefix for all Prometheus metrics.
     job_name: Name of export job in Prometheus.
     expose_metrics_with_zero_values: Whether to send zero metrics.
@@ -71,8 +70,6 @@ class GaarfExporter:
 
   def __init__(
     self,
-    pushgateway_url: str | None = None,
-    http_server_url: str = 'localhost:8000',
     namespace: str = 'googleads',
     job_name: str = 'gaarf_exporter',
     expose_metrics_with_zero_values: bool = False,
@@ -80,21 +77,10 @@ class GaarfExporter:
     """Initializes GaarfExporter to serve metrics.
 
     Args:
-      pushgateway_url: Address when Pushgateway is running.
-      http_server_url: Address of HTTP server to expose data.
       namespace: Global prefix for all Prometheus metrics.
       job_name: Name of export job in Prometheus.
       expose_metrics_with_zero_values: Whether to send zero metrics.
-
-    Raises:
-      ValueError: If there's no correct namespace or URL for metrics exposure.
     """
-    if not pushgateway_url and not http_server_url:
-      raise ValueError('please specify either pushgateway or http server')
-    self.pushgateway_url = pushgateway_url if pushgateway_url else None
-    self.http_server_url = http_server_url if http_server_url else None
-    if not namespace:
-      raise ValueError('namespace cannot be empty')
     self.namespace = namespace
     self.job_name = job_name
     self.expose_metrics_with_zero_values = expose_metrics_with_zero_values
@@ -159,8 +145,7 @@ class GaarfExporter:
     """Exports data from report into the format consumable by Prometheus.
 
     Iterates over each row or report and creates gauges (metrics with labels
-    attached to them) and either exposes them as HTTP server or pushes to
-    Pushgateway.
+    attached to them) which are added to the registry.
 
     Args:
       report: Report with Google Ads data.
@@ -171,7 +156,7 @@ class GaarfExporter:
     """
     if not report:
       return
-    logger.info(
+    logging.info(
       'Started export for query "[%s]" for account "[%s]"',
       collector,
       account,
@@ -184,7 +169,7 @@ class GaarfExporter:
         'collector',
         'account',
       ),
-      namespace='gaarf',
+      namespace=namespace,
     )
     api_requests_counter = self._define_counter(name='api_requests_count')
     metrics = self._define_metrics(
@@ -203,25 +188,19 @@ class GaarfExporter:
         if (
           metric_value := getattr(row, name)
           or self.expose_metrics_with_zero_values
-        ):
-          if not isinstance(metric_value, str):
-            metric.labels(*label_values).set(metric_value)
+        ) and not isinstance(metric_value, str):
+          metric.labels(*label_values).set(metric_value)
     end = time.time()
     export_time_gauge.labels(collector=collector, account=account).set(
       end - start
     )
-    logger.info(
+    logging.info(
       'Ended export for query "[%s]" for account "[%s]"',
       collector,
       account,
     )
     api_requests_counter.inc()
-    if self.pushgateway_url:
-      prometheus_client.push_to_gateway(
-        self.pushgateway_url, job=self.job_name, registry=self.registry
-      )
-    else:
-      self.registry.collect()
+    self.registry.collect()
 
   def _define_metrics(
     self,
@@ -252,7 +231,7 @@ class GaarfExporter:
     if virtual_columns := query_specification.virtual_columns:
       for column, field in virtual_columns.items():
         metrics[column] = self._define_gauge(column, suffix, labels, namespace)
-    logger.debug('metrics: %s', metrics)
+    logging.debug('metrics: %s', metrics)
     return metrics
 
   def _define_labels(
@@ -276,7 +255,7 @@ class GaarfExporter:
     for column, field in zip(non_virtual_columns, query_specification.fields):
       if 'metric' not in field and field not in _METRICS:
         labelnames.append(str(column))
-    logger.debug('labelnames: %s', labelnames)
+    logging.debug('labelnames: %s', labelnames)
     return labelnames
 
   def _define_gauge(
@@ -297,8 +276,9 @@ class GaarfExporter:
     Args:
       name: Name of the metric to be exposed to Prometheus (without prefix).
       suffix: Common identifier to be added to a series of metrics.
-      labelsnames: Dimensions attached to metric (i.e. ad_group_id, account).
+      labelnames: Dimensions attached to metric (i.e. ad_group_id, account).
       namespace: Global prefix for all Prometheus metrics.
+
     Returns:
       An instance of Counter that associated with registry.
     """
@@ -322,6 +302,7 @@ class GaarfExporter:
 
     Args:
       name: Name of the metric to be exposed to Prometheus (without prefix).
+
     Returns:
       An instance of Counter that associated with registry.
     """
@@ -353,7 +334,7 @@ class GaarfExporter:
       if column not in query_specification.virtual_columns
     ]
 
-  def __str__(self) -> str:
+  def __str__(self) -> str:  # noqa: D105
     return (
-      f'GaarfExporter(namespace={self.namespace}, ' f'job_name={self.job_name})'
+      f'GaarfExporter(namespace={self.namespace}, job_name={self.job_name})'
     )

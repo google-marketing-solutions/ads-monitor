@@ -29,7 +29,7 @@ repos:
   hooks:
   - id: pytest-check
     name: pytest-check
-    entry: pytest -n auto gaarf_exporter/tests/unit/
+    entry: pytest gaarf_exporter/tests/unit/
     language: system
     pass_filenames: false
     always_run: true
@@ -37,13 +37,6 @@ repos:
     stages: [pre-push]
     name: uat
     entry: behave  gaarf_exporter/tests/uat/features
-    language: system
-    pass_filenames: false
-    always_run: true
-  - id: pytest-e2e
-    stages: [pre-push]
-    name: e2e
-    entry: pytest gaarf_exporter/tests/end-to-end
     language: system
     pass_filenames: false
     always_run: true

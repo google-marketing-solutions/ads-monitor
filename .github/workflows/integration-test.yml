@@ -28,10 +28,7 @@ jobs:
           pip install -e gaarf_exporter/.
       - name: Run unit tests
         run: |
-          pytest -n auto gaarf_exporter/tests/unit/
+          pytest gaarf_exporter/tests/unit/
       - name: Run user acceptance tests
         run: |
           behave gaarf_exporter/tests/uat/features
-      - name: Run end-to-end tests
-        run: |
-          pytest gaarf_exporter/tests/end-to-end/

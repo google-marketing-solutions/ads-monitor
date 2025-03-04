@@ -1,6 +1,8 @@
-# gaarf exporter
+# gaarf exporter - Prometheus exporter for Google Ads.
 
-Prometheus exporter for Google Ads metrics with customizable metrics collectors.
+[![PyPI](https://img.shields.io/pypi/v/gaarf-exporter?logo=pypi&logoColor=white&style=flat-square)](https://pypi.org/project/gaarf-exporter)
+[![Downloads PyPI](https://img.shields.io/pypi/dw/gaarf-exporter?logo=pypi)](https://pypi.org/project/gaarf-exporter/)
+
 
 ## Installation and usage
 
@@ -41,10 +43,9 @@ By default it will start http_server on `localhost:8000` and will push some basi
 * `--config` - path to `gaarf_exporter.yaml`
   >  `config` can be taken from local storage or remote storage (same as `--ads-config`).
 * `--collectors` - names of one or more [collectors](#collectors) (separated by comma).
-* `--http_server.address` - address of your http server (`localhost` by default)
-* `--http_server.port` - port of your http server (`8000` by default)
-* `--pushgateway.address` - address of your pushgateway service (`None` by default)
-* `--pushgateway.port` - port of your pushgateway (`None` by default)
+* `--expose-type` - type of exposition (`http` or `pushgateway`, `http` is used by default)
+* `--host` - address of your http server (`localhost` by default)
+* `--port` - port of your http server (`8000` by default)
 * `--delay-minutes` - delay in minutes between scrapings (`15` by default)
 
 #### Customizing with macros:

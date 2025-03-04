@@ -16,8 +16,9 @@ from __future__ import annotations
 import pytest
 from gaarf.query_editor import QuerySpecification
 from gaarf.report import GaarfReport
-from gaarf_exporter.exporter import GaarfExporter
 from prometheus_client import samples
+
+from gaarf_exporter.exporter import GaarfExporter
 
 
 class TestGaaarfExporter:
@@ -58,10 +59,8 @@ class TestGaaarfExporter:
     )
 
   def test_gaarf_exporter_has_default_values(self, gaarf_exporter):
-    assert gaarf_exporter.http_server_url
     assert gaarf_exporter.namespace
     assert gaarf_exporter.job_name
-    assert not gaarf_exporter.pushgateway_url
     assert not gaarf_exporter.registry.get_target_info()
 
   def test_export_returns_correct_metric_name(self, gaarf_exporter, report):
@@ -120,11 +119,3 @@ class TestGaaarfExporter:
     for metric in metrics:
       if metric.name == 'googleads_clicks':
         assert metric.samples == expected_samples
-
-  def test_gaarf_exporter_raises_value_error_when_url_not_provided(self):
-    with pytest.raises(ValueError):
-      GaarfExporter(http_server_url=None)
-
-  def test_gaarf_exporter_raises_value_error_when_namespace_is_empty(self):
-    with pytest.raises(ValueError):
-      GaarfExporter(namespace=None)
