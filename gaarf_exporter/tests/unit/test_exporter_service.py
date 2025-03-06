@@ -32,62 +32,70 @@ def _generate_collectors(property_name: str) -> list[str]:
   ]
 
 
-@pytest.mark.parametrize('collector', _generate_collectors('all_collectors'))
-def test_generate_metrics_from_collector_name_returns_correct_results(
-  caplog, collector
-):
-  caplog.set_level(logging.INFO)
-  test_exporter = exporter.GaarfExporter()
-  test_request = exporter_service.GaarfExporterRequest(collectors=collector)
+class TestGaarfExporterService:
+  @pytest.fixture(scope='class')
+  def service(self):
+    return exporter_service.GaarfExporterService()
 
-  exporter_service.generate_metrics(test_request, test_exporter)
+  @pytest.mark.parametrize('collector', _generate_collectors('all_collectors'))
+  def test_generate_metrics_from_collector_name_returns_correct_results(
+    self, service, caplog, collector
+  ):
+    caplog.set_level(logging.INFO)
+    test_exporter = exporter.GaarfExporter()
+    test_request = exporter_service.GaarfExporterRequest(collectors=collector)
 
-  assert 'Beginning export' in caplog.text
-  assert collector in caplog.text
-  assert 'Export completed' in caplog.text
+    service.generate_metrics(test_request, test_exporter)
 
+    assert 'Beginning export' in caplog.text
+    assert collector in caplog.text
+    assert 'Export completed' in caplog.text
 
-@pytest.mark.parametrize('collector', _generate_collectors('all_subregistries'))
-def test_generate_metrics_from_subregistry_name_returns_correct_results(
-  caplog, collector
-):
-  caplog.set_level(logging.INFO)
-  test_exporter = exporter.GaarfExporter()
-  test_request = exporter_service.GaarfExporterRequest(collectors=collector)
-
-  exporter_service.generate_metrics(test_request, test_exporter)
-
-  assert 'Beginning export' in caplog.text
-  assert collector in caplog.text
-  assert 'Export completed' in caplog.text
-
-
-def test_generate_metrics_from_all_collectors_returns_correct_results(caplog):
-  caplog.set_level(logging.INFO)
-  test_exporter = exporter.GaarfExporter()
-  test_request = exporter_service.GaarfExporterRequest(collectors='all')
-
-  exporter_service.generate_metrics(test_request, test_exporter)
-
-  assert 'Beginning export' in caplog.text
-  for collector in COLLECTORS_REGISTRY.all_collectors:
-    assert collector.name in caplog.text
-  assert 'Export completed' in caplog.text
-
-
-def test_generate_metrics_from_config_returns_correct_results(caplog):
-  caplog.set_level(logging.INFO)
-  config_location = f'{_SCRIPT_DIR}/test_gaarf_exporter.yaml'
-  with open(config_location, 'r', encoding='utf-8') as f:
-    collector_data = yaml.safe_load(f)
-  test_exporter = exporter.GaarfExporter()
-  test_request = exporter_service.GaarfExporterRequest(
-    collectors_path=config_location,
+  @pytest.mark.parametrize(
+    'collector', _generate_collectors('all_subregistries')
   )
+  def test_generate_metrics_from_subregistry_name_returns_correct_results(
+    self, service, caplog, collector
+  ):
+    caplog.set_level(logging.INFO)
+    test_exporter = exporter.GaarfExporter()
+    test_request = exporter_service.GaarfExporterRequest(collectors=collector)
 
-  exporter_service.generate_metrics(test_request, test_exporter)
+    service.generate_metrics(test_request, test_exporter)
 
-  assert 'Beginning export' in caplog.text
-  for collector in collector_data:
-    assert collector.get('name') in caplog.text
-  assert 'Export completed' in caplog.text
+    assert 'Beginning export' in caplog.text
+    assert collector in caplog.text
+    assert 'Export completed' in caplog.text
+
+  def test_generate_metrics_from_all_collectors_returns_correct_results(
+    self, service, caplog
+  ):
+    caplog.set_level(logging.INFO)
+    test_exporter = exporter.GaarfExporter()
+    test_request = exporter_service.GaarfExporterRequest(collectors='all')
+
+    service.generate_metrics(test_request, test_exporter)
+
+    assert 'Beginning export' in caplog.text
+    for collector in COLLECTORS_REGISTRY.all_collectors:
+      assert collector.name in caplog.text
+    assert 'Export completed' in caplog.text
+
+  def test_generate_metrics_from_config_returns_correct_results(
+    self, service, caplog
+  ):
+    caplog.set_level(logging.INFO)
+    config_location = f'{_SCRIPT_DIR}/test_gaarf_exporter.yaml'
+    with open(config_location, 'r', encoding='utf-8') as f:
+      collector_data = yaml.safe_load(f)
+    test_exporter = exporter.GaarfExporter()
+    test_request = exporter_service.GaarfExporterRequest(
+      collectors_path=config_location,
+    )
+
+    service.generate_metrics(test_request, test_exporter)
+
+    assert 'Beginning export' in caplog.text
+    for collector in collector_data:
+      assert collector.get('name') in caplog.text
+    assert 'Export completed' in caplog.text

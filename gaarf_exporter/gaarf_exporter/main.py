@@ -24,6 +24,7 @@ import argparse
 import asyncio
 import contextlib
 import datetime
+import logging
 
 import fastapi
 import prometheus_client
@@ -92,10 +93,22 @@ async def start_metric_generation(
   request: exporter_service.GaarfExporterRequest,
 ):
   """Continuously exports metrics from Google Ads API."""
+  gaarf_exporter_service = exporter_service.GaarfExporterService(
+    ads_config_path=request.ads_config_path, account=request.account
+  )
+  logging.info(
+    'Starting exporting metrics from accounts: %s',
+    gaarf_exporter_service.accounts,
+  )
   iterations = None
   export_metrics = True
+  refresh_accounts = False
   while export_metrics:
-    exporter_service.generate_metrics(request, exporter)
+    if iterations_left := request.runtime_options.account_update:
+      iterations_left -= 1
+    if iterations_left == 0:
+      refresh_accounts = True
+    gaarf_exporter_service.generate_metrics(request, exporter, refresh_accounts)
     if request.runtime_options.expose_type == 'pushgateway':
       prometheus_client.push_to_gateway(
         request.runtime_parameters.address,
@@ -103,7 +116,7 @@ async def start_metric_generation(
         registry=exporter.registry,
       )
       export_metrics = False
-    await asyncio.sleep(request.runtime_options.delay_minutes)
+    await asyncio.sleep(request.runtime_options.delay_minutes * 60)
     if iterations := iterations or request.runtime_options.iterations:
       iterations -= 1
       if iterations == 0:
@@ -144,7 +157,7 @@ def main() -> None:  # noqa: D103
   parser.add_argument('--iterations', dest='iterations', default=None, type=int)
   parser.add_argument(
     '--update-accounts-every-n-iterations',
-    dest='iterations_left',
+    dest='account_update',
     default=4 * 24,
     type=int,
   )
@@ -179,6 +192,7 @@ def main() -> None:  # noqa: D103
     fetching_timeout=args.fetching_timeout,
     iterations=args.iterations,
     delay_minutes=args.delay,
+    update_accounts_on_iterations=args.account_update,
   )
   if not args.account and args.ads_config:
     request = exporter_service.GaarfExporterRequest(

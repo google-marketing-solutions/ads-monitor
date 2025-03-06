@@ -25,9 +25,12 @@ from time import time
 from typing import Literal
 
 import pydantic
+import smart_open
+import yaml
+from gaarf import api_clients, report_fetcher
 
 import gaarf_exporter
-from gaarf_exporter import bootstrap, registry
+from gaarf_exporter import exceptions, registry
 
 
 class GaarfExporterRuntimeOptions(pydantic.BaseModel):
@@ -49,6 +52,7 @@ class GaarfExporterRuntimeOptions(pydantic.BaseModel):
     fetching_timeout:
       Period to abort fetching if not data from Google Ads API returned.
     max_workers: Maximum number of parallel fetching from Google Ads API.
+    account_update: Number between iterations to refresh account list.
   """
 
   host: str = '0.0.0.0'
@@ -63,6 +67,7 @@ class GaarfExporterRuntimeOptions(pydantic.BaseModel):
   deduplicate_collectors: bool = True
   fetching_timeout: int = 120
   max_workers: int | None = None
+  account_update: int | None = None
 
 
 class GaarfExporterRequest(pydantic.BaseModel):
@@ -87,65 +92,123 @@ class GaarfExporterRequest(pydantic.BaseModel):
   runtime_options: GaarfExporterRuntimeOptions = GaarfExporterRuntimeOptions()
 
 
-def generate_metrics(
-  request: GaarfExporterRequest, exporter: gaarf_exporter.GaarfExporter
-):
-  """Generates metrics based on API request."""
-  active_collectors = registry.initialize_collectors(
-    config_file=request.collectors_config,
-    collector_names=request.collectors,
-    create_service_collectors=request.runtime_options.create_service_collectors,
-    deduplicate_collectors=request.runtime_options.deduplicate_collectors,
-  )
+class GaarfExporterService:
+  """Responsible for getting data from Ads and exposing it to Prometheus.
 
-  dependencies = bootstrap.inject_dependencies(
-    ads_config_path=request.ads_config_path,
-    api_version=request.api_version,
-    account=request.account,
-  )
-  report_fetcher, accounts = (
-    dependencies.get('report_fetcher'),
-    dependencies.get('accounts'),
-  )
-  if request.account:
-    accounts = report_fetcher.expand_mcc(request.account)
-  logging.info('Beginning export')
-  start_export_time = time()
-  exporter.export_started.set(start_export_time)
-  for collector in active_collectors:
-    logging.info('Exporting from collector: %s', collector.name)
-    if not (query_text := collector.query):
-      raise ValueError(f'Missing query text for query "{collector.name}"')
-    if not accounts:
-      report = report_fetcher.fetch(query_text, accounts)
-    else:
-      with futures.ThreadPoolExecutor(
-        max_workers=request.runtime_options.max_workers
-      ) as executor:
-        future_to_account = {
-          executor.submit(report_fetcher.fetch, query_text, account): account
-          for account in accounts
-        }
-        for future in futures.as_completed(
-          future_to_account, timeout=request.runtime_options.fetching_timeout
-        ):
-          account = future_to_account[future]
-          start = time()
-          report = future.result()
-          end = time()
-          exporter.report_fetcher_gauge.labels(
-            collector=collector.name, account=account
-          ).set(end - start)
-          if dependencies.get('convert_fake_report'):
-            report.is_fake = False
-          exporter.export(
-            report=report,
-            suffix=collector.suffix,
-            collector=collector.name,
-            account=account,
-          )
-  logging.info('Export completed')
-  end_export_time = time()
-  exporter.export_completed.set(end_export_time)
-  exporter.total_export_time_gauge.set(end_export_time - start_export_time)
-  exporter.delay_gauge.set(request.runtime_options.delay_minutes * 60)
+  Attributes:
+    ads_config_path: Path to google-ads.yaml (local or remote).
+    account: Child or MCC account.
+    fetcher: Initialized AdsReportFetcher to perform fetching from Ads.
+    accounts: All child accounts expanded from provided account.
+  """
+
+  def __init__(
+    self,
+    ads_config_path: os.PathLike[str] | str | None = None,
+    account: str | None = None,
+  ) -> None:
+    """Initializes GaarfExporterService."""
+    self.ads_config_path = ads_config_path
+    self.account = account
+    self._report_fetcher = None
+    self._accounts = None
+    self._convert_fake_report = False
+
+  @property
+  def fetcher(self) -> report_fetcher.AdsReportFetcher:
+    """Initialized AdsReportFetcher for fetching data from Ads API."""
+    if self._report_fetcher:
+      return self._report_fetcher
+    if not self.account or not self.ads_config_path:
+      self._report_fetcher = report_fetcher.AdsReportFetcher(
+        api_clients.BaseClient(api_clients.GOOGLE_ADS_API_VERSION)
+      )
+      self._convert_fake_report = True
+      return self._report_fetcher
+    with smart_open.open(self.ads_config_path, 'r', encoding='utf-8') as f:
+      google_ads_config_dict = yaml.safe_load(f)
+    if not self.account and not google_ads_config_dict.get('login_customer_id'):
+      raise exceptions.GaarfExporterError(
+        'No account found, please specify as `account` argument'
+        'or add as login_customer_id in google-ads.yaml'
+      )
+    self._report_fetcher = report_fetcher.AdsReportFetcher(
+      api_clients.GoogleAdsApiClient(config_dict=google_ads_config_dict)
+    )
+    return self._report_fetcher
+
+  @property
+  def accounts(self) -> list[str]:
+    """All child accounts to get data from."""
+    if self.account and not self._accounts:
+      self._accounts = self.fetcher.expand_mcc(self.account)
+    return self._accounts
+
+  @accounts.setter
+  def accounts(self, new_accounts: list[str]) -> None:
+    """All child accounts to get data from."""
+    self._accounts = new_accounts
+
+  def generate_metrics(
+    self,
+    request: GaarfExporterRequest,
+    exporter: gaarf_exporter.GaarfExporter,
+    refresh_accounts: bool = False,
+  ) -> None:
+    """Generates metrics based on API request.
+
+    Args:
+      request: Complete request to fetch and expose data.
+      exporter: Initialized GaarfExporter.
+      refresh_accounts: Whether to refresh list of accounts under MCC.
+    """
+    active_collectors = registry.initialize_collectors(
+      config_file=request.collectors_config,
+      collector_names=request.collectors,
+      create_service_collectors=request.runtime_options.create_service_collectors,
+      deduplicate_collectors=request.runtime_options.deduplicate_collectors,
+    )
+
+    if refresh_accounts:
+      logging.info('Refreshing accounts...')
+      self.accounts = self.fetcher.expand_mcc(self.account)
+    logging.info('Beginning export')
+    start_export_time = time()
+    exporter.export_started.set(start_export_time)
+    for collector in active_collectors:
+      logging.info('Exporting from collector: %s', collector.name)
+      if not (query_text := collector.query):
+        raise ValueError(f'Missing query text for query "{collector.name}"')
+      if not self.accounts:
+        report = self.fetcher.fetch(query_text, self.accounts)
+      else:
+        with futures.ThreadPoolExecutor(
+          max_workers=request.runtime_options.max_workers
+        ) as executor:
+          future_to_account = {
+            executor.submit(self.fetcher.fetch, query_text, account): account
+            for account in self.accounts
+          }
+          for future in futures.as_completed(
+            future_to_account, timeout=request.runtime_options.fetching_timeout
+          ):
+            account = future_to_account[future]
+            start = time()
+            report = future.result()
+            end = time()
+            exporter.report_fetcher_gauge.labels(
+              collector=collector.name, account=account
+            ).set(end - start)
+            if self._convert_fake_report:
+              report.is_fake = False
+            exporter.export(
+              report=report,
+              suffix=collector.suffix,
+              collector=collector.name,
+              account=account,
+            )
+    logging.info('Export completed')
+    end_export_time = time()
+    exporter.export_completed.set(end_export_time)
+    exporter.total_export_time_gauge.set(end_export_time - start_export_time)
+    exporter.delay_gauge.set(request.runtime_options.delay_minutes * 60)
