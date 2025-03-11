@@ -22,7 +22,7 @@ import logging
 import os
 from concurrent import futures
 from time import time
-from typing import Literal
+from typing import Literal, Optional
 
 import pydantic
 import smart_open
@@ -66,8 +66,8 @@ class GaarfExporterRuntimeOptions(pydantic.BaseModel):
   create_service_collectors: bool = True
   deduplicate_collectors: bool = True
   fetching_timeout: int = 120
-  max_workers: int | None = None
-  account_update: int | None = None
+  max_workers: Optional[int] = None
+  account_update: Optional[int] = None
 
 
 class GaarfExporterRequest(pydantic.BaseModel):
