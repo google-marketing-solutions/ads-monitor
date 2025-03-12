@@ -22,7 +22,7 @@ import logging
 import os
 from concurrent import futures
 from time import time
-from typing import Literal, Optional
+from typing import Literal, Optional, Union
 
 import pydantic
 import smart_open
@@ -58,7 +58,7 @@ class GaarfExporterRuntimeOptions(pydantic.BaseModel):
   host: str = '0.0.0.0'
   port: int = 8000
   expose_type: Literal['http', 'pushgateway'] = 'http'
-  iterations: int | None = None
+  iterations: Optional[int] = None
   accounts_refresh_frequency: int = 4 * 24
   delay_minutes: int = 15
   namespace: str = 'googleads'
@@ -83,12 +83,12 @@ class GaarfExporterRequest(pydantic.BaseModel):
     runtime_options: Options to finetune exporting process.
   """
 
-  account: str | None = None
-  ads_config_path: os.PathLike[str] | str | None = None
-  api_version: str | None = None
+  account: Optional[str] = None
+  ads_config_path: Union[os.PathLike[str], str, None] = None
+  api_version: Optional[str] = None
   collectors: str = 'default'
-  collectors_config: os.PathLike[str] | str | None = None
-  macros: dict[str, str] | None = None
+  collectors_config: Union[os.PathLike[str], str, None] = None
+  macros: Optional[dict[str, str]] = None
   runtime_options: GaarfExporterRuntimeOptions = GaarfExporterRuntimeOptions()
 
 
@@ -104,8 +104,8 @@ class GaarfExporterService:
 
   def __init__(
     self,
-    ads_config_path: os.PathLike[str] | str | None = None,
-    account: str | None = None,
+    ads_config_path: Optional[os.PathLike[str] | str] = None,
+    account: Optional[str] = None,
   ) -> None:
     """Initializes GaarfExporterService."""
     self.ads_config_path = ads_config_path
