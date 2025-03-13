@@ -21,4 +21,4 @@ from gaarf_exporter.exporter import GaarfExporter
 __all__ = [
   'GaarfExporter',
 ]
-__version__ = '1.1.2'
+__version__ = '1.2.0'
