@@ -63,7 +63,7 @@ services:
       - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
       - grafana_data:/var/lib/grafana
   gaarf_exporter:
-    image: ghcr.io/google-marketing-solutions/gaarf-exporter:v1.1.1
+    image: ghcr.io/google-marketing-solutions/gaarf-exporter:latest
     container_name: gaarf_exporter
     networks:
       - ads-monitor
@@ -72,12 +72,8 @@ services:
     command:
       - "--account=$GAARF_EXPORTER_ACCOUNT_ID"
       - "--ads-config=/google-ads.yaml"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000"]
-      interval: 2m
-      timeout: 10s
-      retries: 3
-      start_period: 1m
+    labels:
+      autoheal-app: true
     restart: unless-stopped
     depends_on:
       - prometheus
@@ -92,3 +88,10 @@ services:
       - "./alertmanager:/config"
     command: --config.file=/config/alertmanager.yml --log.level=debug
     restart: unless-stopped
+  autoheal:
+    restart: always
+    image: willfarrell/autoheal
+    environment:
+      - AUTOHEAL_CONTAINER_LABEL=all
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
