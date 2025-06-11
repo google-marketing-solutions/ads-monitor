@@ -9,6 +9,8 @@ dependencies = [
   "google-ads-api-report-fetcher",
   "fastapi",
   "uvicorn",
+  "pydantic",
+  "eval-type-backport",
 ]
 
 authors = [
@@ -44,6 +46,9 @@ test =  [
 
 [tool.setuptools.package-data]
 "*"= ["*.yaml"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
 
 [project.scripts]
 gaarf-exporter="gaarf_exporter.main:main"
