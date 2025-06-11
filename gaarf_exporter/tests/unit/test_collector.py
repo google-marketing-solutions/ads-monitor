@@ -11,6 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# pylint: disable=C0330, g-bad-import-order, g-multiple-import
+
 from __future__ import annotations
 
 import re
@@ -77,12 +80,15 @@ class TestCollector:
       level=test_collector.level,
       dimensions=[
         query_collector.Field(
-          'segments.conversion_action_category', 'conversion_category'
+          name='segments.conversion_action_category',
+          alias='conversion_category',
         ),
         query_collector.Field(
-          'segments.conversion_action_name', 'conversion_name'
+          name='segments.conversion_action_name', alias='conversion_name'
         ),
-        query_collector.Field('segments.conversion_action~0', 'conversion_id'),
+        query_collector.Field(
+          name='segments.conversion_action~0', alias='conversion_id'
+        ),
       ],
       resource_name=test_collector.resource_name,
       filters='metrics.all_conversions > 0',
@@ -211,7 +217,7 @@ class TestCollector:
         ],
       )
       with pytest.raises(ValueError):
-        collector.metrics = query_collector.Field('ad_group.id')
+        collector.metrics = query_collector.Field(name='ad_group.id')
 
     def test_mcc_level_collector_creates_correct_customer_level_query(self):
       collector = query_collector.Collector(
@@ -262,7 +268,7 @@ class TestCollector:
         name='simple',
         metrics='impressions',
         dimensions=[
-          query_collector.Field('ad_group.id'),
+          'ad_group.id',
         ],
         level=query_collector.CollectorLevel.AD_GROUP,
       )
@@ -279,10 +285,12 @@ class TestCollector:
       collector = query_collector.Collector(
         name='bid_budget',
         metrics=[
-          query_collector.Field('impressions'),
-          query_collector.Field('campaign_budget.amount_micros', 'budget'),
+          query_collector.Field(name='impressions'),
           query_collector.Field(
-            'campaign.target_cpa.target_cpa_micros', 'target_cpa'
+            name='campaign_budget.amount_micros', alias='budget'
+          ),
+          query_collector.Field(
+            name='campaign.target_cpa.target_cpa_micros', alias='target_cpa'
           ),
         ],
         level=query_collector.CollectorLevel.CAMPAIGN,
@@ -303,12 +311,14 @@ class TestCollector:
         name='disapproval',
         level=query_collector.CollectorLevel.AD_GROUP_AD,
         dimensions=[
-          query_collector.Field('campaign.id', 'campaign_id'),
+          query_collector.Field(name='campaign.id'),
           query_collector.Field(
-            'ad_group_ad.policy_summary.approval_status', 'approval_status'
+            name='ad_group_ad.policy_summary.approval_status',
+            alias='approval_status',
           ),
           query_collector.Field(
-            'ad_group_ad.policy_summary.review_status', 'review_status'
+            name='ad_group_ad.policy_summary.review_status',
+            alias='review_status',
           ),
         ],
         filters=(
@@ -428,7 +438,7 @@ class TestCollector:
     def test_dimensions_returns_correct_fields(self):
       collector = query_collector.Collector(dimensions='segments.date')
       assert collector.dimensions == {
-        query_collector.Field(name='segments.date', alias=None),
+        query_collector.Field(name='segments.date'),
       }
 
     @pytest.mark.parametrize(
@@ -746,4 +756,4 @@ def test_collectors_similarity_check_returns_deduplicated_collectors(
   collectors, expected
 ):
   actual = query_collector.collectors_similarity_check(collectors)
-  assert set([t.name for t in actual]) == set(expected)
+  assert set(t.name for t in actual) == set(expected)

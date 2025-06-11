@@ -11,6 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# pylint: disable=C0330, g-bad-import-order, g-multiple-import
+
 """Defines Collector class and corresponding helper methods.
 
 Collector serves an important roles of building Google Ads queries from set of
@@ -29,23 +32,22 @@ allowing Collector customization at the runtime.
 from __future__ import annotations
 
 import copy
-import dataclasses
 import enum
 import itertools
 from collections.abc import Mapping, MutableSequence, Sequence
 from datetime import datetime
-from typing import TypedDict
 
+import pydantic
 from gaarf.cli import utils as gaarf_utils
 
 from gaarf_exporter import util
 
 
-class QueryField(TypedDict):
+class QueryField(pydantic.BaseModel):
   field: str
 
 
-class QuerySpec(TypedDict):
+class QuerySpec(pydantic.BaseModel):
   level: str | None
   metrics: list[str] | list[QueryField] | None
   dimensions: list[QueryField] | None
@@ -54,7 +56,7 @@ class QuerySpec(TypedDict):
   filters: list[str] | None
 
 
-class CollectorDefinition(TypedDict):
+class CollectorDefinition(pydantic.BaseModel):
   name: str
   type: str | dict[str, str] | None
   query_spec: QuerySpec | None
@@ -63,7 +65,7 @@ class CollectorDefinition(TypedDict):
   registries: list[str]
 
 
-class CollectorCustomization(TypedDict):
+class CollectorCustomization(pydantic.BaseModel):
   start_date: str
   end_date: str
   level: str
@@ -72,7 +74,7 @@ class CollectorCustomization(TypedDict):
   filters: list[str]
 
 
-class Field:
+class Field(pydantic.BaseModel):
   """Helper class for defining Google Ads API field.
 
   Field can be a metric, dimension or segment.
@@ -82,44 +84,18 @@ class Field:
       alias: Optional alias for the field, i.e. clicks.
   """
 
-  def __init__(self, name: str, alias: str | None = None) -> None:
-    """Initializes Field.
+  name: str
+  alias: str | None = None
 
-    Args:
-      name: Name of the field, i.e. metric.clicks.
-      alias: Optional alias for the field, i.e. clicks.
-    """
-    self.name = name
-    self.alias = alias or name.replace('.', '_')
-
-  def to_query_field(self) -> str:
-    """Converts Field to format 'name AS alias'."""
-    return f'{self.name} AS {self.alias}' if self.alias else self.name
+  def model_post_init(self, __context__) -> None:
+    if not self.alias:
+      self.alias = self.name.replace('.', '_')
 
   def __str__(self) -> str:
-    return self.to_query_field()
-
-  def __repr__(self) -> str:
-    return f'Field(name={self.name}, alias={self.alias})'
-
-  def __eq__(self, other: Field) -> bool:
-    if not other or not isinstance(other, Field):
-      return False
-    return util.remove_spaces(str(self)) == util.remove_spaces(str(other))
-
-  def __lt__(self, other: Field) -> bool:
-    return util.remove_spaces(str(self)) < util.remove_spaces(str(other))
-
-  def __gt__(self, other: Field) -> bool:
-    return util.remove_spaces(str(self)) > util.remove_spaces(str(other))
+    return f'{self.name} AS {self.alias}'
 
   def __hash__(self):
-    return hash(
-      (
-        util.remove_spaces(self.name),
-        util.remove_spaces(self.alias if self.alias else ''),
-      )
-    )
+    return hash(str(self))
 
 
 class CollectorLevel(enum.IntEnum):
@@ -144,8 +120,7 @@ class CollectorLevel(enum.IntEnum):
     return all(key.upper() in cls.__members__ for key in keys)
 
 
-@dataclasses.dataclass
-class LevelInfo:
+class LevelInfo(pydantic.BaseModel):
   """Stores meta information for a particular CollectorLevel.
 
   This meta information is used to correctly build query in the Collector.
@@ -177,52 +152,52 @@ class LevelInfo:
 
 _LEVELS = {
   CollectorLevel.AD_GROUP_AD_ASSET: LevelInfo(
-    'ad_group_ad_asset_view',
-    'asset.id',
-    'asset_id',
-    'asset.name',
-    'asset',
-    'ad_group_ad_asset_view.enabled = TRUE',
+    resource_name='ad_group_ad_asset_view',
+    id='asset.id',
+    id_alias='asset_id',
+    name='asset.name',
+    name_alias='asset',
+    active_entities_filter='ad_group_ad_asset_view.enabled = TRUE',
   ),
   CollectorLevel.AD_GROUP_AD: LevelInfo(
-    'ad_group_ad',
-    'ad_group_ad.ad.id',
-    'ad_id',
-    'ad_group_ad.ad.name',
-    'ad_name',
-    'ad_group_ad.status = ENABLED',
+    resource_name='ad_group_ad',
+    id='ad_group_ad.ad.id',
+    id_alias='ad_id',
+    name='ad_group_ad.ad.name',
+    name_alias='ad_name',
+    active_entities_filter='ad_group_ad.status = ENABLED',
   ),
   CollectorLevel.AD_GROUP: LevelInfo(
-    'ad_group',
-    'ad_group.id',
-    'ad_group_id',
-    'ad_group.name',
-    'ad_group_name',
-    'ad_group.status = ENABLED',
+    resource_name='ad_group',
+    id='ad_group.id',
+    id_alias='ad_group_id',
+    name='ad_group.name',
+    name_alias='ad_group_name',
+    active_entities_filter='ad_group.status = ENABLED',
   ),
   CollectorLevel.CAMPAIGN: LevelInfo(
-    'campaign',
-    'campaign.id',
-    'campaign_id',
-    'campaign.name',
-    'campaign_name',
-    'campaign.status = ENABLED',
+    resource_name='campaign',
+    id='campaign.id',
+    id_alias='campaign_id',
+    name='campaign.name',
+    name_alias='campaign_name',
+    active_entities_filter='campaign.status = ENABLED',
   ),
   CollectorLevel.CUSTOMER: LevelInfo(
-    'customer',
-    'customer.id',
-    'customer_id',
-    'customer.descriptive_name',
-    'account_name',
-    'customer.status = ENABLED',
+    resource_name='customer',
+    id='customer.id',
+    id_alias='customer_id',
+    name='customer.descriptive_name',
+    name_alias='account_name',
+    active_entities_filter='customer.status = ENABLED',
   ),
   CollectorLevel.MCC: LevelInfo(
-    'customer',
-    'customer.id',
-    'customer_id',
-    'customer.descriptive_name',
-    'account_name',
-    'customer.status = ENABLED',
+    resource_name='customer',
+    id='customer.id',
+    id_alias='customer_id',
+    name='customer.descriptive_name',
+    name_alias='account_name',
+    active_entities_filter='customer.status = ENABLED',
   ),
 }
 
@@ -323,9 +298,12 @@ class Collector:
       level=self.level,
       metrics='all_conversions,all_conversions_value',
       dimensions=[
-        Field('segments.conversion_action_category', 'conversion_category'),
-        Field('segments.conversion_action_name', 'conversion_name'),
-        Field('segments.conversion_action~0', 'conversion_id'),
+        Field(
+          name='segments.conversion_action_category',
+          alias='conversion_category',
+        ),
+        Field(name='segments.conversion_action_name', alias='conversion_name'),
+        Field(name='segments.conversion_action~0', alias='conversion_id'),
       ],
       resource_name=self.resource_name,
       filters='metrics.all_conversions > 0',
@@ -374,9 +352,9 @@ class Collector:
       self._filters = set(self._filters)
     if isinstance(self, ServiceCollector) or not self._metrics:
       return self._filters
-    if not self._filters:
-      self._filters.add('segments.date DURING TODAY')
-    elif not any('segments.date' in _filter for _filter in self._filters):
+    if not self._filters or not any(
+      'segments.date' in f for f in self._filters
+    ):
       self._filters.add('segments.date DURING TODAY')
     return self._filters
 
@@ -457,9 +435,7 @@ class Collector:
     """Returns formatted metrics as field names with aliases."""
     if not self.metrics:
       return '\n'
-    metrics_info = ',\n'.join(
-      [field.to_query_field() for field in sorted(self.metrics)]
-    )
+    metrics_info = ',\n'.join([str(field) for field in self.metrics])
     return f'{metrics_info},\n'
 
   @property
@@ -468,12 +444,14 @@ class Collector:
     if not (dimensions := self.dimensions):
       return '\n'
     if level_info := self.level_info:
-      dimensions = set(dimensions).difference(set([level_info.to_field()]))
+      dimensions = set(dimensions).difference(
+        {
+          level_info.to_field(),
+        }
+      )
     if not dimensions:
       return '\n'
-    dimensions_info = ',\n'.join(
-      [field.to_query_field() for field in sorted(dimensions)]
-    )
+    dimensions_info = ',\n'.join([str(field) for field in dimensions])
     return f'{dimensions_info},\n'
 
   @property
@@ -532,13 +510,13 @@ class Collector:
         datetime.strptime(end_date, '%Y-%m-%d')
         - datetime.strptime(start_date, '%Y-%m-%d')
       ).days + 1
-      self.dimensions.add(Field(str(n_days), 'n_days'))
+      self.dimensions.add(Field(name=str(n_days), alias='n_days'))
 
   def is_similar(self, other: Collector) -> bool:
     """Compares similarity between two collectors.
 
     Similarity first checks whether two collectors are coming from different
-    non CollectorLevel specific resouce_names, if they are different then
+    non CollectorLevel specific resource_names, if they are different then
     collectors are not similar.
     Then is compares all  metrics, dimensions and filters between two collectors.
 
@@ -552,36 +530,34 @@ class Collector:
       CollectorLevel.contains(self.resource_name, other.resource_name)
     ):
       return False
-    if (self.metrics, self.dimensions, self.filters) == (
+    return (self.metrics, self.dimensions, self.filters) == (
       other.metrics,
       other.dimensions,
       other.filters,
-    ):
-      return True
-    return False
+    )
 
   def __eq__(self, other: Collector) -> bool:
     """Compares two collectors based on similarity, resource_name and level."""
     if not self.is_similar(other):
       return False
-    if self.level != other.level:
-      return False
-    return True
+    return self.level == other.level
 
   def __lt__(self, other: Collector) -> bool:
     """Compares collectors by level values."""
-    if self.level.value < other.level.value:
-      return True
-    return False
+    return self.level.value < other.level.value
 
   def __gt__(self, other: Collector) -> bool:
     """Compares collectors by level values."""
-    if self.level.value > other.level.value:
-      return True
-    return False
+    return self.level.value > other.level.value
 
   def __hash__(self):
     return hash(self.query)
+
+  def __str__(self) -> str:
+    return f'Collector(name={self.name}, query={self.query})'
+
+  def __repr__(self) -> str:
+    return str(self)
 
 
 class ServiceCollector(Collector):

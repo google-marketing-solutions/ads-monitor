@@ -41,8 +41,8 @@ class Registry:
   """
 
   def __init__(self, collectors: dict | None = None) -> None:
-    """Creates Registry based on module level variable _REGISTRY."""
-    self.collectors = dict(collectors) or dict()
+    """Creates Registry based on provided collectors."""
+    self.collectors = dict(collectors) or {}
 
   @classmethod
   def from_collector_definitions(
@@ -53,7 +53,7 @@ class Registry:
     """Builds Registry from one or multiple definitions.
 
     Args:
-      path_to_definition: Path to file / folder with collector definitions.
+      path_to_definitions: Path to file / folder with collector definitions.
 
     Returns:
       Initialized collector registry.
@@ -182,10 +182,8 @@ class CollectorSet(MutableSet):
       self.deduplicate_collectors()
     if self._service_collectors:
       has_service_collector = any(
-        [
-          isinstance(collector, query_collector.ServiceCollector)
-          for collector in self._collectors
-        ]
+        isinstance(collector, query_collector.ServiceCollector)
+        for collector in self._collectors
       )
       if not has_service_collector:
         valid_collector_levels = [
@@ -243,6 +241,9 @@ class CollectorSet(MutableSet):
   def __len__(self) -> int:
     return len(self.collectors)
 
+  def __str__(self) -> int:
+    return ', '.join(sorted(c.name for c in self.collectors))
+
   def add(self, collector) -> None:
     self._collectors.add(collector)
 
@@ -261,9 +262,11 @@ def initialize_collectors(
   Args:
     config_file: Path to file with collector definitions.
     collector_names: Comma-separated string with collector names.
+    create_service_collectors: Whether to create additional service collectors.
+    deduplicate_collectors: Whether to perform collector deduplications.
 
   Returns:
-    All found collectors.
+    All found and created collectors.
 
   Raises:
     ValueError: When neither collector_file nor collector_names were provided.
@@ -296,7 +299,8 @@ def _load_collector_data(
   """Loads collectors data from file or folder.
 
   Args:
-    path_to_definition: Local path to file / folder with collector definitions.
+    path_to_definitions: Local path to file / folder with collector definitions.
+
   Returns:
     Loaded collector definitions.
   """
