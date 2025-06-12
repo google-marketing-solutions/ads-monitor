@@ -31,14 +31,8 @@ _TOKEN_PATTERNS = (
   r'|(?P<MATH_OPERATOR>((\>\=)|(\<\=))|([\+\-\*/\(\)\=\>\<]))'
 )
 
-_RELATIVE_METRIC_PATTERNS = r'(?i)average_|_cpm|ctr|_percentage|_rate|_share'
 
-
-def remove_spaces(s) -> str:
-  return re.sub(r'\s+', '', s)
-
-
-def tokenize(expression) -> list[tuple[str, str | None]]:
+def tokenize(expression: str) -> list[tuple[str, str | None]]:
   tokens = []
   prev_token_type = None
   for match in re.finditer(_TOKEN_PATTERNS, expression):
@@ -49,17 +43,3 @@ def tokenize(expression) -> list[tuple[str, str | None]]:
     )
     prev_token_type = token_type
   return tokens
-
-
-def find_relative_metrics(query) -> list[str]:
-  result = set()
-  raw_tokens = tokenize(query)
-  for token_value, token_type in raw_tokens:
-    if token_type == 'KEYWORD_FROM':
-      break
-
-    if token_type in ('IDENTIFIER', 'PREFIXED_IDENTIFIER'):
-      metric_name = token_value.split('.')[-1]
-      if re.search(_RELATIVE_METRIC_PATTERNS, metric_name):
-        result.add(metric_name)
-  return list(result)
