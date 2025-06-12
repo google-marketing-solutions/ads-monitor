@@ -1,4 +1,4 @@
-# Copyright 2023 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ from datetime import datetime
 import pydantic
 from gaarf.cli import utils as gaarf_utils
 
-from gaarf_exporter import util
+from gaarf_exporter import exceptions, util
 
 
 class QueryField(pydantic.BaseModel):
@@ -376,7 +376,7 @@ class Collector:
       Formatted list of Fields.
 
     Raises:
-      ValueError: If fields has non-aliased virtual column.
+      GaarfExporterError: If fields has non-aliased virtual column.
     """
     if not fields:
       return set()
@@ -404,7 +404,7 @@ class Collector:
       raw_tokens = util.tokenize(field.name)
       if not field.alias:
         if len(raw_tokens) > 1:
-          raise ValueError('virtual column need an alias.')
+          raise exceptions.GaarfExporterError('virtual column need an alias.')
         field.alias = field.name
 
       processed_tokens = []
@@ -573,7 +573,7 @@ class ServiceCollector(Collector):
   @metrics.setter
   def metrics(self, value: Field) -> None:
     """Ensures that metrics cannot be overwritten."""
-    raise ValueError('Cannot change value of "metrics"!')
+    raise exceptions.GaarfExporterError('Cannot change value of "metrics"!')
 
 
 def create_default_service_collector(level: CollectorLevel) -> ServiceCollector:

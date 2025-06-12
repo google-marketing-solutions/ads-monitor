@@ -178,7 +178,9 @@ class GaarfExporterService:
     for collector in active_collectors:
       logging.info('Exporting from collector: %s', collector.name)
       if not (query_text := collector.query):
-        raise ValueError(f'Missing query text for query "{collector.name}"')
+        raise exceptions.GaarfExporterError(
+          f'Missing query text for query "{collector.name}"'
+        )
       if not self.accounts:
         report = self.fetcher.fetch(query_text, self.accounts)
       else:

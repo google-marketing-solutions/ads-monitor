@@ -1,4 +1,4 @@
-# Copyright 2023 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import re
 import pytest
 
 from gaarf_exporter import collector as query_collector
+from gaarf_exporter import exceptions
 
 
 def tokenize_sql(sql: str) -> list[str]:
@@ -216,7 +217,7 @@ class TestCollector:
           query_collector.Field(name='ad_group.id', alias='ad_group_id'),
         ],
       )
-      with pytest.raises(ValueError):
+      with pytest.raises(exceptions.GaarfExporterError):
         collector.metrics = query_collector.Field(name='ad_group.id')
 
     def test_mcc_level_collector_creates_correct_customer_level_query(self):

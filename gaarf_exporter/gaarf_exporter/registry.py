@@ -10,6 +10,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# pylint: disable=C0330, g-bad-import-order, g-multiple-import
+
 """Module for defining collectors.
 
 Collectors are converted to gaarf queries that are sent to Ads API.
@@ -27,6 +30,7 @@ from collections.abc import MutableSet
 import yaml
 
 from gaarf_exporter import collector as query_collector
+from gaarf_exporter import exceptions
 
 _SCRIPT_DIR = pathlib.Path(__file__).parent
 
@@ -269,7 +273,7 @@ def initialize_collectors(
     All found and created collectors.
 
   Raises:
-    ValueError: When neither collector_file nor collector_names were provided.
+    GaarfExporterError: When collector_file / collector_names weren't provided.
   """
   if config_file:
     collectors_registry = Registry.from_collector_definitions(config_file)
@@ -289,8 +293,10 @@ def initialize_collectors(
         'Failed to get "%s" collectors, using default ones', collector_names
       )
       active_collectors = collectors_registry.default_collectors
-  return active_collectors
-  raise ValueError('Neither collector_file nor collector_names were provided')
+    return active_collectors
+  raise exceptions.GaarfExporterError(
+    'Neither collector_file nor collector_names were provided'
+  )
 
 
 def _load_collector_data(
