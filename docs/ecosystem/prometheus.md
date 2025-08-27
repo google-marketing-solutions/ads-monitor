@@ -1,6 +1,10 @@
-# How to configure Prometheus
+# Prometheus
 
-Create `prometheus.yml` file and add it in the same folder as `docker-compose.yml`
+`gaarf_exporter` exports data in the format that can be easily scraped by Prometheus.
+
+## Configuring
+
+Create `prometheus.yml` file.
 
 ```
 global:
@@ -18,9 +22,7 @@ scrape_configs:
       - targets: ['localhost:8000']
 ```
 
-Please refer to [prometheus.yml](../prometheus/prometheus.yml) example.
-
-## Adding new target to existing prometheus.yml
+### Adding new target to existing prometheus.yml
 
 Since `gaarf_exporter` exposed metrics as HTTP server you need to add the following
 target in your `prometheus.yml`.
@@ -32,3 +34,7 @@ target in your `prometheus.yml`.
   static_configs:
     - targets: ['gaarf_exporter:8000']
 ```
+
+## Defining rules
+
+Please refer to [alerting rules](https://prometheus.io/docs/prometheus/latest/configuration/alerting_rules/) documentation  on prometheus.io for more details.
