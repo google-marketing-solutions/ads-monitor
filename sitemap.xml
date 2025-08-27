@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+         <loc>https://github.com/google-marketing-solutions/ads-monitor/</loc>
+         <lastmod>2025-08-27</lastmod>
+    </url>
+    <url>
+         <loc>https://github.com/google-marketing-solutions/ads-monitor/ecosystem/alertmanager/</loc>
+         <lastmod>2025-08-27</lastmod>
+    </url>
+    <url>
+         <loc>https://github.com/google-marketing-solutions/ads-monitor/ecosystem/grafana/</loc>
+         <lastmod>2025-08-27</lastmod>
+    </url>
+    <url>
+         <loc>https://github.com/google-marketing-solutions/ads-monitor/ecosystem/prometheus/</loc>
+         <lastmod>2025-08-27</lastmod>
+    </url>
+    <url>
+         <loc>https://github.com/google-marketing-solutions/ads-monitor/exporter/collectors/</loc>
+         <lastmod>2025-08-27</lastmod>
+    </url>
+    <url>
+         <loc>https://github.com/google-marketing-solutions/ads-monitor/exporter/config/</loc>
+         <lastmod>2025-08-27</lastmod>
+    </url>
+    <url>
+         <loc>https://github.com/google-marketing-solutions/ads-monitor/exporter/gaarf/</loc>
+         <lastmod>2025-08-27</lastmod>
+    </url>
+    <url>
+         <loc>https://github.com/google-marketing-solutions/ads-monitor/exporter/overview/</loc>
+         <lastmod>2025-08-27</lastmod>
+    </url>
+</urlset>
